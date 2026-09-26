@@ -6,6 +6,7 @@ export interface Env {
   OPENAI_MODEL?: string;
   CORS_ORIGINS?: string;
   VOICE_ICE_SERVERS?: string;
+  PITCH_MODERATOR_IDS?: string;
 }
 export type RoomStatus = 'waiting' | 'active' | 'judging' | 'finished' | 'cancelled';
 export interface Room {

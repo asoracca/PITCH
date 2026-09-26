@@ -1,0 +1,6 @@
+export interface Account { player_id: string; email: string; password_hash: string; password_salt: string; birth_date: string; accepted_at: number }
+export interface Profile { player_id: string; rating: number; games: number; reliability: number; judged: number; priority_credits: number; banned_until: number }
+export interface QueueRow { player_id: string; ticket: string; role: string; priority: number; band: string; joined_at: number; expires_at: number; room_id: string | null; rating: number; reliability: number; birth_date: string }
+export interface PitchRoom { id: string; code: string; band: string; scenario_id: string; scenario_json: string; a_id: string; b_id: string; started_at: number; status: string; result: string | null; resolution_token: string | null; finished_at: number | null }
+export interface Seat { room_id: string; player_id: string; role: string; slot: number; last_seen: number; left_at: number | null; name: string }
+export interface Ballot { id: string; room_id: string; judge_id: string; winner_id: string; a_clarity: number; a_persuasiveness: number; a_composure: number; a_tip: string; b_clarity: number; b_persuasiveness: number; b_composure: number; b_tip: string; created_at: number }

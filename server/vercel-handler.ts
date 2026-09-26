@@ -28,7 +28,7 @@ export function makeHandler(settings: Settings, connect = connectDatabase) {
         const ip = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
         if (ip) headers.set('cf-connecting-ip', ip);
       }
-      const env: Env = { DB: connection.DB, CORS_ORIGINS: settings.CORS_ORIGINS, VOICE_ICE_SERVERS: settings.VOICE_ICE_SERVERS };
+      const env: Env = { DB: connection.DB, CORS_ORIGINS: settings.CORS_ORIGINS, VOICE_ICE_SERVERS: settings.VOICE_ICE_SERVERS, PITCH_MODERATOR_IDS: settings.PITCH_MODERATOR_IDS };
       // Paid AI is deliberately not configured for the no-cost prototype.
       return worker.fetch(new Request(url, { method: request.method, headers,
         body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body, duplex: 'half' } as RequestInit), env);

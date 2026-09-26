@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createClient } from '@libsql/client';
-import { mkdtemp, rm, readFile, writeFile, cp } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, cp, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { migrate, config } from '../scripts/migrate-libsql.mjs';
@@ -33,7 +33,7 @@ test('libSQL migrations are additive, repeatable and reject changed applied file
   const copy = join(f.directory, 'migrations'); await cp('drizzle', copy, { recursive: true });
   const file = join(copy, '0000_lying_stature.sql'); await writeFile(file, (await readFile(file, 'utf8')) + '\n-- changed\n');
   await assert.rejects(migrate(f.client, copy), /Previously applied migration changed/);
-  assert.equal((await f.client.execute('SELECT COUNT(*) AS n FROM _beef_migrations')).rows[0].n, 2);
+  assert.equal((await f.client.execute('SELECT COUNT(*) AS n FROM _beef_migrations')).rows[0].n, (await readdir('drizzle')).filter(f => f.endsWith('.sql')).length);
 });
 
 test('the Vercel route runs a complete human match with atomic ratings on libSQL', async t => {

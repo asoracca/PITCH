@@ -1,0 +1,1 @@
+ALTER TABLE `pitch_rooms` ADD `scenario_json` text DEFAULT '{}' NOT NULL;
