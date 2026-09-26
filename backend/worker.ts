@@ -28,7 +28,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       documentation: 'https://github.com/asoracca/Pitch/blob/backend/quick-match/docs/backend.md',
       features: ['five-person rounds', 'three peer judges', 'age-band scenarios', 'priority queues', 'PITCH Elo', 'feedback and history', 'reporting and blocking', 'WebRTC audio signaling'],
       aiJudging: 'disabled for the no-cost prototype',
-      frontend: 'The functional skeleton is at /. The teammate-owned Next.js frontend remains in beef/.' });
+      frontend: 'The integrated Figma frontend is at /. Source lives in frontend/; the teammate Next.js server remains in beef/.' });
   }
   if (path === '/api/health') {
     method(request, 'GET'); await store.sql('SELECT COUNT(*) AS count FROM players').first();

@@ -1,0 +1,12 @@
+import { createServer } from 'node:http';
+import { mkdir } from 'node:fs/promises';
+import { createClient } from '@libsql/client';
+import { resolve } from 'node:path';
+import { migrate } from './migrate-libsql.mjs';
+import { createApiListener } from '../build/node/node-http.js';
+await mkdir('.local', { recursive: true });
+const url = `file:${resolve('.local/pitch.db')}`;
+const client = createClient({ url }); await migrate(client); client.close();
+const handle = createApiListener({ BEEF_LOCAL_DATABASE: '1', TURSO_DATABASE_URL: url, CORS_ORIGINS: 'http://127.0.0.1:5173,http://localhost:5173' });
+const server = createServer(async (request, response) => { if (!(await handle(request, response))) { response.statusCode = 404; response.end('Use the frontend at http://127.0.0.1:5173/'); } });
+server.listen(8787, '127.0.0.1', () => console.log('Local API: http://127.0.0.1:8787/'));

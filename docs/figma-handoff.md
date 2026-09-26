@@ -2,7 +2,11 @@
 
 Design reference: [Gamified Career Readiness Platform](https://www.figma.com/make/DzA4kriF9v04sf6MFGCKTL/Gamified-Career-Readiness-Platform).
 
-**Review status:** the design itself has not yet been inspected. Browser policy verification blocked access and a Figma connection is pending. The integration kit below covers the implemented PRD. It does not certify that every screen or interaction in the Figma file is implemented.
+**Review status:** the exported React source has been inspected and integrated from [Cassie's repository](https://github.com/CassieYu229/GamifiedCareer-ReadinessPlatform), commit `55a7221bf88194988519a3895ef3f769b1078d3a`. The running frontend is in `frontend/`. This review uses the actual exported source; the live Figma canvas itself was not accessible through the connector.
+
+The supplied layout, colors, typography, navigation, landing page and character artwork are reused. Simulated opponents, fabricated scores, sample profile data, fake activity counts and fake coach replies were removed. Auth, dashboard, queue, live rounds, scoring, results, profile history, leaderboard, report/block and moderator controls call the shared API. Speaking phases, winners and Elo remain server-authoritative. Navigation and refresh preserve the session; polling remains active while visiting another screen.
+
+The design's five example scoring dimensions are replaced by the agreed three peer rubric dimensions (clarity, persuasiveness and composure, 1–5). No AI calls are made. Solo practice is explicitly unscored and local. Character styles save on this device only. AI Coach, video, coins/XP/unlocks, profile editing and earned badges remain follow-up work; the UI does not award fake balances or scores.
 
 ## What is ready
 
@@ -16,7 +20,7 @@ No paid service or second game server is required for this contract.
 
 ## Screen connections for the existing product
 
-This maps implemented behavior; it is not a claim about what the unseen Figma file contains.
+These connections are implemented in the imported frontend.
 
 | UI interaction | Client method / source of truth |
 |---|---|
@@ -70,15 +74,13 @@ Never automatically retry a POST after an ambiguous network failure. Read the cu
 
 Figma's standard Make integration creates its own repository and pushes to that repository's default branch. It does **not** connect directly to this existing backend branch. Its synchronization is one-way; later Make pushes can overwrite edits made in the generated repository. See [Figma's official instructions](https://help.figma.com/hc/en-us/articles/35463818346647-Push-from-Figma-Make-to-GitHub).
 
-1. Finish the design interactions and export/push from Make. Send the generated repository link.
-2. Inspect the actual generated framework, screens, data models and fake/demo state. Import the frontend into `asoracca/Pitch` without replacing the root backend, migrations, secrets configuration or teammate server.
-3. Connect its actions to the client above and review any design/API gaps. Layout and visual labels can change freely; new persistence or game rules require backend implementation.
-4. Select that frontend's real build output for Vercel and test its routes, assets and content-security policy. Currently `vercel.json` still serves `prototype/`. Merely adding files under `beef/` or another folder does not replace the live UI.
-5. Run a five-person integrated playtest, then push the reviewed integration to `backend/quick-match`. Vercel automatically builds and deploys that push.
+1. Push the changed Make design to its generated repository.
+2. Compare against the recorded upstream commit in `frontend/IMPORT.md`; import the relevant visual changes into `frontend/`. Keep `src/usePitch.ts`, `src/Match.tsx`, shared API types and root server configuration intact unless the reviewed change requires an update.
+3. Wire new interactions to real capabilities. Do not restore Make's in-browser simulated opponents, scores, local-only account identity or canned AI replies.
+4. Run `pnpm check` and `pnpm build:vercel` with a local test database; review the scope and the new UI states.
+5. Push the integrated result to `asoracca/Pitch` branch `backend/quick-match`. Native Vercel deployment updates the existing project. Publish the matching private Sites version as well.
 
-The deployment cutover is deliberately pending until the exported code is available. Do not point the live project at an empty folder or remove the API rewrite. If the export uses Vite or Next.js, choose the corresponding build after inspection; do not assume a framework from a screenshot or URL.
-
-Future design exports need to be imported/merged into the integrated branch. A separate Make export repository is not automatically synchronized with this backend repository. Do not edit or enable another hosting project just to make a preview look connected.
+The first import and build cutover are implemented. Root deployment now serves `frontend/dist`; `prototype/` is retained only as reference. Future Figma export pushes are **not** automatically merged into this integration repository. Do not repoint Vercel at the raw export repository, which has no PITCH API or database configuration.
 
 ## Acceptance checks before replacing the skeleton
 

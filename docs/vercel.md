@@ -1,8 +1,8 @@
 # Vercel deployment
 
-Website: https://beef-debate-prototype.vercel.app
+Website: https://pitch-prototype-asoracca.vercel.app
 
-Project `beef-debate-prototype`, scope `anggunsoracca`, uses the repository root, Node 24, `pnpm build:vercel`, and static output `prototype`. Turso resource `beef-prototype-db` is connected. Both hosting and database use the selected free plans; do not enable paid upgrades or overages. All deployment protection settings are preserved. The Sites preview uses a separate database and login context.
+Project `pitch`, scope `anggunsoracca`, uses the repository root, Node 24, `pnpm build:vercel`, and static output `frontend/dist`. Turso resource `beef-prototype-db` is connected. Both hosting and database use the selected free plans; do not enable paid upgrades or overages. All deployment protection settings are preserved. The Sites preview uses a separate database and login context.
 
 ## Native GitHub automatic deployment
 
@@ -41,4 +41,10 @@ After deploying, verify the page, `/api/health` and `/api/pitch/config` with aut
 
 ## Teammates
 
-Teammates contribute through GitHub branches and pull requests. Keep the existing Hobby owner; adding shared dashboard administration may require a paid team plan. Do not create another project, fork, database or paid service as a workaround. The teammate's Socket.IO custom server is integrated for local development; Vercel serves the HTTP API and static prototype, not a persistent Socket.IO process. See [server integration](server-integration.md).
+Teammates contribute through GitHub branches and pull requests. Keep the existing Hobby owner; adding shared dashboard administration may require a paid team plan. Do not create another project, fork, database or paid service as a workaround. The teammate's Socket.IO custom server is integrated for local development; Vercel serves the HTTP API and integrated React frontend, not a persistent Socket.IO process. See [server integration](server-integration.md).
+
+## Frontend build and address
+
+Root pnpm workspaces install `frontend/` alongside the backend. `pnpm build:vercel` type-checks and builds the imported Vite frontend, bundles the existing API, then checks database migrations and the packaged handler. Keep the Vercel root at the repository root so both deploy together. Navigation uses URL hashes, preserving reloads without an API-conflicting catch-all rewrite. CSP permits the exported Google fonts and React inline styling; scripts and API requests remain same-origin.
+
+The project was renamed to `pitch`. Both `pitch.vercel.app` and `pitch-prototype.vercel.app` were unavailable; `pitch-prototype-asoracca.vercel.app` is the new free production address. The previous Beef address remains an alias. No project, database or subscription was replaced.

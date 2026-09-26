@@ -18,7 +18,9 @@
     "db:migrate:remote": "node scripts/migrate.mjs --remote",
     "deploy": "wrangler deploy",
     "build:vercel": "pnpm typecheck && node scripts/build-vercel.mjs",
-    "db:migrate:vercel": "node scripts/migrate-libsql.mjs"
+    "db:migrate:vercel": "node scripts/migrate-libsql.mjs",
+    "dev:web": "pnpm --dir frontend dev",
+    "dev:api": "node scripts/dev-frontend.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
