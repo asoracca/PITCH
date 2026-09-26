@@ -1,3 +1,4 @@
+import { PitchApi, PitchApiError } from '../build/client/pitch-api.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -27,7 +28,7 @@ async function setup(t) {
   async function match(users) { for (let i=0;i<5;i++) await ok('queue', users[i], { mode: i<2 ? 'contestant' : 'judge' }); const queued = await ok('queue', users[0]); assert.equal(queued.status, 'matched'); return queued.room; }
   async function phase(room, seconds) { await sql('UPDATE pitch_rooms SET started_at=? WHERE id=?', Date.now() - seconds * 1000, room.id); await sql('UPDATE pitch_seats SET last_seen=? WHERE room_id=?', Date.now(), room.id); }
   function ballot(room, winnerId, a = 4, b = 3) { return { winnerId, a: { clarity: a, persuasiveness: a, composure: a, tip: 'Try a concrete example before your main request.' }, b: { clarity: b, persuasiveness: b, composure: b, tip: 'Try stating your desired next step more clearly.' } }; }
-  return { sql, api, ok, signup, group, match, phase, ballot, settings, client, DB };
+  return { sql, api, ok, signup, group, match, phase, ballot, settings, client, DB, handler };
 }
 
 test('Pitch signup enforces age, conduct, private credentials, login and revocation', async t => {
@@ -138,4 +139,35 @@ test('latest scenarios stay age-scoped and assigned sides are retained in room s
     assert.equal(shown.yourPosition,scenario.positions[seat.slot]);
     assert.equal(seat.position,scenario.positions[seat.slot]);
   }
+});
+
+
+test('frontend client drives the real signup, queue, voice signaling, judging and feedback flow', async t => {
+  const f=await setup(t);
+  const clients=Array.from({length:5},()=>new PitchApi('https://pitch.test',(input,init)=>f.handler(new Request(input,init))));
+  const config=await clients[0].config(); assert.equal(config.apiVersion,'pitch.v1');
+  assert.equal(config.capabilities.humanJudging,true); assert.equal(config.capabilities.aiPractice,false);
+  const sessions=[];
+  for (let i=0;i<5;i++) sessions.push(await clients[i].signup({name:`Frontend ${i}`,email:`frontend-${i}@example.test`,password:'frontend-test-password',birthDate:'2006-01-01',acceptedConduct:true}));
+  assert.equal((await clients[0].me()).rating.value,1000);
+  for (let i=0;i<5;i++) await clients[i].queue(i<2?'contestant':'judge');
+  const matched=await clients[0].queue();assert.equal(matched.status,'matched');const room=matched.room;
+  assert.equal(room.participants.length,5);assert.equal((await clients[0].voice()).recording,false);
+  await clients[0].sendSignal(room.code,sessions[1].player.id,{kind:'offer',payload:{type:'offer',sdp:'test-session-description'}});
+  const signals=await clients[1].signals(room.code);assert.equal(signals.signals[0].senderId,sessions[0].player.id);
+  const aId=room.participants.find(p=>p.slot===0).id, a=clients[sessions.findIndex(s=>s.player.id===aId)];
+  await f.phase(room,25);await a.respond(room.code,1,'A concrete example of how I can contribute.');
+  assert.equal((await a.room(room.code)).responses.length,1);
+  await f.phase(room,185);
+  for (const judge of clients.slice(2)) await judge.vote(room.code,f.ballot(room,aId));
+  const finished=await a.room(room.code);assert.equal(finished.status,'finished');assert.equal(finished.result.winnerId,aId);
+  assert.equal((await a.history()).history[0].code,room.code);assert.equal((await a.leaderboard()).players[0].playerId,aId);
+  await a.rateFeedback(finished.feedback[0].ballotId,'helpful');
+  await clients[0].report(room.code,sessions[1].player.id,'other','Integration test report for the moderator queue.');
+  await clients[0].block(room.code,sessions[1].player.id);
+  assert.ok((await clients[0].me()).blockedPlayers.some(p=>p.id===sessions[1].player.id));
+  await assert.rejects(clients[0].reports(),e=>e instanceof PitchApiError&&e.code==='MODERATOR_REQUIRED');
+  await clients[0].logout();assert.equal(clients[0].token,null);
+  await clients[0].login('frontend-0@example.test','frontend-test-password');assert.equal((await clients[0].me()).player.id,sessions[0].player.id);
+  await clients[0].queue('judge');assert.equal((await clients[0].cancelQueue()).status,'idle');
 });

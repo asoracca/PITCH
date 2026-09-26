@@ -1,3 +1,4 @@
+import { PITCH_API_VERSION, type PitchConfig, type PitchMe, type PitchQueue, type PitchHistory, type PitchLeaderboard } from '../../shared/pitch';
 import { fail, jsonBody, sha256 } from '../http';
 import { Store } from '../store';
 import type { Env, Player } from '../types';
@@ -15,7 +16,7 @@ export const RULES = { version: 'pitch-elo-v2', initialRating: 1000, provisional
   queueTimeoutSeconds: 120, disconnectGraceSeconds: 60, firstLeaveBanSeconds: 300, repeatLeaveBanSeconds: 600, phases: PHASES,
   rubric: ['clarity', 'persuasiveness', 'composure'], scoreRange: [1, 5], aiEnabled: false };
 
-async function queueView(store: Store, player: Player, account: Account) {
+async function queueView(store: Store, player: Player, account: Account): Promise<PitchQueue> {
   let row = await store.sql('SELECT * FROM pitch_queue WHERE player_id=?', player.id).first<QueueRow>();
   if (!row) return { status: 'idle', serverTime: Date.now() };
   if (!row.room_id && row.expires_at <= Date.now()) {
@@ -36,7 +37,7 @@ async function queueView(store: Store, player: Player, account: Account) {
     message: 'Matching two contestants and three judges in your age band. Priority improves queue order; it cannot guarantee an instant match.' };
 }
 
-async function history(store: Store, player: Player) {
+async function history(store: Store, player: Player): Promise<PitchHistory> {
   const rounds = (await store.sql(`SELECT r.*,e.before_rating,e.after_rating,e.delta,e.result AS player_result FROM pitch_rooms r
     JOIN pitch_rating_events e ON e.room_id=r.id WHERE e.player_id=? ORDER BY r.finished_at DESC LIMIT 50`, player.id).all<PitchRoom & {before_rating:number;after_rating:number;delta:number;player_result:string}>()).results;
   const feedback = (await store.sql(`SELECT b.id AS ballotId,b.room_id AS roomId,
@@ -58,7 +59,11 @@ async function history(store: Store, player: Player) {
 
 export async function pitchRoute(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url), path = url.pathname.replace(/\/$/, ''); const store = new Store(env);
-  if (path === '/api/pitch/config') { method(request, 'GET'); return Response.json({ name: 'Pitch', rules: RULES, scenarios: SCENARIOS }); }
+  if (path === '/api/pitch/config') { method(request, 'GET'); return Response.json({ name: 'Pitch', apiVersion: PITCH_API_VERSION, rules: RULES, scenarios: SCENARIOS,
+    capabilities: { emailPassword: true, googleSignIn: false, emailVerification: false, passwordRecovery: false,
+      humanJudging: true, aiPractice: false, voice: true, voiceChanging: false, video: false, transcripts: false,
+      customLobbies: false, tournaments: false, reporting: true, blocking: true, moderatorReviewConfigured: !!env.PITCH_MODERATOR_IDS?.trim() }
+  } satisfies PitchConfig); }
   if (path === '/api/pitch/signup' || path === '/api/pitch/login') {
     method(request, 'POST');
     await store.limit(`pitch-auth-ip:${await sha256(request.headers.get('cf-connecting-ip') ?? 'local')}`, 30, 3_600_000);
@@ -73,7 +78,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
     return Response.json({ player, ageBand: ageBand(account.birth_date), rating: { value: p.rating, games: p.games, provisional: p.games < 10, placementGamesRemaining: Math.max(0, 10 - p.games) },
       judge: { reliability: p.reliability, roundsCompleted: p.judged, progressToCredit: p.judged % 2 }, priorityCredits: p.priority_credits,
       bannedUntil: p.banned_until, moderator: moderator(store, player.id), activeRoom: active?.code ?? null,
-      blockedPlayers: (await store.sql('SELECT target_id AS id FROM pitch_blocks WHERE player_id=?', player.id).all()).results });
+      blockedPlayers: (await store.sql('SELECT target_id AS id FROM pitch_blocks WHERE player_id=?', player.id).all<{id:string}>()).results } satisfies PitchMe);
   }
   if (path === '/api/pitch/history') { method(request, 'GET'); return Response.json(await history(store, player)); }
   if (path === '/api/pitch/leaderboard') {
@@ -87,7 +92,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
       WHERE e.created_at>=? AND p.banned_until<=?
       AND (CAST(strftime('%Y',?)-strftime('%Y',a.birth_date) AS INTEGER) - (strftime('%m-%d',?)<strftime('%m-%d',a.birth_date))) BETWEEN ? AND ?
       GROUP BY p.player_id ORDER BY weeklyGain DESC,p.rating DESC,p.player_id LIMIT 30`, today.getTime(), Date.now(), date, date, ...bounds).all<{playerId:string;name:string;rating:number;games:number;birth_date:string;weeklyGain:number;weeklyGames:number}>()).results;
-    return Response.json({ band, weekStartsAt: today.getTime(), players: rows.filter(p => ageBand(p.birth_date) === band).slice(0, 30).map(({birth_date, ...p}) => p) });
+    return Response.json({ band, weekStartsAt: today.getTime(), players: rows.filter(p => ageBand(p.birth_date) === band).slice(0, 30).map(({birth_date, ...p}) => p) } satisfies PitchLeaderboard);
   }
   if (path === '/api/pitch/queue') {
     if (request.method === 'POST') { await store.limit(`pitch-queue:${player.id}`, 20); const body = await jsonBody(request); await enqueue(store, player, account, body.mode ?? 'quick'); }

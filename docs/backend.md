@@ -1,6 +1,6 @@
 # Pitch API and frontend handoff
 
-The current product uses `/api/pitch`. The older Beef routes remain available for compatibility, with separate game/ratings tables; do not mix their guest tokens, room IDs, rating rules or UI contracts with Pitch.
+The current product uses `/api/pitch` with the `pitch.v1` contract. See [the Figma frontend handoff](figma-handoff.md) for screen wiring and the export/deployment steps. The older Beef routes remain available for compatibility, with separate game/ratings tables; do not mix their guest tokens, room IDs, rating rules or UI contracts with Pitch.
 
 Use the same origin as the website. `client/pitch-api.ts` is the small browser client; it keeps a token in memory unless the UI explicitly persists it. The skeleton uses sessionStorage. Send `Authorization: Bearer <session token>` on authenticated requests and JSON on writes. Responses use `{error:{code,message}}` with HTTP status codes. Server timestamps are UTC milliseconds. No database or hosting secret belongs in frontend code.
 
@@ -9,7 +9,7 @@ Use the same origin as the website. `client/pitch-api.ts` is the small browser c
 | Method/path | Body or behavior |
 |---|---|
 | GET `/api/health` | Checks the database; no authentication |
-| GET `/api/pitch/config` | Rules, timeline and 36 scenario definitions |
+| GET `/api/pitch/config` | API version, supported capability flags, rules, timeline and 36 scenario definitions |
 | POST `/api/pitch/signup` | `{name,email,password,birthDate,acceptedConduct:true}`; ISO birth date, 12–128 character password; returns `{player,token,expiresAt}` |
 | POST `/api/pitch/login` | `{email,password}`; same session response |
 | POST `/api/pitch/logout` | Revokes this token |

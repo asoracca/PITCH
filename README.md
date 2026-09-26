@@ -29,7 +29,7 @@ pnpm dev
 
 Open `http://localhost:8787/`. Run `pnpm check` for type checks, integration tests and browser-script syntax checks. The separate Next.js server setup is documented in [the teammate handoff](docs/server-integration.md).
 
-[Vercel deployment](docs/vercel.md) · [API contract](docs/backend.md) · [Elo rules](docs/ratings.md) · [Sites deployment](docs/deployment.md) · [Scope and follow-up](docs/roadmap.md)
+[Vercel deployment](docs/vercel.md) · [API contract](docs/backend.md) · [Figma frontend handoff](docs/figma-handoff.md) · [Elo rules](docs/ratings.md) · [Sites deployment](docs/deployment.md) · [Scope and follow-up](docs/roadmap.md)
 
 ## Original project
 
