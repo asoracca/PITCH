@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-const result = await build({ stdin: { contents: `export * from './src/model'; export * from './src/practice-transcript'; export * from './src/delivery'; export * from './src/coach-prompt'; export { demoPlayers } from './src/demo'; export { OpponentChat } from './src/OpponentChat'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
+const result = await build({ stdin: { contents: `export * from './src/model'; export * from './src/practice-transcript'; export * from './src/delivery'; export * from './src/coach-prompt'; export * from './src/coach-feedback'; export { CoachFeedback } from './src/CoachFeedback'; export { DeliverySummary } from './src/PracticeReview'; export { PracticeLogs } from './src/PracticeLogs'; export { demoPracticeLogs } from './src/demo-practices'; export { demoPlayers } from './src/demo'; export { OpponentChat } from './src/OpponentChat'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
 const temp = mkdtempSync(join(tmpdir(), 'pitch-ui-test-'));
 const file = join(temp, 'render.cjs'); writeFileSync(file, result.outputFiles[0].text);
 const ui = createRequire(import.meta.url)(file); rmSync(temp, { recursive: true, force: true });
@@ -112,7 +112,7 @@ test('both sides can initiate or reconnect voice; simultaneous offers resolve to
 
 test('solo practice exposes a microphone beside text and category cards instead of dropdowns', () => {
   const html = render(ui.Practice, { p });
-  assert.match(html, /Turn microphone on/); assert.match(html, /Your practice response/); assert.match(html, /Choose a practice scenario/); assert.doesNotMatch(html, /<select/);
+  assert.match(html, /Turn microphone on/); assert.match(html, /Your response/); assert.match(html, /Choose a practice scenario/); assert.doesNotMatch(html, /<select/);
   const demo = render(ui.DemoMatch, { scenario, name: 'Alex', onClose() {} });
   assert.match(demo, /simulated opponents/); assert.match(demo, /never changes your Elo/); assert.match(demo, /Maya Chen/);
 });
@@ -210,4 +210,21 @@ test('solo video requests the camera only when enabled and releases all tracks o
   Object.defineProperty(globalThis,'MediaRecorder',{configurable:true,value:Recorder});Object.defineProperty(globalThis,'navigator',{configurable:true,value:{mediaDevices:{getUserMedia:async o=>{options=o;return stream;}}}});
   const recording=new ui.PracticeRecording(value=>{latest=value;});
   try{await recording.start(()=>60000,()=>{},{video:true,onStop:()=>{releases++;}});assert.ok(options.audio);assert.equal(options.video.facingMode,'user');assert.equal(latest.video,true);recording.stop();await new Promise(resolve=>setImmediate(resolve));assert.equal(audio.track.stopped,true);assert.equal(video.stopped,true);assert.equal(releases,1);assert.match((await fetch(latest.url)).headers.get('content-type'),/video\/mp4/);}finally{recording.dispose();for(const[key,value]of descriptors){if(value)Object.defineProperty(globalThis,key,value);else delete globalThis[key];}}
+});
+
+test('coach feedback recognizes short sections and preserves unexpected model output safely',()=>{
+  const parts=ui.coachFeedback('1. **What worked:** Your example was specific.\n2. **Try next:** Name a deadline.\n3. **Example:** Could we agree on Friday?');
+  assert.deepEqual(parts.map(p=>p.kind),['strength','improve','example']);assert.equal(parts[2].text,'Could we agree on Friday?');
+  for(const value of ['Please say more before I can give feedback.','Strength: One point.\nImprove: Another.','An introduction\nStrength: Good.\nImprove: Change.\nTry saying: Hello.']){
+    const fallback=ui.coachFeedback(value);assert.equal(fallback.length,1);assert.equal(fallback[0].kind,'notes');assert.equal(fallback[0].text,value);
+  }
+  const html=render(ui.CoachFeedback,{answer:'<script>alert(1)</script>'});assert.doesNotMatch(html,/<script>/);assert.match(html,/&lt;script&gt;/);
+});
+
+test('practice summary explains unavailable pace and demo logs stay visibly labelled',()=>{
+  const short=render(ui.DeliverySummary,{transcript:'Test says hello hello hi',delivery:{seconds:8.7,samples:87,audiblePercent:30,pauses:0,levelRangeDb:10}});
+  assert.match(short,/Not ready yet/);assert.match(short,/10\+ seconds/);assert.match(short,/How to read these numbers/);
+  const logs=ui.demoPracticeLogs('18–22',now);assert.equal(logs.length,4);assert.ok(logs.every(log=>log.id.startsWith('demo-')&&log.feedback&&log.transcript));
+  const html=render(ui.PracticeLogs,{entries:logs,demo:true});assert.match(html,/SOLO · DEMO/);assert.doesNotMatch(html,/Delete log/);assert.match(html,/Tell me about yourself/);
+  const practice=render(ui.Practice,{p});assert.equal((practice.match(/<textarea/g)||[]).length,1);assert.match(practice,/Save practice/);
 });

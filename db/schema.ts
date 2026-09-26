@@ -169,3 +169,10 @@ export const pitchChat = sqliteTable('pitch_chat', {
   playerId: text('player_id').notNull().references(()=>players.id), requestId: text('request_id').notNull(),
   kind: text('kind').notNull(), content: text('content').notNull(), createdAt: integer('created_at').notNull(),
 }, t=>[index('pitch_chat_room').on(t.roomId,t.id),uniqueIndex('pitch_chat_once').on(t.roomId,t.playerId,t.requestId),check('pitch_chat_kind',sql`${t.kind} IN ('message','reaction')`)]);
+
+export const pitchPracticeLogs = sqliteTable('pitch_practice_logs', {
+  id: text('id').notNull(), playerId: text('player_id').notNull().references(()=>players.id),
+  scenarioId: text('scenario_id').notNull(), scenarioJson: text('scenario_json').notNull(),
+  transcript: text('transcript').notNull(), feedback: text('feedback').notNull(), deliveryJson: text('delivery_json'),
+  createdAt: integer('created_at').notNull(), updatedAt: integer('updated_at').notNull(),
+}, t=>[primaryKey({columns:[t.playerId,t.id]}),index('pitch_practice_player_date').on(t.playerId,t.createdAt)]);

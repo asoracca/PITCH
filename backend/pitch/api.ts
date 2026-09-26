@@ -11,6 +11,7 @@ import { spectate } from './spectate';
 import { incomingPeerFeedback, peerRows, submitPeerFeedback } from './peer';
 import { readAvatar, storedAvatar } from '../../shared/avatar';
 import { roomChat } from './chat';
+import { practiceLogs, savePractice, deletePractice } from './practice';
 import { PHASES, SCENARIOS } from './scenarios';
 import type { Account, PitchRoom, QueueRow } from './types';
 
@@ -42,8 +43,8 @@ async function queueView(store: Store, player: Player, account: Account): Promis
 }
 
 async function history(store: Store, player: Player): Promise<PitchHistory> {
-  const rounds = (await store.sql(`SELECT r.*,e.before_rating,e.after_rating,e.delta,e.result AS player_result FROM pitch_rooms r
-    JOIN pitch_rating_events e ON e.room_id=r.id WHERE e.player_id=? ORDER BY r.finished_at DESC LIMIT 50`, player.id).all<PitchRoom & {before_rating:number;after_rating:number;delta:number;player_result:string}>()).results;
+  const rounds = (await store.sql(`SELECT r.*,opponent.id AS opponent_id,opponent.name AS opponent_name,e.before_rating,e.after_rating,e.delta,e.result AS player_result FROM pitch_rooms r
+    JOIN pitch_rating_events e ON e.room_id=r.id JOIN players opponent ON opponent.id=CASE WHEN r.a_id=e.player_id THEN r.b_id ELSE r.a_id END WHERE e.player_id=? ORDER BY r.finished_at DESC LIMIT 50`, player.id).all<PitchRoom & {opponent_id:string;opponent_name:string;before_rating:number;after_rating:number;delta:number;player_result:string}>()).results;
   const feedback = (await store.sql(`SELECT b.id AS ballotId,b.room_id AS roomId,
     CASE WHEN r.a_id=? THEN b.a_tip ELSE b.b_tip END AS tip,
     CASE WHEN r.a_id=? THEN b.a_clarity ELSE b.b_clarity END AS clarity,
@@ -56,10 +57,10 @@ async function history(store: Store, player: Player): Promise<PitchHistory> {
   const tips = feedback.map(f => ({ ...f, tip: f.rating === 'abusive' ? '[Feedback hidden after your report]' : f.tip }));
   const usable = tips.filter(f => f.rating !== 'abusive');
   const averages = Object.fromEntries(['clarity', 'persuasiveness', 'composure'].map(k => [k, usable.length ? Math.round(usable.reduce((n, f) => n + Number(f[k as keyof typeof f]), 0) / usable.length * 10) / 10 : null]));
-  const peerRooms=(await store.sql(`SELECT r.* FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id
-    WHERE s.player_id=? AND r.judging_mode='peer' AND r.status IN ('finished','cancelled') ORDER BY r.finished_at DESC LIMIT 20`,player.id).all<PitchRoom>()).results;
-  const peerHistory=await Promise.all(peerRooms.map(async r=>({code:r.code,scenario:scenarioFor(r),finishedAt:r.finished_at,feedback:incomingPeerFeedback(await peerRows(store,r),player.id)})));
-  return { peerHistory, history: rounds.map(r => ({ code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
+  const peerRooms=(await store.sql(`SELECT r.*,opponent.id AS opponent_id,opponent.name AS opponent_name FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id JOIN players opponent ON opponent.id=CASE WHEN r.a_id=s.player_id THEN r.b_id ELSE r.a_id END
+    WHERE s.player_id=? AND r.judging_mode='peer' AND r.status IN ('finished','cancelled') ORDER BY r.finished_at DESC LIMIT 20`,player.id).all<PitchRoom & {opponent_id:string;opponent_name:string}>()).results;
+  const peerHistory=await Promise.all(peerRooms.map(async r=>({opponent:{id:r.opponent_id,name:r.opponent_name},code:r.code,scenario:scenarioFor(r),finishedAt:r.finished_at,feedback:incomingPeerFeedback(await peerRows(store,r),player.id)})));
+  return { practices: await practiceLogs(store,player.id), peerHistory, history: rounds.map(r => ({ opponent:{id:r.opponent_id,name:r.opponent_name}, code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
     delta: r.delta, finishedAt: r.finished_at, feedback: tips.filter(t => t.roomId === r.id) })), averages,
     scope: 'most_recent_50_rated_rounds', byCategory: ['career', 'conflict', 'money', 'leadership', 'social'].map(category => { const games = rounds.filter(r => scenarioFor(r).category === category); return { category, games: games.length, wins: games.filter(r => r.player_result === 'win').length, winRate: games.length ? Math.round(games.filter(r => r.player_result === 'win').length / games.length * 100) : null }; }) };
 }
@@ -79,6 +80,9 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
   const player = await store.authenticate(request); const account = await requireAccount(store, player);
   await store.limit(`pitch-request:${player.id}`, 300);
   if (path === '/api/pitch/logout') { method(request, 'POST'); await store.sql('DELETE FROM sessions WHERE token_hash=?', await sha256(request.headers.get('authorization')!.slice(7))).run(); return Response.json({ signedOut: true }); }
+  if (path === '/api/pitch/practice') { if(request.method==='GET')return Response.json({practices:await practiceLogs(store,player.id)}); method(request,'POST');return Response.json(await savePractice(store,player.id,await jsonBody(request,32768))); }
+  const practiceEntry=/^\/api\/pitch\/practice\/([^/]+)$/.exec(path);
+  if(practiceEntry){method(request,'DELETE');return Response.json(await deletePractice(store,player.id,practiceEntry[1]));}
   if (path === '/api/pitch/avatar') { method(request,'POST'); const body=await jsonBody(request); const avatar=readAvatar(body.avatar); if(!avatar)fail(400,'INVALID_AVATAR','Choose an appearance from the available options.'); await store.sql('UPDATE pitch_profiles SET avatar_json=? WHERE player_id=?',JSON.stringify(avatar),player.id).run(); return Response.json({avatar}); }
   if (path === '/api/pitch/me') {
     method(request, 'GET'); const p = await profile(store, player.id);

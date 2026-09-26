@@ -36,6 +36,7 @@ These connections are implemented in the imported frontend.
 | Result and Elo animation | `room.result.ratingChanges`; animate the saved numbers without calculating a new rating locally |
 | Feedback usefulness | `rateFeedback` |
 | History / skill averages / category wins | `history`; the statistics cover the most recent 50 rated rounds |
+| Save / delete solo practice | `savePractice`, `deletePractice`; private text/feedback/measurements only, never media |
 | Weekly leaderboard | `leaderboard`; shared across age groups |
 | Report / block / leave | `report`, `block`, `leave`; blocking also needs to mute that user's current audio in the UI |
 | Microphone / playback | `voice`, `signals`, `sendSignal`, plus `frontend/src/voice.ts` for live media and `PracticeMicrophone.tsx` for solo recordings |

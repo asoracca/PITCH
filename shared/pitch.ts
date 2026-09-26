@@ -72,8 +72,9 @@ export type PitchQueue =
   | { status: 'matched'; serverTime: number; room: PitchRoomView };
 export interface HistoryFeedback extends Rubric { ballotId: string; roomId: string; rating: string | null }
 export interface PitchHistory {
-  peerHistory: { code: string; scenario: Scenario; finishedAt: number | null; feedback: Feedback[] }[];
-  history: { code: string; scenario: Scenario; result: string; before: number; after: number; delta: number; finishedAt: number | null; feedback: HistoryFeedback[] }[];
+  practices: PracticeLog[];
+  peerHistory: { opponent?: Player; code: string; scenario: Scenario; finishedAt: number | null; feedback: Feedback[] }[];
+  history: { opponent?: Player; code: string; scenario: Scenario; result: string; before: number; after: number; delta: number; finishedAt: number | null; feedback: HistoryFeedback[] }[];
   averages: RubricAverages; scope: string;
   byCategory: { category: string; games: number; wins: number; winRate: number | null }[];
 }
@@ -98,3 +99,7 @@ export const TOPICS = [{id:'all',label:'Any topic'},{id:'career',label:'Intervie
 export const REACTIONS = ['👏','👍','💡','🤝','🔥','😊'] as const;
 export interface ChatMessage { id: number; playerId: string; kind: 'message'|'reaction'; content: string; createdAt: number }
 export interface RoomChat { messages: ChatMessage[]; canSend: boolean }
+
+export interface PracticeDelivery { seconds: number; samples: number; audiblePercent: number; pauses: number; levelRangeDb: number | null }
+export interface PracticeDraft { id: string; scenarioId: string; transcript: string; feedback: string; delivery: PracticeDelivery | null }
+export interface PracticeLog extends PracticeDraft { scenario: Scenario; createdAt: number; updatedAt: number }

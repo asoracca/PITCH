@@ -50,6 +50,13 @@
       "when": 1790464169962,
       "tag": "0006_chat_avatars_topics",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1790466184143,
+      "tag": "0007_magical_red_wolf",
+      "breakpoints": true
     }
   ]
 }

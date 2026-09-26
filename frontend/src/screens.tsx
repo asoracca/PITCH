@@ -1,3 +1,4 @@
+import { PracticeLogs } from './PracticeLogs'
 import { useEffect, useState, type FormEvent } from "react"
 import {
   Button,
@@ -378,6 +379,7 @@ export function Practice({ p }: { p: Pitch }) {
   const [deadline, setDeadline] = useState(0)
   const [now, setNow] = useState(Date.now())
   const [done, setDone] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState("")
   const scenario = scenarios.find((s) => s.id === selected) || scenarios[0]
@@ -406,7 +408,7 @@ export function Practice({ p }: { p: Pitch }) {
           const next = alternatives[Math.floor(Math.random() * alternatives.length)]
           if (!next) return
           choose(next)
-          setNotice(`New scenario: ${next.title}. The timer is reset; your previous draft is kept for this visit.`)
+          setNotice(`New scenario: ${next.title}.`)
         }}>Random scenario <Icon name="spark" /></Button>}
       />
       <ScenarioPicker scenarios={scenarios} selected={scenario.id} category={category}
@@ -416,7 +418,7 @@ export function Practice({ p }: { p: Pitch }) {
           if (matching && next !== "all" && scenario.category !== next) choose(matching)
           else setNotice("")
         }} onSelect={choose} />
-      <p className="practice-random-hint">Random picks stay in your age group and selected category. Switching scenarios resets the timer and keeps your drafts for this visit.</p>
+      <p className="practice-random-hint">Random picks follow your selected category. Your drafts stay here during this visit.</p>
       {notice && <p role="status">{notice}</p>}
       {!alternatives.length && <p>Choose another category for more random scenarios.</p>}
       <div className="arena">
@@ -438,7 +440,9 @@ export function Practice({ p }: { p: Pitch }) {
           </div>
         )}
         <PracticeMicrophone
-          key={scenario.id}
+          key={`${scenario.id}:${attempt}`}
+          draft={response} onDraftChange={text=>setDrafts(current=>({...current,[scenario.id]:text}))}
+          onSave={async snapshot=>{await p.api.savePractice({...snapshot,scenarioId:scenario.id});await p.refresh()}}
           coaching prompt={scenario.prompt} goal={scenario.goal}
           deadline={deadline}
           finished={finished}
@@ -450,19 +454,8 @@ export function Practice({ p }: { p: Pitch }) {
             }
           }}
         />
-        <label className="form-stack">
-          Your practice response
-          <textarea
-            className="match-response-input"
-            value={response}
-            maxLength={1200}
-            readOnly={finished}
-            onChange={(e) => setDrafts((current) => ({ ...current, [scenario.id]: e.target.value }))}
-            placeholder="Draft your response here, or practice speaking aloud."
-          />
-        </label>
         <div className="response-submit">
-          <span>{response.length}/1200 · This draft is not uploaded.</span>
+          <span>60-second practice · Unrated</span>
           {!deadline ? (
             <Button
               onClick={() => {
@@ -478,6 +471,7 @@ export function Practice({ p }: { p: Pitch }) {
               onClick={() => {
                 setDone(false)
                 setDeadline(0)
+                setAttempt(value=>value+1)
               }}
             >
               Try again
@@ -491,19 +485,6 @@ export function Practice({ p }: { p: Pitch }) {
           )}
         </div>
       </div>
-      {finished && (
-        <div className="panel">
-          <SectionTitle title="Reflect before your next round" />
-          <p>
-            Did you state your point clearly, give a concrete reason and stay
-            composed? Choose one thing to improve.
-          </p>
-          <p>
-            Solo practice is not scored and does not award Elo, XP or coins.
-            Play a live round for peer feedback.
-          </p>
-        </div>
-      )}
     </div>
   )
 }
@@ -694,7 +675,8 @@ export function Profile({
           </Button>
         </div>
       </div>
-      <SectionTitle eyebrow="YOUR LAST 50 RATED ROUNDS" title="Round history" />
+      <PracticeLogs entries={history?.practices || []} onDelete={async id=>{await p.api.deletePractice(id);await p.refresh()}} />
+      <SectionTitle eyebrow="SAVED AUTOMATICALLY · LAST 50 RATED ROUNDS" title="Opponent matches" />
       {history?.history.length ? (
         history.history.map((r) => (
           <details className="panel" key={r.code}>
@@ -705,7 +687,7 @@ export function Profile({
               </strong>
             </summary>
             <p>
-              {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : ""} ·{" "}
+              {r.opponent ? `vs ${r.opponent.name} · ` : ""}{r.finishedAt ? new Date(r.finishedAt).toLocaleString() : ""} ·{" "}
               {r.before} → {r.after}
             </p>
             {r.feedback.map((f) => (
@@ -728,7 +710,7 @@ export function Profile({
           <p>Your first rated round and peer feedback will appear here.</p>
         </div>
       )}
-      {!!history?.peerHistory?.length && <section className="form-stack"><SectionTitle eyebrow="UNRATED · OPPONENT FEEDBACK" title="Practice duels" />{history.peerHistory.map((round) => <details className="panel" key={round.code}><summary>{round.scenario.title}<strong>Unrated practice</strong></summary><p>{round.finishedAt ? new Date(round.finishedAt).toLocaleString() : ""} · Elo unchanged</p>{round.feedback.length ? round.feedback.map((feedback) => <div className="feedback-card" key={feedback.ballotId}><p>{feedback.tip}</p><div className="score-row">{skills.map((skill) => <span key={skill} className="capitalize">{skill}: {feedback[skill]}/5</span>)}</div><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></div>) : <p>No opponent feedback was submitted.</p>}</details>)}</section>}
+      {!!history?.peerHistory?.length && <section className="form-stack"><SectionTitle eyebrow="UNRATED · OPPONENT FEEDBACK" title="Practice duels" />{history.peerHistory.map((round) => <details className="panel" key={round.code}><summary>{round.scenario.title}<strong>Unrated practice</strong></summary><p>{round.opponent ? `vs ${round.opponent.name} · ` : ""}{round.finishedAt ? new Date(round.finishedAt).toLocaleString() : ""} · Elo unchanged</p>{round.feedback.length ? round.feedback.map((feedback) => <div className="feedback-card" key={feedback.ballotId}><p>{feedback.tip}</p><div className="score-row">{skills.map((skill) => <span key={skill} className="capitalize">{skill}: {feedback[skill]}/5</span>)}</div><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></div>) : <p>No opponent feedback was submitted.</p>}</details>)}</section>}
       <Rules />
       {me.moderator && <Moderator p={p} />}
     </div>

@@ -204,9 +204,7 @@ export function Button({
 export function Logo({ onHome }: { onHome?: () => void }) {
   return (
     <a className="logo" href="#Home" aria-label="PITCH home" onClick={(event) => { if (onHome) { event.preventDefault(); onHome() } }}>
-      <div className="logo-mark">
-        <span>P</span>
-      </div>
+      <img className="pitch-logo-mark" src="/pitch-mark.svg" width="64" height="64" alt="" aria-hidden="true" />
       <span>PITCH</span>
     </a>
   )

@@ -329,3 +329,28 @@ test('chat throttles bursts and stops new messages when a round closes',async t=
   const chat=await f.ok(url,users[1]);assert.equal(chat.messages.length,12);assert.equal(chat.canSend,false);
   assert.equal((await f.api(url,users[1],{kind:'message',content:'Too late',requestId:'closed'})).status,409);
 });
+
+test('solo practice saves privately, updates without duplicates, preserves scenarios, and deletes only own logs',async t=>{
+  const f=await setup(t),a=await f.signup(),b=await f.signup(),config=await f.ok('config'),scenario=config.scenarios.find(s=>s.band==='18–22');
+  const draft={id:crypto.randomUUID(),scenarioId:scenario.id,transcript:'I would explain the situation and suggest one clear next step.',feedback:'What worked: Your request was clear.\nTry next: Give an example.\nExample: Could we agree on a deadline?',delivery:{seconds:42,samples:420,audiblePercent:70,pauses:2,levelRangeDb:10}};
+  assert.equal((await f.api('practice',null,draft)).status,401);
+  await Promise.all([f.ok('practice',a,draft),f.ok('practice',a,draft)]);
+  let logs=(await f.ok('history',a)).practices;assert.equal(logs.length,1);assert.equal(logs[0].transcript,draft.transcript);assert.deepEqual(logs[0].scenario,scenario);
+  assert.equal((await f.ok('practice',b)).practices.length,0);assert.equal((await f.ok('history',b)).practices.length,0);
+  const created=logs[0].createdAt;
+  await f.ok('practice',a,{...draft,transcript:'I would first ask for their perspective, then agree on a practical next step.'});
+  logs=(await f.ok('practice',a)).practices;assert.equal(logs.length,1);assert.equal(logs[0].createdAt,created);assert.match(logs[0].transcript,/first ask/);
+  assert.equal((await f.api('practice',a,{...draft,scenarioId:config.scenarios.find(s=>s.id!==scenario.id).id})).status,409);
+  await f.ok(`practice/${draft.id}`,b,undefined,'DELETE');assert.equal((await f.ok('practice',a)).practices.length,1);
+  await f.ok('practice',b,{...draft,transcript:'A different user can save their own private response with this ID.'});
+  await f.ok(`practice/${draft.id}`,a,undefined,'DELETE');assert.equal((await f.ok('practice',a)).practices.length,0);assert.equal((await f.ok('practice',b)).practices.length,1);
+  assert.equal((await f.ok('me',a)).rating.value,1000);assert.equal((await f.ok('me',a)).rating.games,0);
+});
+
+test('practice logs reject invalid and oversized inputs and retain a scenario snapshot',async t=>{
+  const f=await setup(t),u=await f.signup(),scenario=(await f.ok('config')).scenarios[0];
+  const draft={id:crypto.randomUUID(),scenarioId:scenario.id,transcript:'A clear response with one practical next step.',feedback:'',delivery:null};
+  for(const patch of [{id:'invalid'},{scenarioId:'unknown'},{transcript:''},{transcript:'x'.repeat(6001)},{feedback:'x'.repeat(2001)},{delivery:{seconds:-1}},{delivery:{seconds:200,samples:20,audiblePercent:20,pauses:0,levelRangeDb:5}}])assert.equal((await f.api('practice',u,{...draft,...patch})).status,400);
+  await f.ok('practice',u,draft);
+  const stored=(await f.sql('SELECT scenario_json FROM pitch_practice_logs WHERE player_id=?',u.player.id)).rows[0];assert.deepEqual(JSON.parse(stored.scenario_json),scenario);
+});

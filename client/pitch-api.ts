@@ -1,5 +1,5 @@
 import { PITCH_API_VERSION } from '../shared/pitch';
-import type { Ballot, FeedbackRating, PitchConfig, PitchHistory, PitchLeaderboard, PitchMe, PitchQueue, PitchRoomView, QueueMode, ReportReason, Reports, Session, Signup, SignalPage, VoiceConfig, VoiceMessage, SpectatorList, SpectatorRound, Rubric, AvatarLook, RoomChat } from '../shared/pitch';
+import type { Ballot, FeedbackRating, PitchConfig, PitchHistory, PitchLeaderboard, PitchMe, PitchQueue, PitchRoomView, QueueMode, ReportReason, Reports, Session, Signup, SignalPage, VoiceConfig, VoiceMessage, SpectatorList, SpectatorRound, Rubric, AvatarLook, RoomChat, PracticeDraft, PracticeLog } from '../shared/pitch';
 export type * from '../shared/pitch';
 export { PITCH_API_VERSION } from '../shared/pitch';
 
@@ -60,6 +60,8 @@ export class PitchApi {
   respond(code: string, phase: number, content: string, options?: RequestOptions) { return this.request<PitchRoomView>(this.roomPath(code, '/response'), 'POST', { phase, content }, options); }
   peerFeedback(code: string, feedback: Rubric, options?: RequestOptions) { return this.request<PitchRoomView>(this.roomPath(code, '/peer-feedback'), 'POST', feedback, options); }
   leave(code: string, options?: RequestOptions) { return this.request<PitchRoomView>(this.roomPath(code, '/leave'), 'POST', {}, options); }
+  savePractice(draft: PracticeDraft, options?: RequestOptions) { return this.request<{practice:PracticeLog}>('/practice','POST',draft,options); }
+  deletePractice(id:string, options?: RequestOptions) { return this.request<{deleted:true}>(`/practice/${encodeURIComponent(id)}`,'DELETE',undefined,options); }
   history(options?: RequestOptions) { return this.request<PitchHistory>('/history', 'GET', undefined, options); }
   leaderboard(options?: RequestOptions) { return this.request<PitchLeaderboard>('/leaderboard', 'GET', undefined, options); }
   publicRounds(options?: RequestOptions) { return this.request<SpectatorList>('/spectate', 'GET', undefined, options); }

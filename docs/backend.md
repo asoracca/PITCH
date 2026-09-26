@@ -16,7 +16,7 @@ Use the same origin as the website. `client/pitch-api.ts` is the small browser c
 | POST `/api/pitch/login` | `{email,password}`; same session response |
 | POST `/api/pitch/logout` | Revokes this token |
 | GET `/api/pitch/me` | Rating, judge reliability, priority credits, bans, blocked players, age band, saved avatar, active room and moderator flag |
-| GET `/api/pitch/history` | Last 50 rated rounds, own feedback, rubric averages and category win rates |
+| GET `/api/pitch/history` | Last 50 rated rounds with opponent names, own feedback, rubric averages, category win rates, recent unrated duels and last 50 saved solo practices |
 | GET `/api/pitch/leaderboard` | Top 30 across ages by net Elo earned since Monday 00:00 UTC, with lifetime Elo alongside |
 
 Birth dates and email addresses are never exposed to other players. There is no email delivery, verification or recovery service. Passwords are salted/hashed; session secrets are stored as hashes and expire after 30 days. Age bands use self-declared dates, not identity verification.
@@ -67,4 +67,11 @@ Migrations 0004 and 0005 add private-by-default public-consent fields, peer-matc
 
 `GET /api/pitch/rooms/:code/chat` returns `{messages,canSend}` for contestants only. Judges, spectators and outsiders cannot read it. POST `{kind:'message'|'reaction',content,requestId}` sends a message of up to 300 characters or an allowed reaction. Generate a unique request ID for each send; duplicates do not create another message. Twelve new messages per minute are allowed. The existing basic contact/abuse filter applies. Chat closes when a contestant leaves, someone blocks the other, or the round ends. Blocking hides chat in both directions. Previous chat is readable after completion by its contestants. Chat is separate from scoring submissions and is not an Elo input.
 
-Frontend `browserTranscription` and `onDeviceCoaching` capability flags describe optional browser features. Server `aiPractice` and `transcripts` remain false: no server AI or transcript upload endpoint is enabled. The on-device coach needs a manual load, WebGPU, roughly 1 GB download and sufficient GPU memory (model configuration estimates about 1.6 GB). It is experimental and device dependent. Automated tests cover transcription lifecycle, recording cancellation, delivery calculations and prompt boundaries; they do not validate model inference on physical hardware.
+Frontend `browserTranscription` and `onDeviceCoaching` capability flags describe optional browser features. Server `aiPractice` and `transcripts` remain false: no server AI or automatic transcript upload is enabled; text is stored only when the user chooses Save practice. The on-device coach needs a manual load, WebGPU, roughly 1 GB download and sufficient GPU memory (model configuration estimates about 1.6 GB). It is experimental and device dependent. Automated tests cover transcription lifecycle, recording cancellation, delivery calculations and prompt boundaries; they do not validate model inference on physical hardware.
+
+
+## Saved solo practices
+
+Migration 0007 adds `pitch_practice_logs`. POST `/api/pitch/practice` accepts `{id,scenarioId,transcript,feedback,delivery}`. `id` is a client-generated UUID per attempt; the scenario must exist in the catalog. Transcript is 1–6,000 characters, optional feedback at most 2,000, and delivery is null or bounded approximate recording measurements. The server saves a scenario snapshot and timestamps. Repeating an ID updates that account’s existing practice; it cannot move the entry to a different scenario. Client measurements and feedback are self-reported practice data, never rating inputs.
+
+GET `/api/pitch/practice` and `/history.practices` return only the authenticated account’s latest 50 entries. DELETE `/api/pitch/practice/:id` removes only that account’s entry and is safe to repeat. No audio or video is uploaded or stored. The UI makes saving explicit; changes after saving can update the same entry. A new recording or Try again begins a new attempt. Demo profile logs are separate static examples and never inserted into the database.
