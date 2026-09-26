@@ -9,6 +9,7 @@ import {
 export interface AudioState {
   enabled: boolean
   microphone: "off" | "requesting" | "on"
+  camera: "off" | "requesting" | "on"
   transmitting: boolean
   connected: number
   participants: number
@@ -17,13 +18,14 @@ export interface AudioState {
 }
 
 export const audioOff: AudioState = {
-  enabled: false, microphone: "off", transmitting: false,
+  enabled: false, microphone: "off", camera: "off", transmitting: false,
   connected: 0, participants: 0, needsPlayback: false, message: "",
 }
 
 interface Peer {
   pc: RTCPeerConnection
   sender: RTCRtpSender
+  videoSender: RTCRtpSender
   ignoreOffer: boolean
 }
 
@@ -32,9 +34,11 @@ export class LiveAudio {
   private peers = new Map<string, Peer>()
   private pending = new Map<string, RTCIceCandidateInit[]>()
   private stream: MediaStream | null = null
+  private cameraStream: MediaStream | null = null
   private controller: AbortController | null = null
   private generation = 0
   private micRequest = 0
+  private cameraRequest = 0
   private timer?: ReturnType<typeof setTimeout>
   private cursor = 0
   private cursorRoom = ""
@@ -49,6 +53,7 @@ export class LiveAudio {
     private api: PitchApi,
     private container: HTMLElement,
     private update: (value: AudioState) => void,
+    private preview?: HTMLVideoElement,
   ) {}
 
   private emit(change: Partial<AudioState>) {
@@ -142,6 +147,38 @@ export class LiveAudio {
     this.emit({ microphone: "off", transmitting: false, message: "" })
   }
 
+  async enableCamera() {
+    if (!this.controller || !this.state.enabled || this.room?.role !== "contestant" || this.state.camera !== "off") return
+    const generation = this.generation, request = ++this.cameraRequest
+    this.emit({ camera: "requesting", message: "Allow camera access to share video with this round’s participants." })
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is unavailable in this browser.")
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15, max: 24 } } })
+      if (generation !== this.generation || request !== this.cameraRequest) { stream.getTracks().forEach((track) => track.stop()); return }
+      this.cameraStream = stream
+      const track = stream.getVideoTracks()[0]
+      if (!track) throw new Error("No camera was found.")
+      track.onended = () => { if (this.cameraStream === stream) { this.disableCamera(); this.emit({ message: "Camera disconnected. Turn it on again to retry." }) } }
+      await Promise.all([...this.peers.values()].map(({ videoSender }) => videoSender.replaceTrack(track)))
+      if (generation !== this.generation || request !== this.cameraRequest) return
+      if (this.preview) { this.preview.srcObject = stream; void this.preview.play().catch(() => {}) }
+      this.emit({ camera: "on", message: "" })
+    } catch (error) {
+      if (generation !== this.generation || request !== this.cameraRequest) return
+      this.disableCamera()
+      this.emit({ message: error instanceof DOMException && error.name === "NotAllowedError" ? "Camera permission denied. Voice and text are still available." : `${error instanceof Error ? error.message : "Camera could not start."} Voice and text are still available.` })
+    }
+  }
+
+  disableCamera() {
+    this.cameraRequest++
+    this.cameraStream?.getTracks().forEach((track) => { track.enabled = false; track.stop() })
+    this.cameraStream = null
+    if (this.preview) this.preview.srcObject = null
+    for (const { videoSender } of this.peers.values()) void videoSender.replaceTrack(null).catch(() => {})
+    this.emit({ camera: "off", message: "" })
+  }
+
   private peer(id: string): Peer {
     const existing = this.peers.get(id)
     if (existing) return existing
@@ -149,9 +186,11 @@ export class LiveAudio {
     const pc = new RTCPeerConnection({ iceServers: this.config!.iceServers })
     // Reserve the sending channel so microphone on/off doesn't interrupt listening.
     const { sender } = pc.addTransceiver("audio", { direction: this.room!.role === "contestant" ? "sendrecv" : "recvonly" })
-    const peer = { pc, sender, ignoreOffer: false }
+    const { sender: videoSender } = pc.addTransceiver("video", { direction: this.room!.role === "contestant" ? "sendrecv" : "recvonly" })
+    const peer = { pc, sender, videoSender, ignoreOffer: false }
     this.peers.set(id, peer)
     if (this.stream) void sender.replaceTrack(this.stream.getAudioTracks()[0]).catch(() => {})
+    if (this.cameraStream) void videoSender.replaceTrack(this.cameraStream.getVideoTracks()[0]).catch(() => {})
     pc.onicecandidate = (event) => {
       if (event.candidate && this.controller && generation === this.generation)
         void this.send(id, { kind: "candidate", payload: {
@@ -162,6 +201,21 @@ export class LiveAudio {
     pc.onconnectionstatechange = () => { if (generation === this.generation) this.status() }
     pc.ontrack = (event) => {
       if (!this.controller || generation !== this.generation) return
+      if (event.track.kind === "video") {
+        this.container.querySelector(`figure[data-player="${id}"]`)?.remove()
+        const tile = document.createElement("figure"), video = document.createElement("video"), caption = document.createElement("figcaption")
+        tile.dataset.player = id
+        video.dataset.player = id
+        video.autoplay = true; video.playsInline = true; video.muted = true
+        video.srcObject = new MediaStream([event.track])
+        caption.textContent = this.room?.participants.find((person) => person.id === id)?.name || "Contestant"
+        tile.append(video, caption); this.container.append(tile)
+        const visibility = () => { tile.hidden = event.track.muted || event.track.readyState === "ended" || this.blocked.has(id) }
+        event.track.onmute = visibility; event.track.onunmute = visibility; event.track.onended = visibility
+        visibility()
+        void video.play().catch(() => { if (generation === this.generation) this.emit({ needsPlayback: true }) })
+        return
+      }
       let audio = this.container.querySelector<HTMLAudioElement>(`audio[data-player="${id}"]`)
       if (!audio) {
         audio = document.createElement("audio")
@@ -169,7 +223,7 @@ export class LiveAudio {
         audio.autoplay = true
         this.container.append(audio)
       }
-      audio.srcObject = event.streams[0] || new MediaStream([event.track])
+      audio.srcObject = new MediaStream([event.track])
       audio.muted = this.blocked.has(id)
       void audio.play().catch(() => {
         if (generation === this.generation) this.emit({ needsPlayback: true })
@@ -253,6 +307,7 @@ export class LiveAudio {
         this.pending.delete(id)
         pc.close()
         this.container.querySelector(`audio[data-player="${id}"]`)?.remove()
+        this.container.querySelector(`figure[data-player="${id}"]`)?.remove()
       }
     }
     this.status()
@@ -261,11 +316,15 @@ export class LiveAudio {
   setBlocked(ids: string[]) {
     this.blocked = new Set(ids)
     this.container.querySelectorAll<HTMLAudioElement>("audio").forEach((a) => { a.muted = this.blocked.has(a.dataset.player!) })
+    this.container.querySelectorAll<HTMLElement>("figure").forEach((tile) => {
+      const track = (tile.querySelector("video")?.srcObject as MediaStream | null)?.getVideoTracks()[0]
+      tile.hidden = this.blocked.has(tile.dataset.player!) || !track || track.muted || track.readyState === "ended"
+    })
   }
 
   async play() {
     const generation = this.generation
-    const results = await Promise.allSettled([...this.container.querySelectorAll("audio")].map((a) => a.play()))
+    const results = await Promise.allSettled([...this.container.querySelectorAll<HTMLMediaElement>("audio,video")].map((a) => a.play()))
     if (generation === this.generation) this.emit({ needsPlayback: results.some((r) => r.status === "rejected") })
   }
 
@@ -280,6 +339,7 @@ export class LiveAudio {
     this.controller = null
     clearTimeout(this.timer)
     this.disableMicrophone()
+    this.disableCamera()
     this.peers.forEach(({ pc }) => pc.close())
     this.peers.clear()
     this.pending.clear()

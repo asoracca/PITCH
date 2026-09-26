@@ -7,8 +7,11 @@ The team's Figma Make design is integrated in `frontend/` (React, Vite and Tailw
 ## Implemented
 
 - Email/password accounts, conduct consent, and age-separated matching: 14–17, 18–22, 23+.
-- Five-person rounds: two contestants, three independent peer judges.
-- 36 scenarios from the current PRD, including assigned sides for face-offs; each match saves its scenario snapshot.
+- Five-person rated rounds and optional unrated two-player duels with opponent feedback.
+- Optional camera/video, turn-based voice and text; local solo voice recording/playback.
+- Labelled demo opponents, leaderboard and 500-day profile; public text spectating while queued.
+- Category chips and scenario cards; optional customizable avatars that start empty.
+- 72 scenarios: the 36 PRD prompts plus 36 additional prototype prompts, including assigned sides for face-offs; each match saves its scenario snapshot.
 - Quick/contestant, judge and earned priority queues; a 120-second timeout and widening Elo range.
 - Server-timed speaking turns, optional text submissions, browser peer-to-peer audio and judge scoring.
 - Majority verdicts, rubric tiebreaks, Elo, leave penalties, feedback helpfulness, history and weekly age-band leaderboards.

@@ -6,6 +6,8 @@ import {
   Logo,
   Sidebar,
   cosmeticItems,
+  skinTones,
+  hairColors,
   type EquippedItems,
   type Page,
 } from "./design"
@@ -40,6 +42,9 @@ const defaultLook: EquippedItems = {
   outfit: "Varsity Pitch",
   accessory: "Round Glasses",
   background: "Midnight Arena",
+  skinTone: "brown",
+  hairColor: "black",
+  avatarEnabled: false,
 }
 function currentPage(): Page {
   try {
@@ -56,14 +61,14 @@ function storedLook(): EquippedItems {
     )
     if (
       look &&
-      Object.values(look).every((name) =>
-        cosmeticItems.some((i) => i.name === name),
-      ) &&
+      [look.outfit, look.accessory, look.background].every((name) => cosmeticItems.some((i) => i.name === name)) &&
       ["outfit", "accessory", "background"].every(
         (k) => typeof look[k] === "string",
       )
     )
-      return look
+      return { ...look, avatarEnabled: look.avatarEnabled ?? true,
+        skinTone: skinTones.some((tone) => tone.id === look.skinTone) ? look.skinTone : "brown",
+        hairColor: hairColors.some((color) => color.id === look.hairColor) ? look.hairColor : "black" }
   } catch {
     /* Device-local appearance is optional. */
   }
@@ -77,7 +82,7 @@ export default function App() {
   const [equipped, updateLook] = useState<EquippedItems>(storedLook)
   const profile = {
     name: p.me?.player.name || "Welcome to PITCH",
-    avatar: initials(p.me?.player.name || "PITCH"),
+    avatar: equipped.avatarEnabled ? initials(p.me?.player.name || "PITCH") : "",
     schoolMajor: "",
     locationBio: "",
   }
@@ -199,7 +204,7 @@ export default function App() {
             <Icon name="menu" />
           </button>
           <div className="mobile-only">
-            <Logo />
+            <Logo onHome={() => navigate("Home")} />
           </div>
           <div className="topbar-right">
             <Button variant="ghost" onClick={() => navigate("Plans")}>View plans</Button>

@@ -3,12 +3,15 @@ import { Button, Icon, SectionTitle } from "./design"
 import { countdown, canRespond, initials, signed, skills } from "./model"
 import { FeedbackButtons, Rules } from "./screens"
 import { LiveAudio, audioOff } from "./voice"
+import { DemoMatch } from "./DemoMatch"
+import { Spectate } from "./Spectate"
 import type { Pitch } from "./usePitch"
 import type {
   PitchRoomView,
   QueueMode,
   ReportReason,
   Rubric,
+  Scenario,
 } from "../../shared/pitch"
 
 function useServerNow(serverTime: number) {
@@ -33,8 +36,12 @@ function useServerNow(serverTime: number) {
 }
 export function Match({ p }: { p: Pitch }) {
   const [mode, setMode] = useState<QueueMode>("quick")
+  const [demo, setDemo] = useState<Scenario | null>(null)
+  const [allowSpectators, setAllowSpectators] = useState(false)
+  const [allowPeerMatch, setAllowPeerMatch] = useState(true)
   const now = useServerNow(p.queue.serverTime)
   if (p.room) return <Round key={p.room.code} p={p} room={p.room} />
+  if (demo) return <DemoMatch scenario={demo} name={p.me!.player.name} onClose={() => setDemo(null)} />
   const waiting = p.queue.status === "waiting"
   return (
     <div className="page-stack">
@@ -42,6 +49,13 @@ export function Match({ p }: { p: Pitch }) {
         eyebrow="HEAD-TO-HEAD · PEER JUDGED"
         title="One scenario. Two responses."
       />
+      {!waiting && <section className="panel demo-invite">
+        <div><div className="eyebrow">TRY IT NOW · NO WAIT</div><h2 className="heading">Play a demo match</h2><p>Face a scripted opponent and three simulated judges. Practice with voice or text. No Elo changes.</p></div>
+        <Button onClick={() => {
+          const scenarios = p.config!.scenarios.filter((s) => s.band === p.me!.ageBand)
+          setDemo(scenarios[Math.floor(Math.random() * scenarios.length)] || null)
+        }}>Play with demo players <Icon name="play" /></Button>
+      </section>}
       <div className="matchup-intro">
         <div className="matchup-player">
           <div className="avatar avatar-xl">{initials(p.me!.player.name)}</div>
@@ -52,7 +66,7 @@ export function Match({ p }: { p: Pitch }) {
         <div className="matchup-vs">
           <span>{waiting ? "FINDING YOUR ROUND" : "QUICK PLAY"}</span>
           <strong>VS</strong>
-          <small>Two contestants · Three judges</small>
+          <small>Two contestants · Judges when available</small>
         </div>
         <div className="matchup-player">
           <div className="avatar avatar-xl avatar-alt">
@@ -65,7 +79,7 @@ export function Match({ p }: { p: Pitch }) {
       </div>
       {waiting ? (
         <div className="panel form-stack" role="status">
-          <h2 className="heading">Finding five compatible players…</h2>
+          <h2 className="heading">Finding your round…</h2>
           <p>{p.queue.status === "waiting" ? p.queue.message : ""}</p>
           <strong className="giant-timer">
             {p.queue.status === "waiting"
@@ -128,6 +142,8 @@ export function Match({ p }: { p: Pitch }) {
               </label>
             ))}
           </fieldset>
+          {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>If judges aren’t available after 15 seconds, start an unrated two-player duel and exchange opponent feedback.</span></label>}
+          <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators from my age group to see my display name, shared text and round result. The round is public only if every participant agrees. Camera and microphone feeds stay within the room.</span></label>
           {p.me!.bannedUntil > Date.now() && (
             <p>
               Queue break until{" "}
@@ -137,7 +153,7 @@ export function Match({ p }: { p: Pitch }) {
           <Button
             disabled={p.busy || p.me!.bannedUntil > Date.now()}
             onClick={() => {
-              void p.join(mode)
+              void p.join(mode, allowSpectators, allowPeerMatch && mode !== "judge" && mode !== "priority")
             }}
           >
             Find a round
@@ -145,10 +161,11 @@ export function Match({ p }: { p: Pitch }) {
           </Button>
           <p>
             Queues last up to two minutes. Invite teammates to open the website
-            and queue at the same time; five compatible accounts are needed.
+            and queue at the same time. Two contestants can practice without judges; rated rounds need three judges.
           </p>
         </div>
       )}
+      <Spectate p={p} />
       <Rules compact />
     </div>
   )
@@ -164,6 +181,7 @@ function AudioControls({
   now: number
 }) {
   const container = useRef<HTMLDivElement>(null)
+  const preview = useRef<HTMLVideoElement>(null)
   const audio = useRef<LiveAudio | null>(null)
   const startRequest = useRef<AbortController | null>(null)
   const latestRoom = useRef(room)
@@ -175,9 +193,12 @@ function AudioControls({
     let mounted = true
     const connection = new LiveAudio(p.api, container.current!, (v) => {
       if (mounted) setState(v)
-    })
+    }, preview.current!)
     audio.current = connection
+    const release = () => { startRequest.current?.abort(); startRequest.current = null; connection.stop(); setStarting(false) }
+    window.addEventListener("pagehide", release)
     return () => {
+      window.removeEventListener("pagehide", release)
       mounted = false
       startRequest.current?.abort()
       startRequest.current = null
@@ -221,21 +242,24 @@ function AudioControls({
   }
   const micOn = state.microphone === "on"
   const micPending = state.microphone === "requesting"
+  const cameraOn = state.camera === "on"
+  const cameraPending = state.camera === "requesting"
   return (
-    <section className="panel audio-controls" aria-label="Voice and microphone">
+    <section className="panel audio-controls" aria-label="Voice, microphone and camera">
       <div>
-        <h2 className="heading">Talk or type. Your choice.</h2>
-        <p>Enable voice to hear the round. Your microphone stays off until you turn it on. Text replies are always available during your turn.</p>
+        <h2 className="heading">Talk, type or turn your camera on.</h2>
+        <p>Connect voice &amp; video to hear and see the round. Your microphone and camera start off. Text replies are always available during your turn.</p>
         <div className="voice-state" role="status" aria-live="polite">
-          <strong>{starting ? "Connecting voice…" : state.enabled ? "Voice enabled" : "Voice disabled"}</strong>
+          <strong>{starting ? "Connecting voice & video…" : state.enabled ? "Voice & video connected" : "Voice & video disabled"}</strong>
           {state.enabled && <span>{state.connected} of {state.participants} participants connected</span>}
           {room.role === "contestant" && <span className={state.transmitting ? "positive" : ""}>
             {micPending ? "Waiting for microphone permission…" : state.transmitting ? "Microphone on · your turn to speak" : micOn ? "Microphone on · muted until your turn" : "Microphone off"}
           </span>}
+          {room.role === "contestant" && <span>{cameraPending ? "Waiting for camera permission…" : cameraOn ? "Camera on · visible to this room’s participants" : "Camera off"}</span>}
           {(error || state.message) && <span>{error || state.message}</span>}
         </div>
         <p>
-          {room.role === "judge" ? "As a judge, you can listen without using a microphone." : "Your voice is shared only during your speaking turns."} Audio is not recorded.
+          {room.role === "judge" ? "As a judge, you can watch and listen without using a microphone or camera." : "Your voice is shared only during your speaking turns. Your camera stays visible until you turn it off."} Live audio and video are not recorded by PITCH.
         </p>
       </div>
       <div className="hero-actions">
@@ -248,7 +272,7 @@ function AudioControls({
             else void start()
           }}
         >
-          {starting ? "Cancel connection" : state.enabled ? "Disable voice" : "Enable voice"}
+          {starting ? "Cancel connection" : state.enabled ? "Disconnect voice & video" : "Connect voice & video"}
         </Button>
         {room.role === "contestant" && (
           <Button
@@ -264,11 +288,16 @@ function AudioControls({
             {micPending ? "Cancel microphone" : micOn ? "Turn microphone off" : "Turn microphone on"}
           </Button>
         )}
-        {state.needsPlayback && <Button variant="secondary" onClick={() => { void audio.current?.play() }}>Play audio</Button>}
-        {state.enabled && <Button variant="ghost" disabled={starting} onClick={() => { void start() }}>Reconnect voice</Button>}
+        {room.role === "contestant" && <Button variant={cameraOn ? "secondary" : "primary"} disabled={!state.enabled || starting} aria-pressed={cameraOn} onClick={() => {
+          if (cameraOn || cameraPending) audio.current?.disableCamera()
+          else void audio.current?.enableCamera()
+        }}>{cameraPending ? "Cancel camera" : cameraOn ? "Turn camera off" : "Turn camera on"}</Button>}
+        {state.needsPlayback && <Button variant="secondary" onClick={() => { void audio.current?.play() }}>Play audio & video</Button>}
+        {state.enabled && <Button variant="ghost" disabled={starting} onClick={() => { void start() }}>Reconnect voice & video</Button>}
       </div>
-      {state.enabled && <p>Everyone who wants to listen needs to enable voice. If a connection fails, reconnect or continue with text.</p>}
-      <div ref={container} hidden />
+      {state.enabled && <p>Everyone who wants to watch or listen needs to connect. If a connection fails, reconnect or continue with text.</p>}
+      <figure className="local-camera" hidden={!cameraOn}><video ref={preview} muted autoPlay playsInline aria-label="Your camera preview" /><figcaption>You · camera on</figcaption></figure>
+      <div ref={container} className="media-streams" />
     </section>
   )
 }
@@ -327,6 +356,22 @@ function ResponseForm({
       </div>
     </form>
   )
+}
+
+function PeerScorecard({ p, room, now }: { p: Pitch; room: PitchRoomView; now: number }) {
+  const [feedback, setFeedback] = useState<Rubric>({ clarity: 3, persuasiveness: 3, composure: 3, tip: "" })
+  const open = room.phase.key === "judging" && now < room.phase.deadline && !room.phase.expired && !room.ballotSubmitted
+  const opponent = room.participants.find((person) => person.id !== p.me!.player.id)
+  return <form className="panel form-stack" onSubmit={(event) => {
+    event.preventDefault()
+    if (open) void p.act(async () => { p.acceptRoom(await p.api.peerFeedback(room.code, feedback)) })
+  }}>
+    <h2 className="heading">Feedback for {opponent?.name}</h2>
+    <p>{room.ballotSubmitted ? "Your feedback is saved. It will be shared when the round ends." : "After the speaking turns, give your opponent three scores and one useful tip. This does not change Elo."}</p>
+    {skills.map((skill) => <label key={skill} className="capitalize">{skill}<select value={feedback[skill]} disabled={!open || p.busy} onChange={(event) => setFeedback({ ...feedback, [skill]: Number(event.target.value) })}>{[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}/5</option>)}</select></label>)}
+    <label>One constructive tip<textarea value={feedback.tip} disabled={!open || p.busy} minLength={12} maxLength={400} required onChange={(event) => setFeedback({ ...feedback, tip: event.target.value })} placeholder="Name one thing they did well and one useful next step." /></label>
+    <Button type="submit" disabled={!open || p.busy || feedback.tip.trim().length < 12}>Send opponent feedback</Button>
+  </form>
 }
 
 function Scorecard({
@@ -540,7 +585,7 @@ function Safety({ p, room }: { p: Pitch; room: PitchRoomView }) {
                 await p.api.block(room.code, target)
                 await p.refresh()
                 p.setNotice(
-                  "Participant blocked. Their audio is muted, and future matching will avoid them.",
+                  "Participant blocked. Their audio is muted and video hidden, and future matching will avoid them.",
                 )
               })
             }}
@@ -561,6 +606,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
   const now = useServerNow(room.serverTime)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const active = room.status === "active" && !room.left
+  const peer = room.judgingMode === "peer"
   const players = room.participants
     .filter((v) => v.role === "contestant")
     .sort((a, b) => a.slot - b.slot)
@@ -579,7 +625,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
               : room.status === "cancelled"
                 ? "Round cancelled."
                 : room.status === "finished"
-                  ? winner
+                  ? peer ? "Practice duel complete!" : winner
                     ? `${winner.name} wins!`
                     : "A draw."
                   : room.phase.label}
@@ -613,7 +659,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
         <div className="matchup-vs match-center">
           <span>{room.band}</span>
           <strong>VS</strong>
-          <small>Peer judged</small>
+          <small>{peer ? "Two-player practice · unrated" : "Peer judged"}</small>
         </div>
       </div>
       <div className="scenario-reveal">
@@ -627,6 +673,8 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           )}
         </div>
       </div>
+      {active && <p>{room.isPublic ? "Public round: viewers in your age group can follow shared text and results." : "Private round: only its participants can view it."}</p>}
+      {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>Two-player practice · no judges needed</strong><p>Take your turns, then give each other feedback. This round does not change Elo or award judging credits.</p></div></div>}
       <div className="live-judge-cards">
         {room.participants
           .filter((v) => v.role === "judge")
@@ -652,7 +700,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
                 className={i === room.phase.index ? "current" : ""}
                 key={phase.key}
               >
-                {phase.label} · {phase.seconds}s
+                {peer && i === 5 ? "Opponent feedback" : phase.label} · {phase.seconds}s
               </span>
             ))}
           </div>
@@ -660,7 +708,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
             <p role="status">Waiting for the server’s next phase…</p>
           )}
           <AudioControls p={p} room={room} now={now} />
-          {room.role === "contestant" ? (
+          {peer && room.phase.key === "judging" ? <PeerScorecard p={p} room={room} now={now} /> : room.role === "contestant" ? (
             <ResponseForm key={room.phase.index} p={p} room={room} now={now} />
           ) : (
             <Scorecard p={p} room={room} now={now} />
@@ -691,17 +739,17 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           <div className="result-banner">
             <Icon name="trophy" />
             <span>
-              {room.status === "cancelled"
+              {peer ? "UNRATED PRACTICE" : room.status === "cancelled"
                 ? "UNRATED"
                 : winner
                   ? "ROUND COMPLETE"
                   : "DRAW"}
             </span>
             <p>
-              {room.result.voteCount} scorecards ·{" "}
-              {room.result.reason.replaceAll("_", " ")}
+              {room.result.voteCount} {peer ? "opponent feedback submissions · Elo unchanged" : `scorecards · ${room.result.reason.replaceAll("_", " ")}`}
             </p>
           </div>
+          {peer && !room.feedback.length && <p>No opponent feedback was submitted before this round ended.</p>}
           <div className="final-score-grid">
             {room.result.scores.map((score) => {
               const change = room.result!.ratingChanges.find(
@@ -743,8 +791,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           {confirmLeave ? (
             <>
               <p>
-                Leaving applies a queue break. Contestants forfeit; judges lose
-                reliability.
+                {peer ? "Leaving ends this unrated duel for both players. Your Elo stays the same." : "Leaving applies a queue break. Contestants forfeit; judges lose reliability."}
               </p>
               <div className="hero-actions">
                 <Button

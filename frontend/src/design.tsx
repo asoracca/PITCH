@@ -6,7 +6,27 @@ export type EquippedItems = {
   outfit: string
   accessory: string
   background: string
+  skinTone?: string
+  hairColor?: string
+  avatarEnabled?: boolean
 }
+
+export const skinTones = [
+  { id: "light", name: "Light", color: "#f2d3bd", shade: "#dfb39a" },
+  { id: "warm", name: "Warm beige", color: "#deb08c", shade: "#c9946e" },
+  { id: "tan", name: "Tan", color: "#c48b61", shade: "#a9714e" },
+  { id: "brown", name: "Medium brown", color: "#9d654b", shade: "#8c563f" },
+  { id: "deep", name: "Deep brown", color: "#754933", shade: "#603822" },
+  { id: "rich", name: "Rich brown", color: "#4b3026", shade: "#382219" },
+]
+export const hairColors = [
+  { id: "black", name: "Black", color: "#1a1720" },
+  { id: "brown", name: "Brown", color: "#593726" },
+  { id: "auburn", name: "Auburn", color: "#914c36" },
+  { id: "blond", name: "Blond", color: "#d9b55e" },
+  { id: "silver", name: "Silver", color: "#b8beca" },
+  { id: "violet", name: "Violet", color: "#8b72ed" },
+]
 
 export type ProfileData = {
   name: string
@@ -179,14 +199,14 @@ export function Button({
   )
 }
 
-export function Logo() {
+export function Logo({ onHome }: { onHome?: () => void }) {
   return (
-    <div className="logo">
+    <a className="logo" href="#Home" aria-label="PITCH home" onClick={(event) => { if (onHome) { event.preventDefault(); onHome() } }}>
       <div className="logo-mark">
         <span>P</span>
       </div>
       <span>PITCH</span>
-    </div>
+    </a>
   )
 }
 
@@ -206,7 +226,7 @@ export function Sidebar({
   return (
     <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
       <div className="sidebar-head">
-        <Logo />
+        <Logo onHome={() => onNavigate("Home")} />
         <button
           className="icon-button mobile-only"
           onClick={onClose}
@@ -670,12 +690,21 @@ export function AvatarCharacter({
   accessory = "Round Glasses",
   background = "Midnight Arena",
   compact = false,
+  skinTone = "brown",
+  hairColor = "black",
+  avatarEnabled = false,
 }: {
   outfit?: string
   accessory?: string
   background?: string
   compact?: boolean
+  skinTone?: string
+  hairColor?: string
+  avatarEnabled?: boolean
 }) {
+  const skin = skinTones.find((tone) => tone.id === skinTone) || skinTones[3]
+  const hair = hairColors.find((color) => color.id === hairColor) || hairColors[0]
+  if (!avatarEnabled) return <div className={`avatar-empty ${compact ? "avatar-empty-compact" : ""}`}><span>No avatar selected</span><small>Choose an appearance to create one.</small></div>
   const jacket =
     outfit === "Game Show Glow"
       ? "#88f4f5"
@@ -705,10 +734,10 @@ export function AvatarCharacter({
         fill="#0a0f20"
         opacity=".65"
       />
-      <circle cx="140" cy="115" r="54" fill="#9d654b" />
+      <circle cx="140" cy="115" r="54" fill={skin.color} />
       <path
         d="M87 112Q86 46 145 48Q205 50 193 123L178 90Q135 103 99 80Z"
-        fill="#1a1720"
+        fill={hair.color}
       />
       <path
         d="M109 135q12 10 24 0M151 135q12 10 24 0"
@@ -724,7 +753,7 @@ export function AvatarCharacter({
         strokeWidth="4"
         strokeLinecap="round"
       />
-      <path d="M112 181h56v30h-56z" fill="#8c563f" />
+      <path d="M112 181h56v30h-56z" fill={skin.shade} />
       <path
         d="M63 263Q68 198 112 190h56q45 10 50 73l-20 83H82Z"
         fill={jacket}

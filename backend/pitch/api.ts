@@ -7,6 +7,8 @@ import { enqueue, match } from './matchmaking';
 import { roomFor, syncRoom, view, vote, leave, submitResponse, scenarioFor } from './game';
 import { block, rateFeedback, report, reviewReports } from './safety';
 import { voiceConfig, signals } from './voice';
+import { spectate } from './spectate';
+import { incomingPeerFeedback, peerRows, submitPeerFeedback } from './peer';
 import { PHASES, SCENARIOS } from './scenarios';
 import type { Account, PitchRoom, QueueRow } from './types';
 
@@ -34,7 +36,7 @@ async function queueView(store: Store, player: Player, account: Account): Promis
     return { status: 'matched', room: await view(store, await syncRoom(store, room, player), player), serverTime: Date.now() };
   }
   return { status: 'waiting', mode: row.role, priority: !!row.priority, band: row.band, joinedAt: row.joined_at, expiresAt: row.expires_at, serverTime: Date.now(),
-    message: 'Matching two contestants and three judges in your age band. Priority improves queue order; it cannot guarantee an instant match.' };
+    message: row.allow_peer ? 'Finding an opponent in your age band. After 15 seconds, two willing contestants can start an unrated practice duel without judges.' : 'Matching two contestants and three judges in your age band. Priority improves queue order; it cannot guarantee an instant match.' };
 }
 
 async function history(store: Store, player: Player): Promise<PitchHistory> {
@@ -52,7 +54,10 @@ async function history(store: Store, player: Player): Promise<PitchHistory> {
   const tips = feedback.map(f => ({ ...f, tip: f.rating === 'abusive' ? '[Feedback hidden after your report]' : f.tip }));
   const usable = tips.filter(f => f.rating !== 'abusive');
   const averages = Object.fromEntries(['clarity', 'persuasiveness', 'composure'].map(k => [k, usable.length ? Math.round(usable.reduce((n, f) => n + Number(f[k as keyof typeof f]), 0) / usable.length * 10) / 10 : null]));
-  return { history: rounds.map(r => ({ code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
+  const peerRooms=(await store.sql(`SELECT r.* FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id
+    WHERE s.player_id=? AND r.judging_mode='peer' AND r.status IN ('finished','cancelled') ORDER BY r.finished_at DESC LIMIT 20`,player.id).all<PitchRoom>()).results;
+  const peerHistory=await Promise.all(peerRooms.map(async r=>({code:r.code,scenario:scenarioFor(r),finishedAt:r.finished_at,feedback:incomingPeerFeedback(await peerRows(store,r),player.id)})));
+  return { peerHistory, history: rounds.map(r => ({ code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
     delta: r.delta, finishedAt: r.finished_at, feedback: tips.filter(t => t.roomId === r.id) })), averages,
     scope: 'most_recent_50_rated_rounds', byCategory: ['career', 'conflict', 'money', 'leadership', 'social'].map(category => { const games = rounds.filter(r => scenarioFor(r).category === category); return { category, games: games.length, wins: games.filter(r => r.player_result === 'win').length, winRate: games.length ? Math.round(games.filter(r => r.player_result === 'win').length / games.length * 100) : null }; }) };
 }
@@ -61,7 +66,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
   const url = new URL(request.url), path = url.pathname.replace(/\/$/, ''); const store = new Store(env);
   if (path === '/api/pitch/config') { method(request, 'GET'); return Response.json({ name: 'PITCH', apiVersion: PITCH_API_VERSION, rules: RULES, scenarios: SCENARIOS,
     capabilities: { emailPassword: true, googleSignIn: false, emailVerification: false, passwordRecovery: false,
-      humanJudging: true, aiPractice: false, voice: true, voiceChanging: false, video: false, transcripts: false,
+      humanJudging: true, aiPractice: false, voice: true, voiceChanging: false, video: true, transcripts: false,
       customLobbies: false, tournaments: false, reporting: true, blocking: true, moderatorReviewConfigured: !!env.PITCH_MODERATOR_IDS?.trim() }
   } satisfies PitchConfig); }
   if (path === '/api/pitch/signup' || path === '/api/pitch/login') {
@@ -95,7 +100,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
     return Response.json({ band, weekStartsAt: today.getTime(), players: rows.filter(p => ageBand(p.birth_date) === band).slice(0, 30).map(({birth_date, ...p}) => p) } satisfies PitchLeaderboard);
   }
   if (path === '/api/pitch/queue') {
-    if (request.method === 'POST') { await store.limit(`pitch-queue:${player.id}`, 20); const body = await jsonBody(request); await enqueue(store, player, account, body.mode ?? 'quick'); }
+    if (request.method === 'POST') { await store.limit(`pitch-queue:${player.id}`, 20); const body = await jsonBody(request); await enqueue(store, player, account, body.mode ?? 'quick', body.allowSpectators ?? false, body.allowPeerMatch ?? false); }
     else if (request.method === 'DELETE') await store.sql('DELETE FROM pitch_queue WHERE player_id=? AND room_id IS NULL', player.id).run();
     else method(request, 'GET');
     return Response.json(await queueView(store, player, account));
@@ -106,13 +111,15 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
     return Response.json(await reviewReports(store, player, request.method === 'POST' ? await jsonBody(request) : undefined));
   }
   if (path === '/api/pitch/voice') { method(request, 'GET'); return Response.json(voiceConfig(store)); }
-  const matched = /^\/api\/pitch\/rooms\/([A-Fa-f0-9]{8})(?:\/(vote|leave|response|signals|report|block))?$/.exec(path);
+  const spectator = /^\/api\/pitch\/spectate(?:\/([A-Fa-f0-9]{8}))?$/.exec(path);
+  if (spectator) { method(request, 'GET'); return Response.json(await spectate(store, player, account, spectator[1])); }
+  const matched = /^\/api\/pitch\/rooms\/([A-Fa-f0-9]{8})(?:\/(vote|leave|response|signals|report|block|peer-feedback))?$/.exec(path);
   if (!matched) fail(404, 'NOT_FOUND', 'PITCH endpoint not found.');
   let room = await roomFor(store, matched[1], player); const action = matched[2];
   // Signal polling does not need expensive round maintenance; its access check still requires a live seat.
   if (action === 'signals') {
     if (request.method !== 'GET') method(request, 'POST');
-    return Response.json(await signals(store, room, player, url.searchParams.get('after'), request.method === 'POST' ? await jsonBody(request) : undefined));
+    return Response.json(await signals(store, room, player, url.searchParams.get('after'), request.method === 'POST' ? await jsonBody(request, 32768) : undefined));
   }
   room = await syncRoom(store, room, player);
   if (!action) { method(request, 'GET'); return Response.json(await view(store, room, player)); }
@@ -122,6 +129,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
   if (action === 'leave') await leave(store, room, player.id);
   if (action === 'vote') await vote(store, room, player, await jsonBody(request));
   if (action === 'response') await submitResponse(store, room, player, await jsonBody(request));
+  if (action === 'peer-feedback') await submitPeerFeedback(store,room,player,await jsonBody(request));
   room = await roomFor(store, room.code, player);
   return Response.json(await view(store, room, player));
 }

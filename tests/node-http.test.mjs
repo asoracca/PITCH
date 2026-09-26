@@ -20,7 +20,7 @@ test('teammate HTTP server delegates pages and preserves shared API authenticati
   const base=`http://127.0.0.1:${server.address().port}`;
   assert.equal(await (await fetch(base+'/')).text(),'frontend page');
   assert.equal((await (await fetch(base+'/api/health')).json()).database,'ready');
-  assert.equal((await (await fetch(base+'/api/pitch/config')).json()).scenarios.length,36);
+  assert.equal((await (await fetch(base+'/api/pitch/config')).json()).scenarios.length,72);
   assert.equal((await fetch(base+'/api/pitch/me')).status,401);
   const options={method:'POST',headers:{'content-type':'application/json',origin:base},body:JSON.stringify({name:'HTTP Player',email:'http@example.test',birthDate:'2000-01-01',password:'local-test-password-only',acceptedConduct:true})};
   const response=await fetch(base+'/api/pitch/signup',options);assert.equal(response.status,201);

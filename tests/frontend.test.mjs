@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-const result = await build({ stdin: { contents: `export * from './src/model'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { Match } from './src/Match'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
+const result = await build({ stdin: { contents: `export * from './src/model'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
 const temp = mkdtempSync(join(tmpdir(), 'pitch-ui-test-'));
 const file = join(temp, 'render.cjs'); writeFileSync(file, result.outputFiles[0].text);
 const ui = createRequire(import.meta.url)(file); rmSync(temp, { recursive: true, force: true });
@@ -27,13 +27,14 @@ test('late room polls cannot reverse a finished result or accepted scorecard', (
 test('connected dashboard, profile and leaderboard render server data and honest empty states', () => {
   const dashboard = render(ui.Dashboard, { p, navigate: () => {}, equipped: {} });
   assert.match(dashboard, /Alex/); assert.match(dashboard, /1064/); assert.doesNotMatch(dashboard, /Jordan|2,450|1,240|12 days|#184/);
-  assert.match(render(ui.Profile, { p, navigate: () => {}, equipped: {} }), /Your first rated round/);
+  const profile = render(ui.Profile, { p, navigate: () => {}, equipped: {} });
+  assert.match(profile, /500 days/); assert.match(profile, /fictional demo data/); assert.match(profile, /Real activity/); assert.match(profile, /No avatar selected/);
   assert.match(render(ui.Leaderboard, { p }), /No rated rounds/);
   assert.match(render(ui.Coach, { navigate: () => {} }), /AI COACH · NOT ENABLED/);
 });
 test('live round renders server participants, judge form and result instead of simulated opponents', () => {
   const contestant = render(ui.Match, { p: { ...p, room } });
-  assert.match(contestant, /Taylor/); assert.match(contestant, /Submit response/); assert.match(contestant, /Enable voice/); assert.match(contestant, /Turn microphone on/); assert.match(contestant, /with or without voice/); assert.match(contestant, /Voice disabled/); assert.doesNotMatch(contestant, /Maya|Sofia|ANALYZING BOTH RESPONSES/);
+  assert.match(contestant, /Taylor/); assert.match(contestant, /Submit response/); assert.match(contestant, /Connect voice &amp; video/); assert.match(contestant, /Turn microphone on/); assert.match(contestant, /with or without voice/); assert.match(contestant, /Voice &amp; video disabled/); assert.doesNotMatch(contestant, /Maya|Sofia|ANALYZING BOTH RESPONSES/);
   const judging = render(ui.Match, { p: { ...p, room: { ...room, role: 'judge', yourSlot: 2, phase: { ...room.phase, key: 'judging', speaker: null } } } });
   assert.doesNotMatch(judging, /Turn microphone on/); assert.match(judging, /Submit scorecard/); assert.match(judging, /persuasiveness/);
 });
@@ -43,8 +44,8 @@ async function withAudio(getUserMedia, run) {
   const peers = [], instances = [], sent = [];
   let latest = { enabled: false, microphone: 'off', transmitting: false };
   class Peer {
-    constructor() { this.signalingState = 'stable'; this.connectionState = 'new'; this.sender = { track: null, replaceTrack: async track => { this.sender.track = track; } }; peers.push(this); }
-    addTransceiver(kind, options) { this.direction = options.direction; return { sender: this.sender }; }
+    constructor() { this.signalingState = 'stable'; this.connectionState = 'new'; this.senders = {}; peers.push(this); }
+    addTransceiver(kind, options) { this.direction = options.direction; const sender = { track: null, replaceTrack: async track => { sender.track = track; } }; this.senders[kind] = sender; if (kind === 'audio') this.sender = sender; return { sender }; }
     async createOffer() { return { type: 'offer', sdp: 'offer' }; }
     async createAnswer() { return { type: 'answer', sdp: 'answer' }; }
     async setLocalDescription(description) { this.localDescription = description; this.signalingState = description.type === 'offer' ? 'have-local-offer' : 'stable'; }
@@ -107,4 +108,63 @@ test('both sides can initiate or reconnect voice; simultaneous offers resolve to
     assert.equal(sent.filter(s => s.kind === 'offer').length, 1); assert.equal(sent.filter(s => s.kind === 'answer').length, 1); assert.equal(peers[0].signalingState, 'stable');
     audio.stop(); await audio.start(room, 'self', voiceConfig, phases); assert.equal(sent.filter(s => s.kind === 'offer').length, 2);
   });
+});
+
+test('solo practice exposes a microphone beside text and category cards instead of dropdowns', () => {
+  const html = render(ui.Practice, { p });
+  assert.match(html, /Turn microphone on/); assert.match(html, /Your practice response/); assert.match(html, /Choose a practice scenario/); assert.doesNotMatch(html, /<select/);
+  const demo = render(ui.DemoMatch, { scenario, name: 'Alex', onClose() {} });
+  assert.match(demo, /simulated opponents/); assert.match(demo, /never changes your Elo/); assert.match(demo, /Maya Chen/);
+});
+
+test('practice recordings release the microphone, create local playback, and cancel late permissions', async () => {
+  const descriptors = ['navigator', 'MediaRecorder'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+  let grant, latest; const instances = [];
+  class Recorder {
+    static isTypeSupported(type) { return type === 'audio/mp4'; }
+    constructor(stream, options) { this.stream = stream; this.mimeType = options.mimeType; this.state = 'inactive'; }
+    start() { this.state = 'recording'; }
+    stop() { this.state = 'inactive'; queueMicrotask(() => { this.ondataavailable?.({ data: new Blob(['sample'], { type: this.mimeType }) }); this.onstop?.(); }); }
+  }
+  Object.defineProperty(globalThis, 'MediaRecorder', { configurable: true, value: Recorder });
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { mediaDevices: { getUserMedia: () => new Promise(resolve => { grant = resolve; }) } } });
+  try {
+    const recording = new ui.PracticeRecording(value => { latest = value; }); instances.push(recording);
+    let pending = recording.start(); const stream = microphone(); grant(stream); await pending;
+    assert.equal(latest.phase, 'recording'); recording.stop(); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(stream.track.stopped, true); assert.equal(latest.phase, 'idle'); assert.match(latest.url, /^blob:/);
+    const url = latest.url; const response = await fetch(url); assert.match(response.headers.get('content-type'), /audio\/mp4/);
+    recording.clear(); await assert.rejects(fetch(url)); assert.equal(latest.url, '');
+    pending = recording.start(); recording.stop(); const cancelled = microphone(); grant(cancelled); await pending;
+    assert.equal(cancelled.track.stopped, true); assert.equal(latest.phase, 'idle'); assert.equal(latest.url, '');
+    pending = recording.start(() => 10); const timed = microphone(); grant(timed); await pending;
+    await new Promise(resolve => setTimeout(resolve, 25)); assert.equal(timed.track.stopped, true); assert.equal(latest.phase, 'idle');
+    pending = recording.start(); recording.dispose(); const late = microphone(); grant(late); await pending; assert.equal(late.track.stopped, true);
+  } finally {
+    instances.forEach(instance => instance.dispose());
+    for (const [key, descriptor] of descriptors) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
+  }
+});
+
+test('camera starts off, is independent of microphone, and releases devices on cancel, stop and round end', async () => {
+  const requests=[];let grant;
+  const camera=()=>{const track={kind:'video',enabled:true,stopped:false,stop(){this.stopped=true;}};return {track,getTracks:()=>[track],getVideoTracks:()=>[track]};};
+  await withAudio(options=>{requests.push(options);return new Promise(resolve=>{grant=resolve;});},async({make,state,peers})=>{
+    const media=make();await media.start(room,'self',voiceConfig,phases);assert.equal(requests.length,0);assert.equal(state().camera,'off');
+    let pending=media.enableCamera();assert.equal(state().camera,'requesting');assert.equal(requests[0].audio,false);
+    const stream=camera();grant(stream);await pending;assert.equal(state().camera,'on');assert.equal(state().microphone,'off');assert.equal(peers[0].senders.video.track,stream.track);
+    media.sync(room,room.startedAt+60001);assert.equal(stream.track.enabled,true);
+    media.disableCamera();assert.equal(stream.track.stopped,true);assert.equal(peers[0].senders.video.track,null);assert.equal(state().enabled,true);
+    pending=media.enableCamera();media.disableCamera();const late=camera();grant(late);await pending;assert.equal(late.track.stopped,true);assert.equal(state().camera,'off');
+    pending=media.enableCamera();const ended=camera();grant(ended);await pending;media.sync({...room,status:'finished'},now);assert.equal(ended.track.stopped,true);assert.equal(state().enabled,false);
+    const judge=make();await judge.start({...room,role:'judge',yourSlot:2},'self',voiceConfig,phases);const count=requests.length;await judge.enableCamera();assert.equal(requests.length,count);
+  });
+});
+
+test('empty avatars, home logo, coaching microphone and unrated feedback are visible', () => {
+  assert.doesNotMatch(render(ui.AvatarCharacter, {}), /<svg/);
+  assert.match(render(ui.Logo, {}), /href="#Home"/);
+  const coach=render(ui.Coach,{navigate(){}});assert.match(coach,/Turn microphone on/);assert.match(coach,/automated scoring are unavailable/);
+  const peer=render(ui.Match,{p:{...p,room:{...room,judgingMode:'peer',phase:{...room.phase,key:'judging',index:5}}}});
+  assert.match(peer,/Send opponent feedback/);assert.match(peer,/Turn camera on/);assert.match(peer,/does not change Elo/);
 });

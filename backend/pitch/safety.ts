@@ -4,6 +4,7 @@ import type { Player } from '../types';
 import { moderator } from './auth';
 import { seats } from './game';
 import type { Ballot, PitchRoom } from './types';
+import { ratePeerFeedback } from './peer';
 
 export async function report(store: Store, room: PitchRoom, player: Player, body: Record<string, unknown>) {
   const target = textField(body.targetId, 'Reported participant', 100);
@@ -28,7 +29,11 @@ export async function rateFeedback(store: Store, player: Player, body: Record<st
   if (!['helpful', 'unhelpful', 'abusive'].includes(body.value as string)) fail(400, 'INVALID_RATING', 'Choose helpful, unhelpful, or abusive.');
   const row = await store.sql(`SELECT b.*,r.a_id,r.b_id FROM pitch_ballots b JOIN pitch_rooms r ON r.id=b.room_id
     WHERE b.id=? AND r.status IN ('finished','cancelled') AND (r.a_id=? OR r.b_id=?)`, ballotId, player.id, player.id).first<Ballot & { a_id:string;b_id:string }>();
-  if (!row) fail(404, 'FEEDBACK_NOT_FOUND', 'Only the recipient can rate completed-round feedback.');
+  if (!row) {
+    const peer = await ratePeerFeedback(store,player,ballotId,body.value as string);
+    if (peer) return peer;
+    fail(404, 'FEEDBACK_NOT_FOUND', 'Only the recipient can rate completed-round feedback.');
+  }
   const claim = crypto.randomUUID(); const now = Date.now(); const value = body.value as string;
   await store.env.DB.batch([
     store.sql(`INSERT INTO pitch_feedback_ratings(id,ballot_id,player_id,value,created_at) VALUES(?,?,?,?,?) ON CONFLICT(ballot_id,player_id) DO NOTHING`, claim, ballotId, player.id, value, now),

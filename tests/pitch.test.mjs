@@ -126,8 +126,8 @@ test('missing judges cancels unrated; signal and moderation access stay scoped t
 
 test('latest scenarios stay age-scoped and assigned sides are retained in room snapshots', async t => {
   const f=await setup(t), config=await f.ok('config');
-  assert.equal(config.scenarios.length,36);
-  for (const band of ['14–17','18–22','23+']) assert.equal(config.scenarios.filter(s=>s.band===band).length,12);
+  assert.equal(config.scenarios.length,72); assert.equal(new Set(config.scenarios.map(s=>s.id)).size,72); assert.ok(config.scenarios.every(s=>s.prompt && s.goal && (!s.positions || s.positions.length===2)));
+  for (const band of ['14–17','18–22','23+']) assert.equal(config.scenarios.filter(s=>s.band===band).length,24);
   const older=await f.signup('1990-01-01'); assert.equal((await f.ok('me',older)).ageBand,'23+');
   const users=await f.group(), room=await f.match(users);
   assert.equal(room.scenario.band,'18–22');
@@ -170,4 +170,105 @@ test('frontend client drives the real signup, queue, voice signaling, judging an
   await clients[0].logout();assert.equal(clients[0].token,null);
   await clients[0].login('frontend-0@example.test','frontend-test-password');assert.equal((await clients[0].me()).player.id,sessions[0].player.id);
   await clients[0].queue('judge');assert.equal((await clients[0].cancelQueue()).status,'idle');
+});
+
+
+test('spectating requires unanimous public consent, respects age and blocks, and cannot participate or refresh seats', async t => {
+  const f=await setup(t), users=await f.group(), viewer=await f.signup(), minor=await f.signup('2010-03-05');
+  for(let i=0;i<5;i++) await f.ok('queue',users[i],{mode:i<2?'contestant':'judge',allowSpectators:i!==4});
+  const privateRoom=(await f.ok('queue',users[0])).room;
+  assert.equal(privateRoom.isPublic,false); assert.equal((await f.ok('spectate',viewer)).rooms.length,0);
+  assert.equal((await f.api(`spectate/${privateRoom.code}`,viewer)).status,404);
+  await f.sql("UPDATE pitch_rooms SET status='cancelled' WHERE id=?",privateRoom.id); await f.sql('DELETE FROM pitch_queue WHERE room_id=?',privateRoom.id);
+  for(let i=0;i<5;i++) await f.ok('queue',users[i],{mode:i<2?'contestant':'judge',allowSpectators:true});
+  const room=(await f.ok('queue',users[0])).room; assert.equal(room.isPublic,true);
+  assert.equal((await f.api('spectate',null)).status,401); assert.equal((await f.api(`spectate/${room.code}`,minor)).status,404);
+  await f.ok('queue',viewer,{mode:'contestant'});
+  assert.equal((await f.ok('spectate',viewer)).rooms[0].code,room.code);
+  assert.equal((await f.ok('queue',viewer)).status,'waiting');
+  const a=users.find(u=>u.player.id===room.participants.find(v=>v.slot===0).id);
+  await f.phase(room,25); await f.ok(`rooms/${room.code}/response`,a,{phase:1,content:'A private current-turn draft.'});
+  assert.equal((await f.ok(`spectate/${room.code}`,viewer)).responses.length,0);
+  await f.phase(room,85);
+  const before=(await f.sql('SELECT player_id,last_seen FROM pitch_seats WHERE room_id=? ORDER BY slot',room.id)).rows;
+  const watched=await f.ok(`spectate/${room.code}`,viewer); assert.equal(watched.responses[0].content,'A private current-turn draft.');
+  assert.equal('feedback' in watched,false); assert.equal('ballotSubmitted' in watched,false);
+  assert.deepEqual((await f.sql('SELECT player_id,last_seen FROM pitch_seats WHERE room_id=? ORDER BY slot',room.id)).rows,before);
+  assert.equal((await f.api(`rooms/${room.code}/response`,viewer,{phase:2,content:'No seat'})).status,404);
+  assert.equal((await f.api(`rooms/${room.code}/vote`,viewer,{})).status,404);
+  assert.equal((await f.api(`rooms/${room.code}/signals`,viewer)).status,404);
+  assert.equal((await f.api(`spectate/${room.code}`,viewer,{})).status,405);
+  await f.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?)',a.player.id,viewer.player.id,Date.now());
+  assert.equal((await f.ok('spectate',viewer)).rooms.length,0); assert.equal((await f.api(`spectate/${room.code}`,viewer)).status,404);
+  await f.sql('DELETE FROM pitch_blocks');
+  await f.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?)',viewer.player.id,a.player.id,Date.now());
+  assert.equal((await f.api(`spectate/${room.code}`,viewer)).status,404);
+  await f.sql('DELETE FROM pitch_blocks'); await f.phase(room,185);
+  for(const judge of users.slice(2)) await f.ok(`rooms/${room.code}/vote`,judge,f.ballot(room,a.player.id));
+  const result=await f.ok(`spectate/${room.code}`,viewer); assert.equal(result.status,'finished'); assert.equal(result.result.winnerId,a.player.id);
+  assert.equal('ratingChanges' in result.result,false); assert.ok(!JSON.stringify(result).includes('Try a concrete example'));
+});
+
+test('two real contestants match after consent and grace, exchange private feedback, and never gain Elo or judge credits', async t => {
+  const f=await setup(t), a=await f.signup(), b=await f.signup(), outside=await f.signup();
+  const choice={mode:'contestant',allowPeerMatch:true,allowSpectators:true};
+  await f.ok('queue',a,choice); await f.ok('queue',b,choice);
+  assert.equal((await f.ok('queue',a)).status,'waiting');
+  await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);
+  const queues=await Promise.all([f.ok('queue',a),f.ok('queue',b)]);
+  const room=queues.find(q=>q.status==='matched').room;
+  assert.equal(room.judgingMode,'peer'); assert.equal(room.isPublic,true); assert.equal(room.participants.length,2);
+  assert.equal((await f.ok('queue',b)).room.id,room.id);
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_rooms')).rows[0].n,1);
+  const feedback={clarity:4,persuasiveness:3,composure:5,tip:'Your example was clear. Try stating your next step earlier.'};
+  assert.equal((await f.api(`rooms/${room.code}/peer-feedback`,outside,feedback)).status,404);
+  assert.equal((await f.api(`rooms/${room.code}/peer-feedback`,a,feedback)).status,409);
+  const speaker=room.participants.find(p=>p.slot===0).id===a.player.id?a:b;
+  await f.phase(room,25); await f.ok(`rooms/${room.code}/response`,speaker,{phase:1,content:'I would explain the impact, listen and agree on a next step.'});
+  const video={targetId:b.player.id,kind:'offer',payload:{type:'offer',sdp:'v=0\r\nm=video '+ 'x'.repeat(10000)}};
+  await f.ok(`rooms/${room.code}/signals`,a,video);
+  assert.equal((await f.ok(`rooms/${room.code}/signals`,b)).signals[0].payload.sdp,video.payload.sdp);
+  assert.equal((await f.api(`rooms/${room.code}/signals`,a,{...video,payload:{type:'offer',sdp:'x'.repeat(25000)}})).status,400);
+  assert.equal((await f.api(`rooms/${room.code}/signals`,a,{...video,payload:{type:'offer',sdp:'x'.repeat(34000)}})).status,413);
+  await f.phase(room,185);
+  assert.equal((await f.api(`rooms/${room.code}/peer-feedback`,a,{...feedback,clarity:6})).status,400);
+  assert.equal((await f.api(`rooms/${room.code}/vote`,a,f.ballot(room,a.player.id))).status,403);
+  const first=await f.ok(`rooms/${room.code}/peer-feedback`,a,feedback);
+  assert.equal(first.ballotSubmitted,true); assert.equal(first.feedback.length,0); assert.equal(first.result,null);
+  assert.equal((await f.ok(`rooms/${room.code}`,b)).feedback.length,0);
+  await Promise.all([f.ok(`rooms/${room.code}/peer-feedback`,b,feedback),f.ok(`rooms/${room.code}/peer-feedback`,b,feedback)]);
+  const done=await f.ok(`rooms/${room.code}`,a);
+  assert.equal(done.status,'finished'); assert.equal(done.result.reason,'peer_practice'); assert.deepEqual(done.result.ratingChanges,[]);
+  assert.equal(done.feedback.length,1); assert.equal(done.feedback[0].playerId,a.player.id);
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_peer_feedback')).rows[0].n,2);
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_rating_events')).rows[0].n,0);
+  const history=await f.ok('history',a); assert.equal(history.history.length,0); assert.equal(history.peerHistory.length,1); assert.equal(history.peerHistory[0].feedback.length,1);
+  for(const user of [a,b]) {const me=await f.ok('me',user);assert.equal(me.rating.value,1000);assert.equal(me.rating.games,0);assert.equal(me.priorityCredits,0);assert.equal(me.judge.roundsCompleted,0);}
+  const watched=await f.ok(`spectate/${room.code}`,outside);assert.equal(watched.result.reason,'peer_practice');assert.ok(!JSON.stringify(watched).includes(feedback.tip));
+  const id=done.feedback[0].ballotId;
+  assert.equal((await f.api('feedback',outside,{ballotId:id,value:'helpful'})).status,404);
+  await f.ok('feedback',a,{ballotId:id,value:'abusive'});await f.ok('feedback',a,{ballotId:id,value:'abusive'});
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_reports')).rows[0].n,1);
+  assert.match((await f.ok('history',a)).peerHistory[0].feedback[0].tip,/hidden/);
+});
+
+test('practice matching respects opt-in, blocks and age; leaving or feedback timeout finishes without penalties', async t => {
+  const f=await setup(t), a=await f.signup(), b=await f.signup(), minor=await f.signup('2010-03-05');
+  await f.ok('queue',a,{mode:'contestant',allowPeerMatch:true});await f.ok('queue',b,{mode:'contestant'});await f.ok('queue',minor,{mode:'contestant',allowPeerMatch:true});
+  await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);
+  assert.equal((await f.ok('queue',a)).status,'waiting');
+  await f.ok('queue',b,undefined,'DELETE');await f.ok('queue',b,{mode:'contestant',allowPeerMatch:true});
+  await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);
+  await f.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?)',b.player.id,a.player.id,Date.now());
+  assert.equal((await f.ok('queue',a)).status,'waiting');
+  await f.sql('DELETE FROM pitch_blocks');
+  let room=(await f.ok('queue',a)).room;assert.equal(room.judgingMode,'peer');assert.equal(room.isPublic,false);
+  await f.ok(`rooms/${room.code}/leave`,a,{});
+  assert.equal((await f.ok(`rooms/${room.code}`,b)).status,'cancelled');
+  const me=await f.ok('me',a);assert.equal(me.bannedUntil,0);assert.equal(me.rating.games,0);
+  for(const user of [a,b]) await f.ok('queue',user,{mode:'contestant',allowPeerMatch:true});
+  await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);room=(await f.ok('queue',a)).room;
+  await f.phase(room,245); const done=await f.ok(`rooms/${room.code}`,a);
+  assert.equal(done.status,'finished');assert.equal(done.result.reason,'peer_practice');assert.equal(done.feedback.length,0);
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_rating_events')).rows[0].n,0);
 });
