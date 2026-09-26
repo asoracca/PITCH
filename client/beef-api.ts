@@ -1,5 +1,5 @@
-export type { RoomView, Verdict, Player, PlayerScore } from '../backend/types';
-import type { Player, RoomView } from '../backend/types';
+export type { RoomView, Verdict, Player, PlayerScore, RatingSummary, RatingChange } from '../backend/types';
+import type { Player, RoomView, RatingSummary } from '../backend/types';
 
 export class BeefApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
@@ -25,6 +25,7 @@ export class BeefApi {
     this.token = session.token; return session;
   }
   async signOut() { await this.request('/sessions', 'DELETE'); this.token = null; }
+  me() { return this.request<{ player: Player; priorityTickets: number; rating: RatingSummary }>('/me'); }
   quickGame(format = 'classic') { return this.request('/queue', 'POST', { mode: 'quick', format }); }
   room(code: string) { return this.request<RoomView>(`/rooms/${encodeURIComponent(code)}`); }
   argument(code: string, round: number, content: string) { return this.request<RoomView>(`/rooms/${encodeURIComponent(code)}/arguments`, 'POST', { round, content }); }

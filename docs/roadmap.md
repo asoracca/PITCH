@@ -11,6 +11,7 @@ Source: [Beef product management — BEEF PRD](https://docs.google.com/document/
 - [x] Guest sessions, private transcripts, rematches, history and casual standings.
 - [x] Tutorial content and optional AI practice/judging integrations.
 - [x] Member-only WebRTC signaling; no audio recordings.
+- [x] Beef Rating v1: Elo-based public match ratings, five placement games, rating history, and rating-sorted leaderboard. Added after the quick-game scope at the owner's request.
 
 ## Connect the frontend next
 
@@ -25,9 +26,9 @@ Source: [Beef product management — BEEF PRD](https://docs.google.com/document/
 - [ ] Four alternating 30-second speaking turns plus 15-second judging, with audio-system speaker permissions.
 - [ ] Eight-contestant brackets, acceptance, quarterfinals/semifinals/final, advancement and forfeits.
 - [ ] Recoverable accounts, age/rules onboarding, avatars and controlled playtest access.
-- [ ] Elo/placements, separate Fair Play standing and 5-/10-minute abandonment cooldowns.
+- [ ] Rating-aware opponent matching, collusion controls, separate Fair Play standing and 5-/10-minute abandonment cooldowns.
 - [ ] Report/block/mute/leave, moderator review/suspension and prompt-management tools; block-aware matching.
 - [ ] Queue times, role completion/abandonment, ticket redemption, brackets, fair-result feedback and retention measurement.
 - [ ] Decide consent, retention and deletion rules before adding audio recording.
 
-The Notes tab mentions three judges, while the PRD specifies two. Immediate delivery retains one; resolve the expanded format before implementation. Current standings use wins/average score, not Elo. Timed-out users can re-enter; matching is not guaranteed. Broader rollout depends on the PRD's reconnect, moderation and launch criteria.
+The Notes tab mentions three judges, while the PRD specifies two. Immediate delivery retains one; resolve the expanded format before implementation. Current standings use [Beef Rating](ratings.md) with provisional labels. Timed-out users can re-enter; matching is not guaranteed. Broader rollout depends on the PRD's reconnect, moderation and launch criteria.

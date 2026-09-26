@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, index, primaryKey, check, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, primaryKey, check, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const players = sqliteTable('players', {
   id: text('id').primaryKey(), name: text('name').notNull(),
@@ -68,3 +68,27 @@ export const voiceSignals = sqliteTable('voice_signals', {
   senderId: text('sender_id').notNull().references(() => players.id), targetId: text('target_id').notNull().references(() => players.id),
   kind: text('kind').notNull(), payload: text('payload').notNull(), createdAt: integer('created_at').notNull(),
 }, t => [index('idx_voice_signals_room_target_id').on(t.roomId, t.targetId, t.id)]);
+
+export const playerRatings = sqliteTable('player_ratings', {
+  playerId: text('player_id').primaryKey().references(() => players.id),
+  rating: integer('rating').notNull().default(1000), games: integer('games').notNull().default(0),
+  updatedAt: integer('updated_at').notNull(),
+}, t => [index('idx_player_ratings_ranking').on(t.rating, t.games),
+  check('rating_floor', sql`${t.rating} >= 100`), check('rated_games_nonnegative', sql`${t.games} >= 0`)]);
+
+export const ratingEvents = sqliteTable('rating_events', {
+  roomId: text('room_id').notNull().references(() => rooms.id),
+  playerId: text('player_id').notNull().references(() => players.id),
+  opponentId: text('opponent_id').notNull().references(() => players.id), opponentRating: integer('opponent_rating').notNull(),
+  beforeRating: integer('before_rating').notNull(), afterRating: integer('after_rating').notNull(),
+  delta: integer('delta').notNull(), gamesBefore: integer('games_before').notNull(),
+  result: text('result').notNull(), expectedScore: real('expected_score').notNull(), k: integer('k').notNull(),
+  version: text('version').notNull(), createdAt: integer('created_at').notNull(),
+}, t => [primaryKey({ columns: [t.roomId, t.playerId] }),
+  uniqueIndex('idx_rating_events_player_game').on(t.playerId, t.gamesBefore),
+  check('rating_event_floor', sql`${t.beforeRating} >= 100 AND ${t.afterRating} >= 100 AND ${t.opponentRating} >= 100`),
+  check('rating_event_delta', sql`${t.afterRating} - ${t.beforeRating} = ${t.delta}`),
+  check('rating_event_result', sql`${t.result} IN ('win','loss','draw')`),
+  check('rating_event_expected', sql`${t.expectedScore} BETWEEN 0 AND 1`),
+  check('rating_event_opponent', sql`${t.playerId} != ${t.opponentId}`),
+  check('rating_event_games', sql`${t.gamesBefore} >= 0`)]);

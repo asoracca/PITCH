@@ -1,5 +1,6 @@
 import { fail, sha256, token } from './http';
 import { PHASES, FORMATS, TOPICS, type Format } from './topics';
+import { RATING_RULES } from './ratings';
 import type { ArgumentRow, Env, Player, Room, RoomView, Verdict } from './types';
 
 const DAY = 86_400_000;
@@ -138,11 +139,14 @@ export class Store {
       FROM rooms WHERE host_id=? OR guest_id=? OR judge_id=? ORDER BY created_at DESC LIMIT ?`, player.id, player.id, player.id, limit).all()).results;
   }
   async leaderboard(limit: number) {
-    return (await this.sql(`SELECT p.id AS playerId,p.name,COUNT(*) AS matches,
+    const rows = (await this.sql(`SELECT p.id AS playerId,p.name,r.rating,r.games AS matches,
       SUM(e.result='win') AS wins,SUM(e.result='loss') AS losses,SUM(e.result='draw') AS draws,
-      ROUND(AVG(e.score),1) AS averageScore
-      FROM score_events e JOIN players p ON p.id=e.player_id GROUP BY p.id,p.name
-      ORDER BY wins DESC,averageScore DESC,matches DESC,p.id ASC LIMIT ?`, limit).all()).results;
+      ROUND(AVG(s.score),1) AS averageScore
+      FROM player_ratings r JOIN players p ON p.id=r.player_id JOIN rating_events e ON e.player_id=p.id
+      JOIN score_events s ON s.room_id=e.room_id AND s.player_id=e.player_id
+      WHERE r.games>0 GROUP BY p.id,p.name,r.rating,r.games
+      ORDER BY r.rating DESC,r.games DESC,p.id ASC LIMIT ?`, limit).all<{playerId: string; name: string; rating: number; matches: number; wins: number; losses: number; draws: number; averageScore: number}>()).results;
+    return rows.map(row => ({ ...row, provisional: row.matches < RATING_RULES.placementGames }));
   }
 }
 

@@ -23,7 +23,7 @@ All paths begin with `/api`. JSON bodies require `Content-Type: application/json
 }
 ```
 
-Each category is an integer 0–10. The server computes `4 × reasoning + 4 × rebuttal + 2 × clarity`, out of 100; equal totals draw. Quotes must occur in that contestant's transcript or are removed. Players without arguments score zero. Verdict, standings and one judge ticket commit atomically; duplicate verdicts cannot grant extra tickets. Completely empty games are cancelled without rewards. AI cannot replace an assigned human judge.
+Each category is an integer 0–10. The server computes `4 × reasoning + 4 × rebuttal + 2 × clarity`, out of 100; equal totals draw. Quotes must occur in that contestant's transcript or are removed. Players without arguments score zero. Verdict, score records, Beef Rating changes and one judge ticket commit atomically; duplicate verdicts cannot grant extra points or tickets. Completely empty games are cancelled without rewards. AI cannot replace an assigned human judge. See [Beef Rating rules and integration](ratings.md).
 
 ## Routes
 
@@ -33,7 +33,9 @@ Each category is an integer 0–10. The server computes `4 × reasoning + 4 × r
 | GET | `/topics` | Topics, formats and rubric; public |
 | GET | `/tutorials` | First-match, judging and practice lessons; public |
 | POST / DELETE | `/sessions` | Create `{name}` / revoke guest session |
-| GET | `/me` | Identity and priority-ticket balance |
+| GET | `/me` | Identity, priority-ticket balance and rating summary |
+| GET | `/ratings/rules` | Beef Rating policy and constants; public |
+| GET | `/ratings/me?limit=20` | Your rating and latest changes, limit 1–50 |
 | POST / GET / DELETE | `/queue` | Join `{mode?,format?}`, poll, cancel waiting |
 | GET | `/rooms?limit=20` | Your history, limit 1–50 |
 | POST | `/rooms` | Private room `{topicId?,topic?,format?}` |
@@ -48,12 +50,12 @@ Each category is an integer 0–10. The server computes `4 × reasoning + 4 × r
 | POST | `/rooms/CODE/cancel` | Host cancels waiting room `{}` |
 | POST | `/practice` | Start AI match `{topicId?,format?}` |
 | POST | `/rooms/CODE/bot-turn` | Generate bot argument for current round `{}` |
-| GET | `/leaderboard?limit=20` | Public casual standings, limit 1–50 |
+| GET | `/leaderboard?limit=20` | Beef Rating standings with provisional labels, limit 1–50 |
 | GET | `/voice` | ICE settings and voice integration status |
 | POST | `/rooms/CODE/signals` | Send `{targetId,kind,payload}` |
 | GET | `/rooms/CODE/signals?after=0` | Your incoming signals plus next cursor |
 
-All except health, topics, tutorials, service info and session creation require a session. A room code permits joining an available room, not reading private transcripts. Public means random matchmaking, not public transcripts.
+All except health, topics, tutorials, rating rules, service info and session creation require a session. A room code permits joining an available room, not reading private transcripts. Public means random matchmaking, not public transcripts.
 
 ## Formats and practice
 
