@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler",
-    "lib": ["ES2022"], "types": ["@cloudflare/workers-types"],
+    "lib": ["ES2022"], "types": ["@cloudflare/workers-types", "node"],
     "strict": true, "noEmit": true, "skipLibCheck": true,
     "resolveJsonModule": true, "esModuleInterop": true
   },
-  "include": ["backend/**/*.ts", "client/**/*.ts", "db/**/*.ts", "drizzle.config.ts"]
+  "include": ["backend/**/*.ts", "client/**/*.ts", "server/**/*.ts", "api/**/*.ts", "db/**/*.ts", "drizzle.config.ts"]
 }

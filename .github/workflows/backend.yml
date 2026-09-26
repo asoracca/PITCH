@@ -20,3 +20,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm build:vercel
+        env:
+          BEEF_LOCAL_DATABASE: '1'
+          TURSO_DATABASE_URL: file:/tmp/beef-vercel-ci.db

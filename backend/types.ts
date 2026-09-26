@@ -1,5 +1,7 @@
+import type { Database } from './database';
 export interface Env {
-  DB: D1Database;
+  DB: Database;
+  ASSETS?: { fetch(request: Request): Promise<Response> };
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
   CORS_ORIGINS?: string;
@@ -17,7 +19,13 @@ export interface Room {
 export interface Player { id: string; name: string }
 export interface ArgumentRow { room_id: string; player_id: string; round: number; content: string; created_at: number }
 export interface PlayerScore { playerId: string; reasoning: number; rebuttal: number; clarity: number; total: number; feedback: string; bestQuote: string }
-export interface Verdict { winnerId: string | null; summary: string; scores: PlayerScore[]; judgedAt: number; model: string | null; rubricVersion: '1'; kind: 'ai' | 'human' }
+export interface RatingSummary { value: number; games: number; provisional: boolean; placementGamesRemaining: number; version: 'br-v1' }
+export interface RatingChange {
+  playerId: string; opponentId: string; opponentRating: number; before: number; after: number; delta: number;
+  gamesBefore: number; gamesAfter: number; result: 'win' | 'loss' | 'draw'; expectedScore: number; k: number;
+  provisional: boolean; version: 'br-v1';
+}
+export interface Verdict { winnerId: string | null; summary: string; scores: PlayerScore[]; judgedAt: number; model: string | null; rubricVersion: '1'; kind: 'ai' | 'human'; ratingChanges?: RatingChange[] }
 export interface RoomView {
   id: string; code: string; topic: string; status: RoomStatus;
   round: number; phase: string; deadline: number | null; serverTime: number;

@@ -6,6 +6,7 @@ import { credits, enqueue, formatFrom, queueStatus } from './matchmaking';
 import { humanVerdict } from './human-judge';
 import { createPractice, botTurn } from './practice';
 import { receiveSignals, sendSignal, voiceConfig } from './voice';
+import { RATING_RULES, ratingHistory, ratingSnapshot, summarizeRating } from './ratings';
 import type { Env } from './types';
 
 function method(request: Request, expected: string) {
@@ -21,11 +22,11 @@ async function route(request: Request, env: Env): Promise<Response> {
   const store = new Store(env);
   if (path === '/' || path === '/api') {
     method(request, 'GET');
-    return Response.json({ service: 'Beef debate backend', version: '1.0.0', health: '/api/health', topics: '/api/topics',
+    return Response.json({ service: 'Beef debate backend', version: '1.2.0', health: '/api/health', topics: '/api/topics',
       documentation: 'https://github.com/cerlina-chen/Beef/blob/backend/quick-match/docs/backend.md',
-      features: ['quick match', 'judge/contestant/priority queues', 'human verdicts', 'custom private rooms', 'tutorials', 'AI practice integration', 'WebRTC signaling'],
+      features: ['quick match', 'judge/contestant/priority queues', 'human verdicts', 'Beef Rating and rating history', 'custom private rooms', 'tutorials', 'AI practice integration', 'WebRTC signaling'],
       aiJudging: env.OPENAI_API_KEY && env.OPENAI_MODEL ? 'configured' : 'awaiting API key and model',
-      frontend: 'This deployment serves the API. The existing Next.js frontend remains in beef/.' });
+      frontend: 'The functional skeleton is at /. The teammate-owned Next.js frontend remains in beef/.' });
   }
   if (path === '/api/health') {
     method(request, 'GET'); await store.sql('SELECT COUNT(*) AS count FROM players').first();
@@ -36,6 +37,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       maxArgumentLength: 600, playersPerRoom: 2, rubric: { reasoning: 40, rebuttal: 40, clarity: 20 } } });
   }
   if (path === '/api/tutorials') { method(request, 'GET'); return Response.json({ tutorials: TUTORIALS }); }
+  if (path === '/api/ratings/rules') { method(request, 'GET'); return Response.json(RATING_RULES); }
   if (path === '/api/sessions' && request.method === 'POST') {
     const ip = request.headers.get('cf-connecting-ip') ?? 'local';
     await store.limit(`session:${await sha256(ip)}`, 20, 3_600_000);
@@ -50,7 +52,14 @@ async function route(request: Request, env: Env): Promise<Response> {
     await store.sql('DELETE FROM sessions WHERE token_hash=?', await sha256(request.headers.get('authorization')!.slice(7))).run();
     return new Response(null, { status: 204 });
   }
-  if (path === '/api/me') { method(request, 'GET'); return Response.json({ player, priorityTickets: await credits(store, player.id) }); }
+  if (path === '/api/me') {
+    method(request, 'GET');
+    return Response.json({ player, priorityTickets: await credits(store, player.id), rating: summarizeRating(await ratingSnapshot(store, player.id)) });
+  }
+  if (path === '/api/ratings/me') {
+    method(request, 'GET'); const limit = limitParam(url);
+    return Response.json({ rating: summarizeRating(await ratingSnapshot(store, player.id)), history: await ratingHistory(store, player.id, limit) });
+  }
   if (path === '/api/voice') { method(request, 'GET'); return Response.json(voiceConfig(store)); }
   if (path === '/api/queue') {
     if (request.method === 'GET') return Response.json(await queueStatus(store, player));
@@ -66,7 +75,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     method(request, 'POST'); await store.limit(`create:${player.id}`, 10, 3_600_000);
     return Response.json(await store.view(await createPractice(store, player, await jsonBody(request)), player), { status: 201 });
   }
-  if (path === '/api/leaderboard') { method(request, 'GET'); return Response.json({ players: await store.leaderboard(limitParam(url)), ranking: 'wins_then_average_score', scope: 'casual_guest_sessions' }); }
+  if (path === '/api/leaderboard') { method(request, 'GET'); return Response.json({ players: await store.leaderboard(limitParam(url)), ranking: 'beef_rating', ratingVersion: RATING_RULES.version, scope: 'prototype_guest_sessions' }); }
   if (path === '/api/rooms') {
     if (request.method === 'GET') return Response.json({ rooms: await store.history(player, limitParam(url)) });
     method(request, 'POST'); await store.limit(`create:${player.id}`, 10, 3_600_000);
@@ -119,6 +128,8 @@ async function route(request: Request, env: Env): Promise<Response> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (env.ASSETS && path !== '/api' && !path.startsWith('/api/')) return env.ASSETS.fetch(request);
     const requestId = crypto.randomUUID(); const origin = request.headers.get('origin');
     const ownOrigin = new URL(request.url).origin;
     const allowed = !origin || origin === ownOrigin || (env.CORS_ORIGINS ?? '').split(',').map(s => s.trim()).filter(Boolean).includes(origin);

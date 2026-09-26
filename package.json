@@ -1,26 +1,32 @@
 {
   "name": "beef-backend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.13"
+    "node": "24.x"
   },
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && node --test tests/*.test.mjs",
-    "check": "pnpm typecheck && pnpm test",
+    "check": "pnpm typecheck && pnpm test && node --check prototype/app.js",
     "dev": "wrangler dev --port 8787",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "node scripts/migrate.mjs --local",
     "db:migrate:remote": "node scripts/migrate.mjs --remote",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "build:vercel": "pnpm typecheck && node scripts/build-vercel.mjs",
+    "db:migrate:vercel": "node scripts/migrate-libsql.mjs"
   },
-  "dependencies": { "drizzle-orm": "^0.45.3" },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "drizzle-orm": "^0.45.3"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260925.2",
+    "@types/node": "^24.13.6",
     "drizzle-kit": "^0.31.11",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
