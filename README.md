@@ -1,4 +1,4 @@
-# Beef / Pitch prototype
+# PITCH prototype
 
 [Website](https://beef-debate-prototype.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
 
