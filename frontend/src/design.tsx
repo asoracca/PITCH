@@ -1,6 +1,6 @@
 import { type ReactNode, type ButtonHTMLAttributes } from "react"
 
-export type Page = "Home" | "Dashboard" | "Practice" | "Head-to-Head" | "AI Coach" | "Leaderboard" | "Profile" | "Character" | "Avatar Shop"
+export type Page = "Home" | "Dashboard" | "Practice" | "Head-to-Head" | "AI Coach" | "Leaderboard" | "Profile" | "Character" | "Avatar Shop" | "Plans"
 
 export type EquippedItems = {
   outfit: string
@@ -25,6 +25,7 @@ const navItems: { label: Page; icon: IconName }[] = [
   { label: "AI Coach", icon: "spark" },
   { label: "Leaderboard", icon: "trophy" },
   { label: "Profile", icon: "user" },
+  { label: "Plans", icon: "star" },
 ]
 
 const iconPaths: Record<IconName, ReactNode> = {

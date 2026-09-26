@@ -367,8 +367,12 @@ export function Practice({ p }: { p: Pitch }) {
   const [deadline, setDeadline] = useState(0)
   const [now, setNow] = useState(Date.now())
   const [done, setDone] = useState(false)
-  const [response, setResponse] = useState("")
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [notice, setNotice] = useState("")
   const scenario = scenarios.find((s) => s.id === selected) || scenarios[0]
+  const response = drafts[scenario?.id] || ""
+  const eligible = scenarios.filter((s) => category === "all" || s.category === category)
+  const alternatives = eligible.filter((s) => s.id !== scenario?.id)
   useEffect(() => {
     if (!deadline || done) return
     const id = setInterval(() => setNow(Date.now()), 250)
@@ -379,18 +383,33 @@ export function Practice({ p }: { p: Pitch }) {
     setSelected(s.id)
     setDeadline(0)
     setDone(false)
-    setResponse("")
+    setNotice("")
   }
   if (!scenario) return <p>No scenarios are available for this age band.</p>
   return (
     <div className="page-stack">
-      <SectionTitle eyebrow="SOLO TRAINING · UNRATED" title="Practice Arena" />
+      <SectionTitle
+        eyebrow="SOLO TRAINING · UNRATED"
+        title="Practice Arena"
+        action={<Button variant="secondary" disabled={!alternatives.length} onClick={() => {
+          const next = alternatives[Math.floor(Math.random() * alternatives.length)]
+          if (!next) return
+          choose(next)
+          setNotice(`New scenario: ${next.title}. The timer is reset; your previous draft is kept for this visit.`)
+        }}>Random scenario <Icon name="spark" /></Button>}
+      />
       <div className="scenario-controls">
         <label>
           Category
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value
+              setCategory(next)
+              const matching = scenarios.find((s) => next === "all" || s.category === next)
+              if (matching && next !== "all" && scenario.category !== next) choose(matching)
+              else setNotice("")
+            }}
           >
             <option value="all">All categories</option>
             {[...new Set(scenarios.map((s) => s.category))].map((c) => (
@@ -406,13 +425,7 @@ export function Practice({ p }: { p: Pitch }) {
               choose(scenarios.find((s) => s.id === e.target.value)!)
             }
           >
-            {scenarios
-              .filter(
-                (s) =>
-                  category === "all" ||
-                  s.category === category ||
-                  s.id === selected,
-              )
+            {eligible
               .map((s) => (
                 <option value={s.id} key={s.id}>
                   {s.title}
@@ -421,6 +434,9 @@ export function Practice({ p }: { p: Pitch }) {
           </select>
         </label>
       </div>
+      <p className="practice-random-hint">Random picks stay in your age group and selected category. Switching scenarios resets the timer and keeps your drafts for this visit.</p>
+      {notice && <p role="status">{notice}</p>}
+      {!alternatives.length && <p>Choose another category for more random scenarios.</p>}
       <div className="arena">
         <div className="arena-top">
           <span className="live-pill capitalize">{scenario.category}</span>
@@ -446,7 +462,7 @@ export function Practice({ p }: { p: Pitch }) {
             value={response}
             maxLength={1200}
             readOnly={finished}
-            onChange={(e) => setResponse(e.target.value)}
+            onChange={(e) => setDrafts((current) => ({ ...current, [scenario.id]: e.target.value }))}
             placeholder="Draft your response here, or practice speaking aloud."
           />
         </label>

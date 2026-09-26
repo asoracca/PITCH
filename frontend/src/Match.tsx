@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Button, Icon, SectionTitle } from "./design"
 import { countdown, canRespond, initials, signed, skills } from "./model"
 import { FeedbackButtons, Rules } from "./screens"
-import { LiveAudio } from "./voice"
+import { LiveAudio, audioOff } from "./voice"
 import type { Pitch } from "./usePitch"
 import type {
   PitchRoomView,
@@ -165,17 +165,23 @@ function AudioControls({
 }) {
   const container = useRef<HTMLDivElement>(null)
   const audio = useRef<LiveAudio | null>(null)
-  const [status, setStatus] = useState("Audio is off.")
-  const [muted, setMuted] = useState(false)
+  const startRequest = useRef<AbortController | null>(null)
+  const latestRoom = useRef(room)
+  latestRoom.current = room
+  const [state, setState] = useState(audioOff)
+  const [error, setError] = useState("")
   const [starting, setStarting] = useState(false)
   useEffect(() => {
     let mounted = true
-    audio.current = new LiveAudio(p.api, container.current!, (v) => {
-      if (mounted) setStatus(v)
+    const connection = new LiveAudio(p.api, container.current!, (v) => {
+      if (mounted) setState(v)
     })
+    audio.current = connection
     return () => {
       mounted = false
-      audio.current?.stop()
+      startRequest.current?.abort()
+      startRequest.current = null
+      connection.stop()
       audio.current = null
     }
   }, [p.api, room.code])
@@ -186,63 +192,82 @@ function AudioControls({
     audio.current?.setBlocked(p.me?.blockedPlayers.map((v) => v.id) || [])
   }, [p.me?.blockedPlayers])
   async function start() {
-    if (starting) return
+    if (startRequest.current || !audio.current) return
+    const request = new AbortController()
+    const connection = audio.current
+    startRequest.current = request
     setStarting(true)
-    setStatus("Connecting audio…")
+    setError("")
     try {
-      const config = await p.api.voice()
-      if (audio.current)
-        await audio.current.start(
-          room,
-          p.me!.player.id,
-          config,
-          p.config!.rules.phases,
-        )
+      const config = await p.api.voice({ signal: request.signal })
+      if (request.signal.aborted || audio.current !== connection) return
+      await connection.start(latestRoom.current, p.me!.player.id, config, p.config!.rules.phases)
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Audio could not start.")
+      if (!request.signal.aborted)
+        setError(e instanceof Error ? e.message : "Voice could not connect. You can still use text.")
     } finally {
-      setStarting(false)
+      if (startRequest.current === request) {
+        startRequest.current = null
+        setStarting(false)
+      }
     }
   }
+  function stop() {
+    startRequest.current?.abort()
+    startRequest.current = null
+    audio.current?.stop()
+    setStarting(false)
+    setError("")
+  }
+  const micOn = state.microphone === "on"
+  const micPending = state.microphone === "requesting"
   return (
-    <section className="panel audio-controls">
+    <section className="panel audio-controls" aria-label="Voice and microphone">
       <div>
-        <strong>Live audio</strong>
-        <p role="status">{status}</p>
+        <h2 className="heading">Talk or type. Your choice.</h2>
+        <p>Enable voice to hear the round. Your microphone stays off until you turn it on. Text replies are always available during your turn.</p>
+        <div className="voice-state" role="status" aria-live="polite">
+          <strong>{starting ? "Connecting voice…" : state.enabled ? "Voice enabled" : "Voice disabled"}</strong>
+          {state.enabled && <span>{state.connected} of {state.participants} participants connected</span>}
+          {room.role === "contestant" && <span className={state.transmitting ? "positive" : ""}>
+            {micPending ? "Waiting for microphone permission…" : state.transmitting ? "Microphone on · your turn to speak" : micOn ? "Microphone on · muted until your turn" : "Microphone off"}
+          </span>}
+          {(error || state.message) && <span>{error || state.message}</span>}
+        </div>
         <p>
-          Only the current contestant’s microphone is sent. Judges listen. Audio
-          is not recorded.
+          {room.role === "judge" ? "As a judge, you can listen without using a microphone." : "Your voice is shared only during your speaking turns."} Audio is not recorded.
         </p>
       </div>
       <div className="hero-actions">
         <Button
-          variant="secondary"
-          disabled={starting || room.status !== "active" || room.left}
+          variant={state.enabled ? "secondary" : "primary"}
+          aria-pressed={state.enabled}
+          disabled={room.status !== "active" || room.left}
           onClick={() => {
-            void start()
+            if (state.enabled || starting) stop()
+            else void start()
           }}
         >
-          {starting ? "Connecting…" : "Connect / reconnect audio"}
-          <Icon name="mic" />
+          {starting ? "Cancel connection" : state.enabled ? "Disable voice" : "Enable voice"}
         </Button>
         {room.role === "contestant" && (
           <Button
-            variant="ghost"
+            variant={micOn ? "secondary" : "primary"}
+            disabled={!state.enabled || starting}
+            aria-pressed={micOn}
             onClick={() => {
-              audio.current?.setMuted(!muted)
-              setMuted(!muted)
+              if (micOn || micPending) audio.current?.disableMicrophone()
+              else void audio.current?.enableMicrophone()
             }}
           >
-            {muted ? "Unmute microphone" : "Mute microphone"}
+            <Icon name="mic" />
+            {micPending ? "Cancel microphone" : micOn ? "Turn microphone off" : "Turn microphone on"}
           </Button>
         )}
-        <Button variant="ghost" onClick={() => audio.current?.play()}>
-          Play audio
-        </Button>
-        <Button variant="ghost" onClick={() => audio.current?.stop()}>
-          Stop audio
-        </Button>
+        {state.needsPlayback && <Button variant="secondary" onClick={() => { void audio.current?.play() }}>Play audio</Button>}
+        {state.enabled && <Button variant="ghost" disabled={starting} onClick={() => { void start() }}>Reconnect voice</Button>}
       </div>
+      {state.enabled && <p>Everyone who wants to listen needs to enable voice. If a connection fails, reconnect or continue with text.</p>}
       <div ref={container} hidden />
     </section>
   )
@@ -272,7 +297,7 @@ function ResponseForm({
   return (
     <form className="play-round" onSubmit={submit}>
       <label className="form-stack">
-        <strong>Your text response · optional alongside audio</strong>
+        <strong>Your text response · with or without voice</strong>
         <textarea
           className="match-response-input"
           value={text}

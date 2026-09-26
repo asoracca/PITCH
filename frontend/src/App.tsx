@@ -19,6 +19,7 @@ import {
   Profile,
 } from "./screens"
 import { Match } from "./Match"
+import { Pricing } from "./Pricing"
 import { initials } from "./model"
 import { usePitch } from "./usePitch"
 import "./integration.css"
@@ -33,6 +34,7 @@ const pages: Page[] = [
   "Profile",
   "Character",
   "Avatar Shop",
+  "Plans",
 ]
 const defaultLook: EquippedItems = {
   outfit: "Varsity Pitch",
@@ -83,7 +85,7 @@ export default function App() {
     setPage(next)
     location.hash = encodeURIComponent(next)
     setMenuOpen(false)
-    if (next !== "Home" && !p.session) setAuth(true)
+    if (next !== "Home" && next !== "Plans" && !p.session) setAuth(true)
     else setAuth(false)
   }
   function setEquipped(look: EquippedItems) {
@@ -122,6 +124,8 @@ export default function App() {
         Restoring your session…
       </div>
     )
+  else if (page === "Plans" && !auth)
+    content = <Pricing navigate={navigate} />
   else if (!p.session)
     content =
       auth || page !== "Home" ? <Auth p={p} /> : <Home onNavigate={navigate} />
@@ -198,6 +202,7 @@ export default function App() {
             <Logo />
           </div>
           <div className="topbar-right">
+            <Button variant="ghost" onClick={() => navigate("Plans")}>View plans</Button>
             {p.me && (
               <>
                 <button

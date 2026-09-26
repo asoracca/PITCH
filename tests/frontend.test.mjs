@@ -33,24 +33,78 @@ test('connected dashboard, profile and leaderboard render server data and honest
 });
 test('live round renders server participants, judge form and result instead of simulated opponents', () => {
   const contestant = render(ui.Match, { p: { ...p, room } });
-  assert.match(contestant, /Taylor/); assert.match(contestant, /Submit response/); assert.doesNotMatch(contestant, /Maya|Sofia|ANALYZING BOTH RESPONSES/);
+  assert.match(contestant, /Taylor/); assert.match(contestant, /Submit response/); assert.match(contestant, /Enable voice/); assert.match(contestant, /Turn microphone on/); assert.match(contestant, /with or without voice/); assert.match(contestant, /Voice disabled/); assert.doesNotMatch(contestant, /Maya|Sofia|ANALYZING BOTH RESPONSES/);
   const judging = render(ui.Match, { p: { ...p, room: { ...room, role: 'judge', yourSlot: 2, phase: { ...room.phase, key: 'judging', speaker: null } } } });
-  assert.match(judging, /Submit scorecard/); assert.match(judging, /persuasiveness/);
+  assert.doesNotMatch(judging, /Turn microphone on/); assert.match(judging, /Submit scorecard/); assert.match(judging, /persuasiveness/);
 });
 
-test('leaving while microphone permission is pending stops the late stream without opening peers', async () => {
-  const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
-  const peerDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'RTCPeerConnection');
-  let resolveStream; let stopped = 0; let peers = 0;
-  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { mediaDevices: { getUserMedia: () => new Promise(resolve => { resolveStream = resolve; }) } } });
-  Object.defineProperty(globalThis, 'RTCPeerConnection', { configurable: true, value: class { constructor() { peers++; } } });
-  try {
-    const audio = new ui.LiveAudio({}, { replaceChildren() {} }, () => {});
-    const starting = audio.start(room, 'self', { iceServers: [], pollMs: 2000 }, []);
-    audio.stop(); resolveStream({ getTracks: () => [{ stop() { stopped++; } }] }); await starting;
-    assert.equal(stopped, 1); assert.equal(peers, 0);
-  } finally {
-    if (navigatorDescriptor) Object.defineProperty(globalThis, 'navigator', navigatorDescriptor); else delete globalThis.navigator;
-    if (peerDescriptor) Object.defineProperty(globalThis, 'RTCPeerConnection', peerDescriptor); else delete globalThis.RTCPeerConnection;
+async function withAudio(getUserMedia, run) {
+  const descriptors = ['navigator', 'RTCPeerConnection'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+  const peers = [], instances = [], sent = [];
+  let latest = { enabled: false, microphone: 'off', transmitting: false };
+  class Peer {
+    constructor() { this.signalingState = 'stable'; this.connectionState = 'new'; this.sender = { track: null, replaceTrack: async track => { this.sender.track = track; } }; peers.push(this); }
+    addTransceiver(kind, options) { this.direction = options.direction; return { sender: this.sender }; }
+    async createOffer() { return { type: 'offer', sdp: 'offer' }; }
+    async createAnswer() { return { type: 'answer', sdp: 'answer' }; }
+    async setLocalDescription(description) { this.localDescription = description; this.signalingState = description.type === 'offer' ? 'have-local-offer' : 'stable'; }
+    async setRemoteDescription(description) { this.remoteDescription = description; this.signalingState = description.type === 'offer' ? 'have-remote-offer' : 'stable'; }
+    async addIceCandidate() {}
+    close() { this.connectionState = 'closed'; }
   }
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { mediaDevices: { getUserMedia } } });
+  Object.defineProperty(globalThis, 'RTCPeerConnection', { configurable: true, value: Peer });
+  const api = { sendSignal: async (code, id, message) => { sent.push({ id, ...message }); }, signals: async () => ({ signals: [], cursor: 0 }) };
+  const container = { replaceChildren() {}, querySelector() { return null; }, querySelectorAll() { return []; } };
+  const make = () => { const a = new ui.LiveAudio(api, container, state => { latest = state; }); instances.push(a); return a; };
+  try { await run({ make, peers, sent, api, state: () => latest }); }
+  finally { instances.forEach(a => a.stop()); for (const [key, descriptor] of descriptors) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; } }
+}
+const voiceConfig = { iceServers: [], pollMs: 2000 };
+const phases = [{ seconds: 60, speaker: 0 }, { seconds: 60, speaker: 1 }];
+function microphone() {
+  const track = { enabled: true, stopped: false, stop() { this.stopped = true; } };
+  return { track, getTracks: () => [track], getAudioTracks: () => [track] };
+}
+test('voice starts without a microphone; on/off releases the device and keeps listening and turn gating', async () => {
+  const streams = []; let requests = 0;
+  await withAudio(async () => { requests++; const stream = microphone(); streams.push(stream); return stream; }, async ({ make, state, peers }) => {
+    const audio = make(); await audio.start(room, 'self', voiceConfig, phases);
+    assert.equal(requests, 0); assert.equal(state().microphone, 'off'); assert.equal(state().enabled, true);
+    await audio.enableMicrophone(); assert.equal(requests, 1); assert.equal(state().transmitting, true); assert.equal(streams[0].track.enabled, true);
+    audio.sync(room, room.startedAt + 60001); assert.equal(streams[0].track.enabled, false); assert.equal(state().microphone, 'on');
+    audio.disableMicrophone(); assert.equal(streams[0].track.stopped, true); assert.equal(peers[0].sender.track, null); assert.equal(state().enabled, true); assert.notEqual(peers[0].connectionState, 'closed');
+    audio.sync(room, room.startedAt + 1); assert.equal(state().transmitting, false);
+    await audio.enableMicrophone(); assert.equal(requests, 2);
+    audio.sync({ ...room, status: 'finished' }, now); assert.equal(streams[1].track.stopped, true); assert.equal(state().enabled, false); assert.equal(peers[0].connectionState, 'closed');
+  });
+});
+test('cancelled microphone permission and leaving cannot turn a late microphone on', async () => {
+  let resolveStream;
+  await withAudio(() => new Promise(resolve => { resolveStream = resolve; }), async ({ make, state, peers }) => {
+    const audio = make(); await audio.start(room, 'self', voiceConfig, phases);
+    let pending = audio.enableMicrophone(); assert.equal(state().microphone, 'requesting'); audio.disableMicrophone();
+    const cancelled = microphone(); resolveStream(cancelled); await pending;
+    assert.equal(cancelled.track.stopped, true); assert.equal(state().enabled, true); assert.equal(state().microphone, 'off'); assert.equal(peers[0].sender.track, null);
+    pending = audio.enableMicrophone(); audio.stop();
+    const late = microphone(); resolveStream(late); await pending;
+    assert.equal(late.track.stopped, true); assert.equal(state().enabled, false); assert.equal(peers.length, 1);
+  });
+});
+test('denied microphone permission leaves voice listening available, and judges never request a microphone', async () => {
+  let requests = 0;
+  await withAudio(async () => { requests++; throw new DOMException('Denied', 'NotAllowedError'); }, async ({ make, state, peers }) => {
+    const audio = make(); await audio.start(room, 'self', voiceConfig, phases); await audio.enableMicrophone();
+    assert.equal(state().enabled, true); assert.equal(state().microphone, 'off'); assert.match(state().message, /still listen and use text/);
+    const judge = make(); await judge.start({ ...room, role: 'judge', yourSlot: 2 }, 'self', voiceConfig, phases); await judge.enableMicrophone();
+    assert.equal(requests, 1); assert.equal(peers.at(-1).direction, 'recvonly'); assert.equal(state().microphone, 'off');
+  });
+});
+test('both sides can initiate or reconnect voice; simultaneous offers resolve to one answer', async () => {
+  await withAudio(async () => microphone(), async ({ make, sent, api, peers }) => {
+    api.signals = async () => ({ signals: [{ id: 1, senderId: 'other', kind: 'offer', payload: { type: 'offer', sdp: 'remote-offer' } }], cursor: 1 });
+    const audio = make(); await audio.start(room, 'self', voiceConfig, phases); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(sent.filter(s => s.kind === 'offer').length, 1); assert.equal(sent.filter(s => s.kind === 'answer').length, 1); assert.equal(peers[0].signalingState, 'stable');
+    audio.stop(); await audio.start(room, 'self', voiceConfig, phases); assert.equal(sent.filter(s => s.kind === 'offer').length, 2);
+  });
 });
