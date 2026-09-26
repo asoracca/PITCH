@@ -1,0 +1,29 @@
+{
+  "name": "beef-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm build && node --test tests/*.test.mjs",
+    "check": "pnpm typecheck && pnpm test",
+    "dev": "wrangler dev --port 8787",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "node scripts/migrate.mjs --local",
+    "db:migrate:remote": "node scripts/migrate.mjs --remote",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": { "drizzle-orm": "^0.45.3" },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260925.2",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.140.0"
+  }
+}

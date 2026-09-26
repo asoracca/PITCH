@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local development. Never commit real secrets.
+OPENAI_API_KEY=""
+OPENAI_MODEL=""
+# Comma-separated frontend origins. Hosted values are configured separately in Sites.
+CORS_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+# WebRTC RTCIceServer array. Configure your own STUN/TURN service for internet calls.
+VOICE_ICE_SERVERS="[]"
