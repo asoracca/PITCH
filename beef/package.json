@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "tsx server.tsx",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js",
-    "lint": "eslint"
+    "start": "NODE_ENV=production tsx server.tsx",
+    "lint": "eslint",
+    "predev": "node scripts/prepare-backend.mjs",
+    "prestart": "node scripts/prepare-backend.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.3.6",

@@ -2,4 +2,5 @@
 
 import { io } from "socket.io-client";
 
-export const socket = io();
+// Connect only after mounting the local server-check screen, never during SSR.
+export const socket = io({ autoConnect: false });

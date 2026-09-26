@@ -6,11 +6,11 @@ Project `beef-debate-prototype`, scope `anggunsoracca`, uses the repository root
 
 ## Native GitHub automatic deployment
 
-The chosen route is Vercel's GitHub app, not a persistent deployment token in Actions. **Repository-owner authorization is still pending** as of this integration. Cerlina should open https://github.com/apps/vercel, install/configure the app for her account, select only `Beef`, and save. Then connect `cerlina-chen/Beef` in this existing Vercel project's Settings → Git (or `vercel git connect`). Set its production branch to `backend/quick-match`, with root directory unchanged. This does not merge into or modify `main`.
+The native Vercel GitHub app is connected to `asoracca/Pitch` after the user authorized the transferred repository. The deployment branch is `backend/quick-match`, with the repository root unchanged. Pushes to this branch update the website; other branches produce previews. This does not merge into or modify `main`.
 
-Verify a subsequent push creates a Vercel deployment tied to that commit before calling automatic deployment enabled. GitHub Actions runs checks without a Vercel secret. Native Vercel builds run type checks and a packaged-entry/database check; GitHub CI separately runs the complete integration suite. See https://vercel.com/docs/git/vercel-for-github.
+GitHub Actions runs checks without a Vercel secret. Native Vercel builds run type checks and a packaged-entry/database check; GitHub CI separately runs the complete integration suite. See https://vercel.com/docs/git/vercel-for-github. Verify deployment status and its source commit after each push; a failed build does not replace the working website.
 
-Manual authorized deployments continue to work while app authorization is pending:
+For an explicitly authorized manual deployment:
 
 ```sh
 pnpm dlx vercel@60.0.1 deploy --yes --scope anggunsoracca --prod

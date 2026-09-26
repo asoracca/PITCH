@@ -10,7 +10,7 @@ Next work for the team:
 - Assign an actual moderator, test report handling, and decide operational policies before broader access.
 - Add email verification/password recovery or free federated authentication if public account access is needed. Self-reported birth dates do not verify age.
 - Integrate the team's Figma-derived frontend using the shared API. Keep the framework route structure consistent.
-- Complete repository-owner authorization for the native Vercel GitHub app, then verify automatic deployment from a push.
+- Maintain the connected native Vercel GitHub deployment and check status after pushes.
 - Evaluate video, private lobbies, tournaments, seasons, transcripts and voice effects separately if the PRD explicitly restores them.
 
 Paid AI and fake AI substitutes are excluded by the user's no-spending instruction. The earlier AI integration code is dormant compatibility code; the Vercel handler never enables it.

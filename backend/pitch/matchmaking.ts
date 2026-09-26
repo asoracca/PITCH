@@ -57,7 +57,7 @@ export async function enqueue(store: Store, player: Player, account: Account, mo
   if (stats.banned_until > Date.now()) fail(403, 'QUEUE_BANNED', `You can queue again at ${new Date(stats.banned_until).toISOString()}.`);
   if (!['quick', 'mixed', 'contestant', 'judge', 'priority'].includes(mode as string)) fail(400, 'INVALID_QUEUE', 'Choose quick, contestant, judge, or priority.');
   if (mode === 'priority' && !stats.priority_credits) fail(409, 'NO_PRIORITY_CREDIT', 'Complete two rounds as a judge to earn a priority credit.');
-  const priority = (mode === 'quick' || mode === 'priority') && stats.priority_credits > 0 ? 1 : 0;
+  const priority = (mode === 'quick' || mode === 'mixed' || mode === 'priority') && stats.priority_credits > 0 ? 1 : 0;
   const role = priority ? 'contestant' : mode === 'quick' || mode === 'mixed' ? 'mixed' : mode as string;
   const current = await store.sql('SELECT * FROM pitch_queue WHERE player_id=?', player.id).first<QueueRow>();
   if (current?.room_id) return;

@@ -1,6 +1,6 @@
 # Beef / Pitch prototype
 
-[Website](https://beef-debate-prototype.vercel.app) · [Backend branch](https://github.com/cerlina-chen/Beef/tree/backend/quick-match)
+[Website](https://beef-debate-prototype.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
 
 Pitch is the current working name for the career and social practice pivot. The functional, deliberately plain website is in `prototype/`; the team's Next.js design workspace remains in `beef/`.
 
@@ -33,4 +33,4 @@ Open `http://localhost:8787/`. Run `pnpm check` for type checks, integration tes
 
 ## Original project
 
-Made during Badger BuildFest 2026 with Next.js and Tailwind. Continue using feature branches and pull requests in `cerlina-chen/Beef`; this work does not modify `main` directly.
+Made during Badger BuildFest 2026 with Next.js and Tailwind. Continue using feature branches and pull requests in `asoracca/Pitch`; this work does not modify `main` directly.
