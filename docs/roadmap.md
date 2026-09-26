@@ -17,4 +17,4 @@ Next work for the team:
 
 Paid AI and fake AI substitutes are excluded by the user's no-spending instruction. The earlier AI integration code is dormant compatibility code; the Vercel handler never enables it.
 
-A Codex task monitor checks the document every 15 minutes and acts on clear changes when this task is idle. It is a periodic monitor, not real-time collaborative editing. It preserves teammates' work, the backend branch, free hosting and pending access approvals.
+A Codex requirement monitor is configured for hourly checks but was paused at the time of this integration. Its paused state is preserved; it will not check for changes until resumed. It preserves teammates' work, the backend branch, free hosting and the existing deployment audience. Figma exports still require a reviewed import into this repository.
