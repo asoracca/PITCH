@@ -67,6 +67,8 @@ For practice, create the match and call `bot-turn` at the start of each phase. T
 
 ## Voice and frontend
 
+`prototype/` now provides a plain working website for guest entry, public queues, text debates, human judging, results and ratings. It uses the same-origin API and leaves visual design to the frontend team. See [Vercel hosting](vercel.md) for the Node.js/libSQL adapter. Paid AI is disabled on that adapter, and the skeleton exposes no AI or voice controls.
+
 `client/beef-api.ts` provides a fetch helper and response types. It keeps the token in memory. Render all user content as text, never raw HTML. Allow exact frontend origins with `CORS_ORIGINS`. Private Sites hosting also requires Sites sign-in, so a standalone app cannot treat it as an unrestricted public API. Prefer same-origin integration or an authenticated proxy while privately testing.
 
 Voice signaling is implemented; microphone capture, voice-changing DSP, playback/mute and reconnect UI are frontend work. Apply effects using Web Audio/AudioWorklet before attaching tracks to RTCPeerConnection. `voiceChangerImplemented` explicitly returns false. No audio is recorded by this backend.

@@ -12,12 +12,14 @@ Source: [Beef product management — BEEF PRD](https://docs.google.com/document/
 - [x] Tutorial content and optional AI practice/judging integrations.
 - [x] Member-only WebRTC signaling; no audio recordings.
 - [x] Beef Rating v1: Elo-based public match ratings, five placement games, rating history, and rating-sorted leaderboard. Added after the quick-game scope at the owner's request.
+- [x] Plain website skeleton for guest entry, public quick games, text rounds, human scoring, results and ratings.
+- [x] Vercel Node.js/libSQL adapter and deployment configuration; hosted Vercel provisioning requires the owner's connected account and free database.
 
 ## Connect the frontend next
 
-- [ ] Connect Next screens to queues, room state, arguments, judgment and results.
+- [ ] Apply the frontend team's design to the Next.js screens and connect the API; the plain skeleton is available for functional testing.
 - [ ] Microphone permission/test, live audio, voice effects, mute/playback, and TURN or managed audio integration.
-- [ ] Validate real AI responses with a configured key/model and spend limits.
+- [ ] AI practice is deferred: the owner requested no AI key and no spending. Vercel does not enable paid AI.
 - [ ] Ready checks, reconnect grace, explicit leave/forfeit, and recovery after judge abandonment. Current open rooms expire after 24 hours with no replacement judge.
 
 ## Larger PRD

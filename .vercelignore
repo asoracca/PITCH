@@ -1,0 +1,12 @@
+.git
+.openai
+.wrangler
+.dev.vars*
+.env*
+beef
+node_modules
+dist
+build
+tests
+*.tar.gz
+*.db*

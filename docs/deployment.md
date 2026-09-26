@@ -1,8 +1,10 @@
 # Deployment
 
+For the Vercel backend and simple website skeleton, use [Vercel setup](vercel.md). The configuration below describes the existing private Sites preview, which remains available during migration.
+
 `.openai/hosting.json` identifies the existing Beef Backend Site and declares D1 binding `DB`. Reuse that Site for updates. Sites provisions the database and applies generated migrations. The identifier is metadata, not a credential. GitHub hosts the source; Sites runs the backend.
 
-`pnpm build` emits `dist/server/index.js`, `dist/.openai/hosting.json` and `dist/.openai/drizzle/`. Publish validated source and its matching archive through Sites. Keep the approved prototype private.
+`pnpm build` emits `dist/server/index.js`, the skeleton assets in `dist/client/`, `dist/.openai/hosting.json` and `dist/.openai/drizzle/`. It also compiles the Node.js adapter under `build/node/` for tests; that directory is not part of the Sites archive. Publish validated source and its matching archive through Sites. Keep the approved prototype private.
 
 Set runtime values in the host, never Git:
 
