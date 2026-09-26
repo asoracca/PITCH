@@ -24,11 +24,11 @@ async function route(request: Request, env: Env): Promise<Response> {
   const store = new Store(env);
   if (path === '/' || path === '/api') {
     method(request, 'GET');
-    return Response.json({ service: 'Pitch practice backend', version: '2.0.0', health: '/api/health', config: '/api/pitch/config',
+    return Response.json({ service: 'PITCH practice backend', version: '2.0.0', health: '/api/health', config: '/api/pitch/config',
       documentation: 'https://github.com/asoracca/Pitch/blob/backend/quick-match/docs/backend.md',
-      features: ['five-person rounds', 'three peer judges', 'age-band scenarios', 'priority queues', 'Pitch Elo', 'feedback and history', 'reporting and blocking', 'WebRTC audio signaling'],
+      features: ['five-person rounds', 'three peer judges', 'age-band scenarios', 'priority queues', 'PITCH Elo', 'feedback and history', 'reporting and blocking', 'WebRTC audio signaling'],
       aiJudging: 'disabled for the no-cost prototype',
-      frontend: 'The functional skeleton is at /. The teammate-owned Next.js frontend remains in beef/.' });
+      frontend: 'The integrated Figma frontend is at /. Source lives in frontend/; the teammate Next.js server remains in beef/.' });
   }
   if (path === '/api/health') {
     method(request, 'GET'); await store.sql('SELECT COUNT(*) AS count FROM players').first();

@@ -1,8 +1,8 @@
 # PITCH prototype
 
-[Website](https://beef-debate-prototype.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
+[Website](https://pitch-prototype-asoracca.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
 
-Pitch is the current working name for the career and social practice pivot. The functional, deliberately plain website is in `prototype/`; the team's Next.js design workspace remains in `beef/`.
+The team's Figma Make design is integrated in `frontend/` (React, Vite and Tailwind). It uses the existing authenticated PITCH backend. The teammate's Next.js/Socket.IO development workspace remains in `beef/`; the previous plain UI is retained as reference in `prototype/`.
 
 ## Implemented
 
@@ -23,13 +23,17 @@ Use Node 24 and pnpm 11.19.0 from this directory:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm db:migrate:local
-pnpm dev
+pnpm build
+node scripts/dev-frontend.mjs
+# In a second terminal:
+pnpm --dir frontend dev
 ```
 
-Open `http://localhost:8787/`. Run `pnpm check` for type checks, integration tests and browser-script syntax checks. The separate Next.js server setup is documented in [the teammate handoff](docs/server-integration.md).
+Open `http://127.0.0.1:5173/`. The local API uses an ignored SQLite database and no cloud credentials. Run `pnpm check` for type checks, integration tests and browser-script syntax checks. The separate Next.js server setup is documented in [the teammate handoff](docs/server-integration.md).
 
-[Vercel deployment](docs/vercel.md) · [API contract](docs/backend.md) · [Elo rules](docs/ratings.md) · [Sites deployment](docs/deployment.md) · [Scope and follow-up](docs/roadmap.md)
+[Vercel deployment](docs/vercel.md) · [API contract](docs/backend.md) · [Figma frontend handoff](docs/figma-handoff.md) · [Elo rules](docs/ratings.md) · [Sites deployment](docs/deployment.md) · [Scope and follow-up](docs/roadmap.md)
+
+The frontend includes real sign-in, dashboard data, matchmaking, live rounds, scorecards, results, history, leaderboard, reporting and blocking. Solo practice is an unscored local warm-up. Character customization is a device-local design preview; coins, purchases, XP, badges, AI coaching, profile editing and video are not enabled. See the [handoff](docs/figma-handoff.md) before importing future design exports.
 
 ## Original project
 

@@ -1,3 +1,4 @@
+import type { PitchRoomView } from '../../shared/pitch';
 import { fail, textField } from '../http';
 import { Store } from '../store';
 import type { Player } from '../types';
@@ -128,7 +129,7 @@ export async function syncRoom(store: Store, room: PitchRoom, player: Player) {
   return (await store.sql('SELECT * FROM pitch_rooms WHERE id=?', room.id).first<PitchRoom>())!;
 }
 
-export async function view(store: Store, room: PitchRoom, player: Player) {
+export async function view(store: Store, room: PitchRoom, player: Player): Promise<PitchRoomView> {
   const [members, votes, responses, feedback] = await Promise.all([
     seats(store, room), ballots(store, room),
     store.sql('SELECT player_id AS playerId,phase,content,created_at AS createdAt FROM pitch_responses WHERE room_id=? ORDER BY phase', room.id).all<{playerId:string;phase:number;content:string;createdAt:number}>(),

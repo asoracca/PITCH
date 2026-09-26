@@ -1,4 +1,4 @@
-# Pitch Elo and judging
+# PITCH Elo and judging
 
 The current website uses `pitch-elo-v2`. Accounts start at 1,000 Elo. For each contestant, expected score is `1 / (1 + 10 ** ((opponentRating - rating) / 400))`. A win scores 1, draw 0.5, loss 0. The first ten rated rounds use K=32; subsequent rounds use K=16. The new rating is rounded to an integer with a floor of 100. K is per player, so changes can differ when an established contestant faces a provisional contestant.
 

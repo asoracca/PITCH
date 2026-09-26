@@ -1,5 +1,5 @@
-packages: []
-verifyDepsBeforeRun: false
+packages:
+  - frontend
 allowBuilds:
   esbuild: true
   workerd: true

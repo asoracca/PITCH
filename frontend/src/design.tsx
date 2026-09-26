@@ -1,0 +1,828 @@
+import { type ReactNode, type ButtonHTMLAttributes } from "react"
+
+export type Page = "Home" | "Dashboard" | "Practice" | "Head-to-Head" | "AI Coach" | "Leaderboard" | "Profile" | "Character" | "Avatar Shop"
+
+export type EquippedItems = {
+  outfit: string
+  accessory: string
+  background: string
+}
+
+export type ProfileData = {
+  name: string
+  avatar: string
+  schoolMajor: string
+  locationBio: string
+}
+
+export type IconName = "home" | "grid" | "play" | "versus" | "spark" | "trophy" | "user" | "gavel" | "bolt" | "fire" | "clock" | "arrow" | "check" | "mic" | "video" | "text" | "target" | "star" | "menu" | "bell" | "close"
+
+const navItems: { label: Page; icon: IconName }[] = [
+  { label: "Home", icon: "home" },
+  { label: "Dashboard", icon: "grid" },
+  { label: "Practice", icon: "play" },
+  { label: "Head-to-Head", icon: "versus" },
+  { label: "AI Coach", icon: "spark" },
+  { label: "Leaderboard", icon: "trophy" },
+  { label: "Profile", icon: "user" },
+]
+
+const iconPaths: Record<IconName, ReactNode> = {
+  home: (
+    <>
+      <path d="m3 10 9-7 9 7" />
+      <path d="M5 9v11h14V9M9 20v-7h6v7" />
+    </>
+  ),
+  grid: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="3" width="7" height="7" rx="2" />
+      <rect x="3" y="14" width="7" height="7" rx="2" />
+      <rect x="14" y="14" width="7" height="7" rx="2" />
+    </>
+  ),
+  play: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m10 8 6 4-6 4Z" />
+    </>
+  ),
+  versus: (
+    <>
+      <path d="M8 8h8M8 16h8M5 5l3 3-3 3M19 13l-3 3 3 3" />
+    </>
+  ),
+  spark: (
+    <>
+      <path d="m12 3 1.4 4.2L18 9l-4.6 1.8L12 15l-1.4-4.2L6 9l4.6-1.8Z" />
+      <path d="m18.5 15 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z" />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M8 4h8v5a4 4 0 0 1-8 0Z" />
+      <path d="M12 13v4M8 21h8M9 17h6M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </>
+  ),
+  gavel: (
+    <>
+      <path d="m14 5 5 5M12 7l5 5M15.5 3.5l-5 5 6 6 5-5ZM12 12 4 20M2 21h8" />
+    </>
+  ),
+  bolt: <path d="m13 2-8 12h7l-1 8 8-12h-7Z" />,
+  fire: (
+    <path d="M12 22c4 0 7-3 7-7 0-3-2-6-5-9 0 3-2 5-3 6 0-4-2-7-4-9 0 5-3 7-3 12 0 4 3 7 8 7Z" />
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  arrow: (
+    <>
+      <path d="M5 12h14M14 7l5 5-5 5" />
+    </>
+  ),
+  check: <path d="m5 12 4 4L19 6" />,
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" />
+    </>
+  ),
+  video: (
+    <>
+      <rect x="3" y="6" width="13" height="12" rx="2" />
+      <path d="m16 10 5-3v10l-5-3Z" />
+    </>
+  ),
+  text: (
+    <>
+      <path d="M5 5h14M12 5v14M8 19h8" />
+    </>
+  ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
+  star: (
+    <path d="m12 3 2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6-4.4-4.2 6-.9Z" />
+  ),
+  menu: (
+    <>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+    </>
+  ),
+  close: (
+    <>
+      <path d="m6 6 12 12M18 6 6 18" />
+    </>
+  ),
+}
+
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {iconPaths[name]}
+    </svg>
+  )
+}
+
+export function Button({
+  children,
+  variant = "primary",
+  onClick,
+  className = "",
+  ...props
+}: {
+  children: ReactNode
+  variant?: "primary" | "secondary" | "ghost"
+  onClick?: () => void
+  className?: string
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={`btn btn-${variant} ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function Logo() {
+  return (
+    <div className="logo">
+      <div className="logo-mark">
+        <span>P</span>
+      </div>
+      <span>PITCH</span>
+    </div>
+  )
+}
+
+export function Sidebar({
+  page,
+  onNavigate,
+  open,
+  onClose,
+  profile,
+}: {
+  page: Page
+  onNavigate: (page: Page) => void
+  open: boolean
+  onClose: () => void
+  profile: ProfileData
+}) {
+  return (
+    <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+      <div className="sidebar-head">
+        <Logo />
+        <button
+          className="icon-button mobile-only"
+          onClick={onClose}
+          aria-label="Close menu"
+        >
+          <Icon name="close" />
+        </button>
+      </div>
+      <nav className="nav-list">
+        {navItems.map((item) => (
+          <button
+            key={item.label}
+            className={`nav-item ${page === item.label ? "nav-active" : ""}`}
+            onClick={() => {
+              onNavigate(item.label)
+              onClose()
+            }}
+          >
+            <Icon name={item.icon} />
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+      <div className="sidebar-footer">
+        <div className="mini-level">
+          <div className="avatar avatar-small">
+            {profile.avatar.startsWith("http") ? (
+              <img src={profile.avatar} alt="" />
+            ) : (
+              profile.avatar
+            )}
+          </div>
+          <div className="grow">
+            <div className="mini-name">{profile.name}</div>
+            <div className="mini-label">Career skills in practice</div>
+          </div>
+          <Icon name="arrow" size={16} />
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+export function Stat({
+  icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: IconName
+  value: string
+  label: string
+  tone: string
+}) {
+  return (
+    <div className="stat-card">
+      <div className={`stat-icon ${tone}`}>
+        <Icon name={icon} />
+      </div>
+      <div>
+        <div className="stat-value">{value}</div>
+        <div className="muted">{label}</div>
+      </div>
+    </div>
+  )
+}
+
+export function SectionTitle({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow?: string
+  title: string
+  action?: ReactNode
+}) {
+  return (
+    <div className="section-title">
+      <div>
+        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+        <div className="heading">{title}</div>
+      </div>
+      {action}
+    </div>
+  )
+}
+
+export function Home({ onNavigate }: { onNavigate: (page: Page) => void }) {
+  const featureCards: {
+    icon: IconName
+    title: string
+    copy: string
+    tone: string
+    page: Page
+  }[] = [
+    {
+      icon: "play",
+      title: "Practice",
+      copy: "Try realistic interview and workplace scenarios.",
+      tone: "lime",
+      page: "Practice",
+    },
+    {
+      icon: "versus",
+      title: "Head-to-Head",
+      copy: "Compete against another student in timed challenges.",
+      tone: "purple",
+      page: "Head-to-Head",
+    },
+    {
+      icon: "spark",
+      title: "AI Coach",
+      copy: "AI coaching is not enabled. Try free solo practice or peer feedback.",
+      tone: "cyan",
+      page: "AI Coach",
+    },
+    {
+      icon: "target",
+      title: "Track Your Growth",
+      copy: "Track your clarity, persuasiveness and composure through peer feedback.",
+      tone: "orange",
+      page: "Profile",
+    },
+    {
+      icon: "trophy",
+      title: "Compete & Connect",
+      copy: "Build your Elo rating and join the weekly leaderboard.",
+      tone: "pink",
+      page: "Leaderboard",
+    },
+  ]
+  const steps = [
+    "Choose a scenario",
+    "Prepare",
+    "Respond",
+    "Get feedback",
+    "Improve",
+  ]
+  const scenarios = [
+    {
+      tag: "LEADERSHIP",
+      copy: "Your manager gives you an unrealistic deadline.",
+      icon: "clock" as IconName,
+    },
+    {
+      tag: "INTERVIEWS",
+      copy: "A recruiter asks why you want the job.",
+      icon: "user" as IconName,
+    },
+    {
+      tag: "TEAMWORK",
+      copy: "Your teammate isn’t doing their part.",
+      icon: "versus" as IconName,
+    },
+  ]
+
+  return (
+    <div className="home-page">
+      <section className="home-hero">
+        <div className="home-hero-copy">
+          <div className="hero-kicker">
+            <span className="live-dot" /> CAREER SKILLS. GAME ON.
+          </div>
+          <div className="home-hero-title">
+            Build career skills by <em>actually practicing them.</em>
+          </div>
+          <p className="home-hero-subtitle">
+            Practice interviews, handle real workplace situations, compete with
+            friends, and build confidence before you step into the real world.
+          </p>
+          <div className="hero-actions">
+            <Button onClick={() => onNavigate("Practice")}>
+              Start Practicing <Icon name="arrow" />
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                document
+                  .getElementById("pitch-features")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              Explore PITCH
+            </Button>
+          </div>
+          <div className="hero-proof">
+            <div className="proof-avatars">
+              <span>JL</span>
+              <span>MK</span>
+              <span>ER</span>
+            </div>
+            <div>
+              <strong>Two contestants. Three judges.</strong>
+              <span>Real feedback from your peers</span>
+            </div>
+          </div>
+        </div>
+        <div className="home-demo">
+          <div className="demo-header">
+            <span className="live-pill">
+              <span className="live-dot" /> EXAMPLE ROUND
+            </span>
+            <span className="countdown">
+              <Icon name="clock" size={17} /> 00:42
+            </span>
+          </div>
+          <div className="demo-category">WORKPLACE SCENARIO</div>
+          <div className="demo-question">
+            Your team sent a client the wrong presentation. What do you do?
+          </div>
+          <div className="demo-response">
+            <div className="demo-person">
+              <div className="avatar avatar-large">JL</div>
+              <span>YOUR RESPONSE</span>
+            </div>
+            <div className="demo-wave">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((item) => (
+                <i key={item} />
+              ))}
+            </div>
+          </div>
+          <div className="demo-score">
+            <div>
+              <Icon name="spark" />
+              <span>
+                <small>EXAMPLE SCORE</small>
+                <strong>86</strong>
+              </span>
+            </div>
+            <div className="score-meter">
+              <i />
+            </div>
+            <span>Clear, calm, and action-oriented</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-section" id="pitch-features">
+        <div className="home-section-head">
+          <div>
+            <div className="eyebrow">ONE PLATFORM. EVERY SKILL.</div>
+            <div className="home-section-title">What can you do on PITCH?</div>
+          </div>
+          <p>
+            Build the skills employers look for through practice that feels
+            real—not another lesson to click through.
+          </p>
+        </div>
+        <div className="feature-grid">
+          {featureCards.map((feature, index) => (
+            <button
+              className={`feature-card ${index === 0 ? "feature-primary" : ""}`}
+              key={feature.title}
+              onClick={() => onNavigate(feature.page)}
+            >
+              <div className={`category-icon ${feature.tone}`}>
+                <Icon name={feature.icon} />
+              </div>
+              <div className="feature-title">{feature.title}</div>
+              <p>{feature.copy}</p>
+              <span>
+                Explore feature <Icon name="arrow" size={16} />
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section how-section">
+        <div className="how-intro">
+          <div className="eyebrow">FROM PROMPT TO PROGRESS</div>
+          <div className="home-section-title">How PITCH works</div>
+          <p>
+            No lectures. No perfect script. Just a simple loop that helps you
+            get better every time you play.
+          </p>
+          <Button onClick={() => onNavigate("Practice")}>
+            Try a practice round <Icon name="arrow" />
+          </Button>
+        </div>
+        <div className="steps-track">
+          {steps.map((step, index) => (
+            <div className="home-step" key={step}>
+              <div>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <Icon
+                  name={
+                    index === 0
+                      ? "target"
+                      : index === 1
+                        ? "clock"
+                        : index === 2
+                          ? "mic"
+                          : index === 3
+                            ? "spark"
+                            : "bolt"
+                  }
+                />
+              </div>
+              <strong>{step}</strong>
+              {index < steps.length - 1 && <Icon name="arrow" size={17} />}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section">
+        <div className="home-section-head">
+          <div>
+            <div className="eyebrow">SCENARIOS THAT MATTER</div>
+            <div className="home-section-title">Train for real life</div>
+          </div>
+          <p>
+            Practice the moments you can’t predict, so you know how to respond
+            when they happen.
+          </p>
+        </div>
+        <div className="scenario-grid">
+          {scenarios.map((scenario, index) => (
+            <button
+              className="real-scenario"
+              key={scenario.tag}
+              onClick={() => onNavigate("Practice")}
+            >
+              <div className="scenario-number">0{index + 1}</div>
+              <div className="scenario-icon">
+                <Icon name={scenario.icon} />
+              </div>
+              <span>{scenario.tag}</span>
+              <div>{scenario.copy}</div>
+              <p>How would you respond?</p>
+              <Icon name="arrow" />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-cta">
+        <div className="cta-badge">
+          <Icon name="bolt" />
+        </div>
+        <div className="eyebrow">YOUR MOVE</div>
+        <div className="home-section-title">
+          Your next opportunity won’t come with a script.
+          <br />
+          Practice for it.
+        </div>
+        <Button onClick={() => onNavigate("Practice")}>
+          Start Your First PITCH <Icon name="arrow" />
+        </Button>
+        <div className="cta-note">
+          <Icon name="check" size={15} /> No experience needed <span />{" "}
+          <Icon name="check" size={15} /> Start in under a minute
+        </div>
+      </section>
+    </div>
+  )
+}
+
+export const cosmeticItems = [
+  {
+    id: "pitch",
+    name: "Varsity Pitch",
+    category: "Outfit",
+    price: 0,
+    rarity: "OWNED",
+    requirement: "",
+  },
+  {
+    id: "casual",
+    name: "Smart Casual",
+    category: "Outfit",
+    price: 350,
+    rarity: "NEW",
+    requirement: "",
+  },
+  {
+    id: "formal",
+    name: "The Closer",
+    category: "Outfit",
+    price: 700,
+    rarity: "RARE",
+    requirement: "Reach Level 10",
+  },
+  {
+    id: "show",
+    name: "Game Show Glow",
+    category: "Outfit",
+    price: 900,
+    rarity: "LIMITED",
+    requirement: "",
+  },
+  {
+    id: "glasses",
+    name: "Round Glasses",
+    category: "Accessories",
+    price: 0,
+    rarity: "OWNED",
+    requirement: "",
+  },
+  {
+    id: "phones",
+    name: "Focus Headphones",
+    category: "Accessories",
+    price: 280,
+    rarity: "NEW",
+    requirement: "",
+  },
+  {
+    id: "pin",
+    name: "Great Communicator",
+    category: "Accessories",
+    price: 0,
+    rarity: "ACHIEVEMENT",
+    requirement: "Earn Great Communicator badge",
+  },
+  {
+    id: "pack",
+    name: "Day One Backpack",
+    category: "Accessories",
+    price: 420,
+    rarity: "RARE",
+    requirement: "",
+  },
+  {
+    id: "navy",
+    name: "Midnight Arena",
+    category: "Background",
+    price: 0,
+    rarity: "OWNED",
+    requirement: "",
+  },
+  {
+    id: "violet",
+    name: "Violet Voltage",
+    category: "Background",
+    price: 500,
+    rarity: "NEW",
+    requirement: "",
+  },
+  {
+    id: "streak",
+    name: "Flame Streak",
+    category: "Background",
+    price: 0,
+    rarity: "STREAK",
+    requirement: "Reach a 30-day streak",
+  },
+  {
+    id: "elite",
+    name: "Leaderboard Elite",
+    category: "Background",
+    price: 0,
+    rarity: "RANKED",
+    requirement: "Finish in the weekly top 10",
+  },
+]
+
+export function AvatarCharacter({
+  outfit = "Varsity Pitch",
+  accessory = "Round Glasses",
+  background = "Midnight Arena",
+  compact = false,
+}: {
+  outfit?: string
+  accessory?: string
+  background?: string
+  compact?: boolean
+}) {
+  const jacket =
+    outfit === "Game Show Glow"
+      ? "#88f4f5"
+      : outfit === "The Closer"
+        ? "#6e5bd4"
+        : outfit === "Smart Casual"
+          ? "#279ba7"
+          : "#8b72ed"
+  const backdrop =
+    background === "Violet Voltage"
+      ? "#2f235c"
+      : background === "Flame Streak"
+        ? "#51251d"
+        : background === "Leaderboard Elite"
+          ? "#3c3516"
+          : "#111a2e"
+  return (
+    <svg
+      className={`pitch-character ${compact ? "character-compact" : ""}`}
+      viewBox="0 0 280 400"
+      role="img"
+      aria-label="Customizable PITCH character"
+    >
+      <rect width="280" height="400" rx="30" fill={backdrop} />
+      <path
+        d="M0 310Q70 270 140 310T280 310V400H0Z"
+        fill="#0a0f20"
+        opacity=".65"
+      />
+      <circle cx="140" cy="115" r="54" fill="#9d654b" />
+      <path
+        d="M87 112Q86 46 145 48Q205 50 193 123L178 90Q135 103 99 80Z"
+        fill="#1a1720"
+      />
+      <path
+        d="M109 135q12 10 24 0M151 135q12 10 24 0"
+        fill="none"
+        stroke="#21161a"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M132 154q10 8 20 0"
+        fill="none"
+        stroke="#6b342d"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path d="M112 181h56v30h-56z" fill="#8c563f" />
+      <path
+        d="M63 263Q68 198 112 190h56q45 10 50 73l-20 83H82Z"
+        fill={jacket}
+      />
+      <path d="m112 190 28 42 28-42-8 88h-40Z" fill="#f5f3ee" />
+      <path d="m132 207 8 25 8-25-8-8Z" fill="#88f4f5" />
+      <path
+        d="M82 250 56 340M198 250l26 90"
+        stroke={jacket}
+        strokeWidth="30"
+        strokeLinecap="round"
+      />
+      <path d="M92 344h38v45H76ZM150 344h38l16 45h-54Z" fill="#171d2e" />
+      {accessory === "Round Glasses" && (
+        <>
+          <circle
+            cx="116"
+            cy="126"
+            r="19"
+            fill="none"
+            stroke="#88f4f5"
+            strokeWidth="5"
+          />
+          <circle
+            cx="164"
+            cy="126"
+            r="19"
+            fill="none"
+            stroke="#88f4f5"
+            strokeWidth="5"
+          />
+          <path d="M135 126h10" stroke="#88f4f5" strokeWidth="5" />
+        </>
+      )}
+      {accessory === "Focus Headphones" && (
+        <>
+          <path
+            d="M88 118q0-58 52-58t52 58"
+            fill="none"
+            stroke="#88f4f5"
+            strokeWidth="9"
+          />
+          <rect x="80" y="108" width="18" height="45" rx="9" fill="#88f4f5" />
+          <rect x="182" y="108" width="18" height="45" rx="9" fill="#88f4f5" />
+        </>
+      )}
+      {accessory === "Great Communicator" && (
+        <circle cx="187" cy="235" r="11" fill="#88f4f5" />
+      )}
+      {accessory === "Day One Backpack" && (
+        <path d="M75 218q-24 8-19 82h24l8-76Z" fill="#ea874d" />
+      )}
+    </svg>
+  )
+}
+
+export function ItemTile({
+  item,
+  owned,
+  equipped,
+  onSelect,
+}: {
+  item: typeof cosmeticItems[number]
+  owned: boolean
+  equipped: boolean
+  onSelect: () => void
+}) {
+  const locked = Boolean(item.requirement)
+  return (
+    <button
+      className={`cosmetic-tile ${locked ? "cosmetic-locked" : ""} ${
+        equipped ? "cosmetic-equipped" : ""
+      }`}
+      onClick={onSelect}
+    >
+      <div className="item-state">{equipped ? "EQUIPPED" : item.rarity}</div>
+      <div className={`item-art item-${item.id}`}>
+        {item.category === "Outfit" ? (
+          <Icon name="user" size={34} />
+        ) : item.category === "Accessories" ? (
+          <Icon name={item.id === "phones" ? "mic" : "star"} size={34} />
+        ) : (
+          <Icon name="spark" size={34} />
+        )}
+      </div>
+      <strong>{item.name}</strong>
+      {locked ? (
+        <span className="lock-reason">
+          <Icon name="clock" size={13} /> {item.requirement}
+        </span>
+      ) : owned ? (
+        <span className="owned-label">
+          <Icon name="check" size={13} /> Owned
+        </span>
+      ) : (
+        <span className="item-price">
+          <Icon name="bolt" size={13} /> {item.price}
+        </span>
+      )}
+    </button>
+  )
+}

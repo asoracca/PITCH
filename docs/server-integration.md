@@ -1,6 +1,6 @@
 # Teammate server integration
 
-The teammate's `server` branch (initial commit `c263f38`) is merged into `backend/quick-match`, preserving its Git history and the original frontend. It supplies a Next.js custom HTTP server and Socket.IO connection demo. It did not implement accounts, matchmaking, scoring or storage; those now come from the shared Pitch backend.
+The teammate's `server` branch (initial commit `c263f38`) is merged into `backend/quick-match`, preserving its Git history and the original frontend. It supplies a Next.js custom HTTP server and Socket.IO connection demo. It did not implement accounts, matchmaking, scoring or storage; those now come from the shared PITCH backend.
 
 ## Run locally
 
@@ -22,7 +22,7 @@ The branch contains both `beef/app` and `beef/src/app`; Next.js selects `app`. T
 
 ## Vercel
 
-The existing Vercel project deploys the root API and `prototype/`. Vercel Functions do not host this long-running Socket.IO process ([Socket.IO's Next.js guidance](https://socket.io/how-to/use-with-nextjs)). Gameplay uses HTTP polling and WebRTC signaling there; browser audio is peer-to-peer. No additional paid service has been created.
+The existing Vercel project deploys the root API and the Figma-derived Vite frontend (`frontend/dist`). Vercel Functions do not host this long-running Socket.IO process ([Socket.IO's Next.js guidance](https://socket.io/how-to/use-with-nextjs)). Gameplay uses HTTP polling and WebRTC signaling there; browser audio is peer-to-peer. No additional paid service has been created.
 
 The `ready` → `hello` handshake is retained for local development. A `hello` message also returns a `backend` event identifying `/api/pitch`. Socket messages do not mutate ratings, bypass login, or broadcast private ballots. Use the HTTP API contract for game actions so the two entrypoints cannot drift into different game engines.
 

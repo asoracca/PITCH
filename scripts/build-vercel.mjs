@@ -1,8 +1,9 @@
+import './build-frontend.mjs';
 import { build } from 'esbuild';
 import { access } from 'node:fs/promises';
 import { migrateConfiguredDatabase } from './migrate-libsql.mjs';
 
-await Promise.all(['prototype/index.html', 'prototype/style.css', 'prototype/app.js'].map(path => access(path)));
+await Promise.all(['frontend/dist/index.html'].map(path => access(path)));
 await build({ entryPoints: ['server/vercel-entry.ts'], outfile: 'build/vercel/index.js', bundle: true, packages: 'external', platform: 'node', format: 'esm', target: 'node24' });
 // Migrations run at build time, never at the beginning of a game request.
 try {

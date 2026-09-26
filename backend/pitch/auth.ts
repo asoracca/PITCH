@@ -58,12 +58,12 @@ export async function accountSession(store: Store, body: Record<string, unknown>
 }
 export async function requireAccount(store: Store, player: Player) {
   const account = await store.sql('SELECT * FROM pitch_accounts WHERE player_id=?', player.id).first<Account>();
-  if (!account) fail(403, 'ACCOUNT_REQUIRED', 'Create a Pitch account before joining a round.');
+  if (!account) fail(403, 'ACCOUNT_REQUIRED', 'Create a PITCH account before joining a round.');
   return account;
 }
 export async function profile(store: Store, id: string): Promise<Profile> {
   const value = await store.sql('SELECT * FROM pitch_profiles WHERE player_id=?', id).first<Profile>();
-  if (!value) fail(404, 'PROFILE_NOT_FOUND', 'Pitch profile not found.');
+  if (!value) fail(404, 'PROFILE_NOT_FOUND', 'PITCH profile not found.');
   return value;
 }
 export function moderator(store: Store, id: string) {
