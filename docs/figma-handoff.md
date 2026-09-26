@@ -1,4 +1,4 @@
-# Figma Make → working Pitch frontend
+# Figma Make → working PITCH frontend
 
 Design reference: [Gamified Career Readiness Platform](https://www.figma.com/make/DzA4kriF9v04sf6MFGCKTL/Gamified-Career-Readiness-Platform).
 
@@ -7,7 +7,7 @@ Design reference: [Gamified Career Readiness Platform](https://www.figma.com/mak
 ## What is ready
 
 - Shared, browser-safe response types in `shared/pitch.ts`.
-- A typed client for every current Pitch endpoint in `client/pitch-api.ts`; `beef/src/pitch-api.ts` re-exports it for the Next.js team.
+- A typed client for every current PITCH endpoint in `client/pitch-api.ts`; `beef/src/pitch-api.ts` re-exports it for the Next.js team.
 - Live contract discovery: `GET /api/pitch/config` reports `apiVersion: "pitch.v1"`, rules, scenarios and supported capabilities. Use its flags to hide unsupported features. AI, Google sign-in, password recovery, video, tournaments and voice effects are not currently enabled.
 - Cancelable queue/room subscriptions, session-error handling, server-controlled results and a full real-database client integration test.
 - Automatic deployment from `asoracca/Pitch` branch `backend/quick-match` to the existing Vercel website. GitHub CI checks backend and Next.js builds.
@@ -60,7 +60,7 @@ export function Round({ api, code }: { api: PitchApi; code: string }) {
 }
 ```
 
-After `signup` or `login`, the client holds the session token in memory. If persistence is desired, save only the returned token/expiry in sessionStorage and restore it into `api.token` on mount, then verify it with `me()`. Clear persisted storage on logout or a 401. A hosting sign-in page produces `HOST_SIGN_IN_REQUIRED`, which is different from a Pitch login error. No hosting bypass key belongs in the browser.
+After `signup` or `login`, the client holds the session token in memory. If persistence is desired, save only the returned token/expiry in sessionStorage and restore it into `api.token` on mount, then verify it with `me()`. Clear persisted storage on logout or a 401. A hosting sign-in page produces `HOST_SIGN_IN_REQUIRED`, which is different from a PITCH login error. No hosting bypass key belongs in the browser.
 
 Call `queue(mode)` from a disabled-while-pending button, then subscribe with `watchQueue`. On `matched`, mount the round screen promptly and start `watchRoom` so heartbeats continue. Subscriptions stop on terminal state; unmounting alone does not send a leave or cancel request. Use explicit `cancelQueue` and `leave` for those actions. Stop microphone tracks and peer connections on leaving/unmounting.
 

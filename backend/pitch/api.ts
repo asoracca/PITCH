@@ -59,7 +59,7 @@ async function history(store: Store, player: Player): Promise<PitchHistory> {
 
 export async function pitchRoute(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url), path = url.pathname.replace(/\/$/, ''); const store = new Store(env);
-  if (path === '/api/pitch/config') { method(request, 'GET'); return Response.json({ name: 'Pitch', apiVersion: PITCH_API_VERSION, rules: RULES, scenarios: SCENARIOS,
+  if (path === '/api/pitch/config') { method(request, 'GET'); return Response.json({ name: 'PITCH', apiVersion: PITCH_API_VERSION, rules: RULES, scenarios: SCENARIOS,
     capabilities: { emailPassword: true, googleSignIn: false, emailVerification: false, passwordRecovery: false,
       humanJudging: true, aiPractice: false, voice: true, voiceChanging: false, video: false, transcripts: false,
       customLobbies: false, tournaments: false, reporting: true, blocking: true, moderatorReviewConfigured: !!env.PITCH_MODERATOR_IDS?.trim() }
@@ -107,7 +107,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
   }
   if (path === '/api/pitch/voice') { method(request, 'GET'); return Response.json(voiceConfig(store)); }
   const matched = /^\/api\/pitch\/rooms\/([A-Fa-f0-9]{8})(?:\/(vote|leave|response|signals|report|block))?$/.exec(path);
-  if (!matched) fail(404, 'NOT_FOUND', 'Pitch endpoint not found.');
+  if (!matched) fail(404, 'NOT_FOUND', 'PITCH endpoint not found.');
   let room = await roomFor(store, matched[1], player); const action = matched[2];
   // Signal polling does not need expensive round maintenance; its access check still requires a live seat.
   if (action === 'signals') {

@@ -1,6 +1,6 @@
-# Pitch API and frontend handoff
+# PITCH API and frontend handoff
 
-The current product uses `/api/pitch` with the `pitch.v1` contract. See [the Figma frontend handoff](figma-handoff.md) for screen wiring and the export/deployment steps. The older Beef routes remain available for compatibility, with separate game/ratings tables; do not mix their guest tokens, room IDs, rating rules or UI contracts with Pitch.
+The current product uses `/api/pitch` with the `pitch.v1` contract. See [the Figma frontend handoff](figma-handoff.md) for screen wiring and the export/deployment steps. The older Beef routes remain available for compatibility, with separate game/ratings tables; do not mix their guest tokens, room IDs, rating rules or UI contracts with PITCH.
 
 Use the same origin as the website. `client/pitch-api.ts` is the small browser client; it keeps a token in memory unless the UI explicitly persists it. The skeleton uses sessionStorage. Send `Authorization: Bearer <session token>` on authenticated requests and JSON on writes. Responses use `{error:{code,message}}` with HTTP status codes. Server timestamps are UTC milliseconds. No database or hosting secret belongs in frontend code.
 

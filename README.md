@@ -1,8 +1,8 @@
-# Beef / Pitch prototype
+# Beef / PITCH prototype
 
 [Website](https://beef-debate-prototype.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
 
-Pitch is the current working name for the career and social practice pivot. The functional, deliberately plain website is in `prototype/`; the team's Next.js design workspace remains in `beef/`.
+PITCH is the current working name for the career and social practice pivot. The functional, deliberately plain website is in `prototype/`; the team's Next.js design workspace remains in `beef/`.
 
 ## Implemented
 

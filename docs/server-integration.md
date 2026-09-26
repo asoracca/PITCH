@@ -1,6 +1,6 @@
 # Teammate server integration
 
-The teammate's `server` branch (initial commit `c263f38`) is merged into `backend/quick-match`, preserving its Git history and the original frontend. It supplies a Next.js custom HTTP server and Socket.IO connection demo. It did not implement accounts, matchmaking, scoring or storage; those now come from the shared Pitch backend.
+The teammate's `server` branch (initial commit `c263f38`) is merged into `backend/quick-match`, preserving its Git history and the original frontend. It supplies a Next.js custom HTTP server and Socket.IO connection demo. It did not implement accounts, matchmaking, scoring or storage; those now come from the shared PITCH backend.
 
 ## Run locally
 
