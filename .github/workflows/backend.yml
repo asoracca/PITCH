@@ -1,9 +1,9 @@
 name: Backend checks
 on:
   push:
-    paths-ignore: ['beef/**']
+    branches: ['backend/quick-match']
   pull_request:
-    paths-ignore: ['beef/**']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -24,3 +24,9 @@ jobs:
         env:
           BEEF_LOCAL_DATABASE: '1'
           TURSO_DATABASE_URL: file:/tmp/beef-vercel-ci.db
+      - run: npm ci --prefix beef --no-audit --no-fund
+      - run: npm run typecheck --prefix beef
+      - run: npm run lint --prefix beef
+      - run: npm run build --prefix beef
+# Deployment uses the native Vercel GitHub app connected to asoracca/Pitch.
+# No persistent Vercel deployment credential is stored in GitHub Actions.

@@ -1,36 +1,18 @@
-# PRD follow-up scope
+# PRD alignment and follow-up
 
-Source: [Beef product management — BEEF PRD](https://docs.google.com/document/d/1EEwdoeWlbDhHMmom1H1mth19KN8dbK0PwRT3ReQyu9E/edit?tab=t.ysf0rv1stc0), draft v0.1, reviewed September 26, 2026. The owner chose to ship the quick-game backend now and track the larger PRD next. Unchecked items are not implemented.
+Source: [shared PRD](https://docs.google.com/document/d/1EEwdoeWlbDhHMmom1H1mth19KN8dbK0PwRT3ReQyu9E/edit?tab=t.ysf0rv1stc0), plus [current scenario tab](https://docs.google.com/document/d/1EEwdoeWlbDhHMmom1H1mth19KN8dbK0PwRT3ReQyu9E/edit?tab=t.32ku66b9k6j9). The latter supersedes the older 18–25 band with 18–22 and 23+, alongside 14–17. The repository contains implemented requirements, not a copied private document.
 
-## Delivered
+Implemented: 36 age-specific scenarios and face-off positions, five-person rounds, three queues, timed audio/text turns, peer rubrics and feedback, Elo, history and age-separated weekly ranking, leave recovery/penalties, reports, blocks, moderator access controls, and a plain functional interface. The original tournament debate roadmap is no longer the current product scope.
 
-- [x] Two contestants and one human judge; score-based outcomes and draws.
-- [x] Quick/mixed, dedicated judge, standard contestant and earned priority queues.
-- [x] Exactly-once judge tickets, consumed only on successful contestant matching.
-- [x] Random public topics/sides, private topics, three timer presets, server-controlled transitions.
-- [x] Guest sessions, private transcripts, rematches, history and casual standings.
-- [x] Tutorial content and optional AI practice/judging integrations.
-- [x] Member-only WebRTC signaling; no audio recordings.
-- [x] Beef Rating v1: Elo-based public match ratings, five placement games, rating history, and rating-sorted leaderboard. Added after the quick-game scope at the owner's request.
-- [x] Plain website skeleton for guest entry, public quick games, text rounds, human scoring, results and ratings.
-- [x] Vercel Node.js/libSQL adapter and deployment configuration; hosted Vercel provisioning requires the owner's connected account and free database.
+Next work for the team:
 
-## Connect the frontend next
+- Run a real-device five-person audio playtest. STUN has no guaranteed connectivity across every network; no paid TURN infrastructure is provisioned.
+- Assign an actual moderator, test report handling, and decide operational policies before broader access.
+- Add email verification/password recovery or free federated authentication if public account access is needed. Self-reported birth dates do not verify age.
+- Integrate the team's Figma-derived frontend using the shared API. Keep the framework route structure consistent.
+- Maintain the connected native Vercel GitHub deployment and check status after pushes.
+- Evaluate video, private lobbies, tournaments, seasons, transcripts and voice effects separately if the PRD explicitly restores them.
 
-- [ ] Apply the frontend team's design to the Next.js screens and connect the API; the plain skeleton is available for functional testing.
-- [ ] Microphone permission/test, live audio, voice effects, mute/playback, and TURN or managed audio integration.
-- [ ] AI practice is deferred: the owner requested no AI key and no spending. Vercel does not enable paid AI.
-- [ ] Ready checks, reconnect grace, explicit leave/forfeit, and recovery after judge abandonment. Current open rooms expire after 24 hours with no replacement judge.
+Paid AI and fake AI substitutes are excluded by the user's no-spending instruction. The earlier AI integration code is dormant compatibility code; the Vercel handler never enables it.
 
-## Larger PRD
-
-- [ ] Two independent judges, hidden votes, majority decision, combined-score tiebreak and extra sudden-death judge.
-- [ ] Four alternating 30-second speaking turns plus 15-second judging, with audio-system speaker permissions.
-- [ ] Eight-contestant brackets, acceptance, quarterfinals/semifinals/final, advancement and forfeits.
-- [ ] Recoverable accounts, age/rules onboarding, avatars and controlled playtest access.
-- [ ] Rating-aware opponent matching, collusion controls, separate Fair Play standing and 5-/10-minute abandonment cooldowns.
-- [ ] Report/block/mute/leave, moderator review/suspension and prompt-management tools; block-aware matching.
-- [ ] Queue times, role completion/abandonment, ticket redemption, brackets, fair-result feedback and retention measurement.
-- [ ] Decide consent, retention and deletion rules before adding audio recording.
-
-The Notes tab mentions three judges, while the PRD specifies two. Immediate delivery retains one; resolve the expanded format before implementation. Current standings use [Beef Rating](ratings.md) with provisional labels. Timed-out users can re-enter; matching is not guaranteed. Broader rollout depends on the PRD's reconnect, moderation and launch criteria.
+A Codex task monitor checks the document every 15 minutes and acts on clear changes when this task is idle. It is a periodic monitor, not real-time collaborative editing. It preserves teammates' work, the backend branch, free hosting and pending access approvals.

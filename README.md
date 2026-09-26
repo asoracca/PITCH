@@ -1,18 +1,25 @@
-# Beef
-The `backend/quick-match` branch adds the debate backend, with Cloudflare Worker/D1 and Vercel/libSQL adapters. A plain functional website skeleton lives in `prototype/`. The original Next.js + Tailwind frontend in `beef/` remains available for the frontend team's design work.
+# Beef / Pitch prototype
 
-## Quick-game backend
+[Website](https://beef-debate-prototype.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
 
-- Quick/mixed, judge, contestant and earned priority queues; two contestants and one human judge.
-- Random public topics/sides, private custom topics, three timer presets, results, rematches and history.
-- Private guest sessions, human scoring, exactly-once priority rewards and a Beef Rating leaderboard.
-- Elo-based ratings starting at 1,000, five placement games, and individual rating histories for public debates.
-- Tutorials, optional AI practice/judging, and authenticated WebRTC signaling.
-- Database migrations, API integration tests, CI and a frontend API helper.
+Pitch is the current working name for the career and social practice pivot. The functional, deliberately plain website is in `prototype/`; the team's Next.js design workspace remains in `beef/`.
 
-The website skeleton uses human judges and requires no AI key. The Vercel adapter deliberately disables paid AI. Optional AI integration code remains for future use on other hosts, but is not part of this no-cost prototype. Voice capture, playback and voice-changing effects remain future frontend integration work. No fake AI responses or audio effects are supplied. This is the approved quick-game prototype, not the full tournament PRD.
+## Implemented
 
-From this repository's root, use Node 24 and pnpm 11.19.0:
+- Email/password accounts, conduct consent, and age-separated matching: 14–17, 18–22, 23+.
+- Five-person rounds: two contestants, three independent peer judges.
+- 36 scenarios from the current PRD, including assigned sides for face-offs; each match saves its scenario snapshot.
+- Quick/contestant, judge and earned priority queues; a 120-second timeout and widening Elo range.
+- Server-timed speaking turns, optional text submissions, browser peer-to-peer audio and judge scoring.
+- Majority verdicts, rubric tiebreaks, Elo, leave penalties, feedback helpfulness, history and weekly age-band leaderboards.
+- Reports, blocking and a moderator review endpoint/UI; moderation requires an assigned moderator.
+- Atomic, repeat-safe ratings and rewards on Vercel/Turso and Sites/D1. No paid AI or API key.
+
+Audio uses free peer-to-peer WebRTC with STUN. Some networks require a TURN relay, which is not provisioned. Five-person microphone playback still needs a real-device playtest. Birth dates are self-reported; email verification, password recovery and Google sign-in are not implemented. Keep this a supervised prototype.
+
+## Run the prototype
+
+Use Node 24 and pnpm 11.19.0 from this directory:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -20,31 +27,10 @@ pnpm db:migrate:local
 pnpm dev
 ```
 
-Open `http://localhost:8787/` for the skeleton or `/api/health` for the API status. Run `pnpm check` for type checking and integration tests. Copy `.dev.vars.example` to `.dev.vars` only for optional local configuration; no AI key is needed. Never commit real secrets. The teammate frontend has separate instructions in `beef/README.md`.
+Open `http://localhost:8787/`. Run `pnpm check` for type checks, integration tests and browser-script syntax checks. The separate Next.js server setup is documented in [the teammate handoff](docs/server-integration.md).
 
-See [Vercel setup](docs/vercel.md), [API integration](docs/backend.md), [rating rules](docs/ratings.md), [Sites deployment](docs/deployment.md), and [PRD follow-up scope](docs/roadmap.md).
+[Vercel deployment](docs/vercel.md) · [API contract](docs/backend.md) · [Elo rules](docs/ratings.md) · [Sites deployment](docs/deployment.md) · [Scope and follow-up](docs/roadmap.md)
 
 ## Original project
 
-Made during 24hrs during the Badger BuildFest 2026
-
-Made with nextjs and tailwind
-run
-
-**git clone https://github.com/cerlina-chen/Beef.git**
-Yall make some branches
-
-main
-   |- frontend
-        |-mainscreen
-        |-fight screen
-        |-leaderboard
-   |-backend
-        |-leaderboard
-        |-server
-        |-AI
-
-```
-git clone https://github.com/cerlina-chen/Beef.git
-```
-        
+Made during Badger BuildFest 2026 with Next.js and Tailwind. Continue using feature branches and pull requests in `asoracca/Pitch`; this work does not modify `main` directly.

@@ -1,6 +1,6 @@
 {
   "name": "beef-backend",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,7 +11,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && node --test tests/*.test.mjs",
-    "check": "pnpm typecheck && pnpm test && node --check prototype/app.js",
+    "check": "pnpm typecheck && pnpm test && node --check prototype/app.js && node --check prototype/voice.js",
     "dev": "wrangler dev --port 8787",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "node scripts/migrate.mjs --local",

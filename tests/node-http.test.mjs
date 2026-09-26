@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { createClient } from '@libsql/client';
+import { migrate } from '../scripts/migrate-libsql.mjs';
+import { createApiListener } from '../build/node/node-http.js';
+
+test('teammate HTTP server delegates pages and preserves shared API authentication and body limits', async t => {
+  const directory=await mkdtemp(join(tmpdir(),'pitch-http-'));
+  const url=`file:${join(directory,'db.sqlite')}`;
+  const client=createClient({url}); await migrate(client); client.close();
+  const listener=createApiListener({TURSO_DATABASE_URL:url,BEEF_LOCAL_DATABASE:'1'});
+  const server=createServer(async(req,res)=>{if(!await listener(req,res)){res.end('frontend page');}});
+  server.listen(0,'127.0.0.1'); await once(server,'listening');
+  t.after(async()=>{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await rm(directory,{recursive:true,force:true});});
+  const base=`http://127.0.0.1:${server.address().port}`;
+  assert.equal(await (await fetch(base+'/')).text(),'frontend page');
+  assert.equal((await (await fetch(base+'/api/health')).json()).database,'ready');
+  assert.equal((await (await fetch(base+'/api/pitch/config')).json()).scenarios.length,36);
+  assert.equal((await fetch(base+'/api/pitch/me')).status,401);
+  const options={method:'POST',headers:{'content-type':'application/json',origin:base},body:JSON.stringify({name:'HTTP Player',email:'http@example.test',birthDate:'2000-01-01',password:'local-test-password-only',acceptedConduct:true})};
+  const response=await fetch(base+'/api/pitch/signup',options);assert.equal(response.status,201);
+  const session=await response.json();
+  const me=await fetch(base+'/api/pitch/me',{headers:{authorization:`Bearer ${session.token}`}});assert.equal(me.status,200);assert.equal((await me.json()).rating.value,1000);
+  assert.equal((await fetch(base+'/api/pitch/login',{...options,headers:{...options.headers,origin:'https://untrusted.test'}})).status,403);
+  assert.equal((await fetch(base+'/api/pitch/login',{...options,body:JSON.stringify({payload:'x'.repeat(9000)})})).status,413);
+});

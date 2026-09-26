@@ -8,6 +8,7 @@ import { createPractice, botTurn } from './practice';
 import { receiveSignals, sendSignal, voiceConfig } from './voice';
 import { RATING_RULES, ratingHistory, ratingSnapshot, summarizeRating } from './ratings';
 import type { Env } from './types';
+import { pitchRoute } from './pitch/api';
 
 function method(request: Request, expected: string) {
   if (request.method !== expected) fail(405, 'METHOD_NOT_ALLOWED', `Use ${expected} for this endpoint.`);
@@ -19,13 +20,14 @@ function limitParam(url: URL): number {
 }
 async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url); const path = url.pathname.replace(/\/$/, '') || '/';
+  if (path.startsWith('/api/pitch/')) return pitchRoute(request, env);
   const store = new Store(env);
   if (path === '/' || path === '/api') {
     method(request, 'GET');
-    return Response.json({ service: 'Beef debate backend', version: '1.2.0', health: '/api/health', topics: '/api/topics',
-      documentation: 'https://github.com/cerlina-chen/Beef/blob/backend/quick-match/docs/backend.md',
-      features: ['quick match', 'judge/contestant/priority queues', 'human verdicts', 'Beef Rating and rating history', 'custom private rooms', 'tutorials', 'AI practice integration', 'WebRTC signaling'],
-      aiJudging: env.OPENAI_API_KEY && env.OPENAI_MODEL ? 'configured' : 'awaiting API key and model',
+    return Response.json({ service: 'Pitch practice backend', version: '2.0.0', health: '/api/health', config: '/api/pitch/config',
+      documentation: 'https://github.com/asoracca/Pitch/blob/backend/quick-match/docs/backend.md',
+      features: ['five-person rounds', 'three peer judges', 'age-band scenarios', 'priority queues', 'Pitch Elo', 'feedback and history', 'reporting and blocking', 'WebRTC audio signaling'],
+      aiJudging: 'disabled for the no-cost prototype',
       frontend: 'The functional skeleton is at /. The teammate-owned Next.js frontend remains in beef/.' });
   }
   if (path === '/api/health') {

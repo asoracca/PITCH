@@ -6,16 +6,7 @@ For the Vercel backend and simple website skeleton, use [Vercel setup](vercel.md
 
 `pnpm build` emits `dist/server/index.js`, the skeleton assets in `dist/client/`, `dist/.openai/hosting.json` and `dist/.openai/drizzle/`. It also compiles the Node.js adapter under `build/node/` for tests; that directory is not part of the Sites archive. Publish validated source and its matching archive through Sites. Keep the approved prototype private.
 
-Set runtime values in the host, never Git:
-
-| Variable | Purpose |
-|---|---|
-| `OPENAI_API_KEY` | Secret for AI practice/private judging |
-| `OPENAI_MODEL` | Explicit model supporting Responses structured outputs |
-| `CORS_ORIGINS` | Comma-separated exact frontend origins |
-| `VOICE_ICE_SERVERS` | JSON RTCIceServer array for your STUN/TURN service |
-
-Local `.dev.vars` values are ignored by Git and are not automatically uploaded to Sites. AI needs both key and model. Health reveals configuration status only. Set provider spending limits before broad AI access.
+Pitch needs no paid AI. Optional runtime values are `CORS_ORIGINS`, `VOICE_ICE_SERVERS`, and `PITCH_MODERATOR_IDS` (approved moderator account IDs). Keep runtime configuration in the host, never Git. The Sites database remains separate from Turso. New Pitch tables and scenario snapshots are additive migrations; legacy data is retained.
 
 For optional direct Cloudflare deployment, create your own D1 database and replace the local zero-ID/name in your deployment config with its actual values. Apply `pnpm db:migrate:remote` before `pnpm deploy`; authenticate Wrangler and manage secrets using the host. The zero ID in this repo is for local development only. This alternative is separate from the selected Sites deployment.
 
