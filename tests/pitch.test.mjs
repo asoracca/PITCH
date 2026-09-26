@@ -78,13 +78,13 @@ test('five-person round enforces turns, private ballots, majority and exactly-on
   for (const j of judges) assert.equal((await f.ok('me',j)).priorityCredits,1);
 });
 
-test('age bands, blocks, queue expiry and priority credit prevent unsafe or invalid matches', async t => {
+test('topic choices, blocks, queue expiry and priority credit constrain matches', async t => {
   const f=await setup(t); const adults=await f.group(); const minor=await f.signup('2010-03-05');
-  for(let i=0;i<4;i++) await f.ok('queue',adults[i],{mode:i<2?'contestant':'judge'});
-  await f.ok('queue',minor,{mode:'judge'}); assert.equal((await f.ok('queue',adults[0])).status,'waiting');
+  for(let i=0;i<4;i++) await f.ok('queue',adults[i],{mode:i<2?'contestant':'judge',category:'career'});
+  await f.ok('queue',minor,{mode:'judge',category:'social'}); assert.equal((await f.ok('queue',adults[0])).status,'waiting');
   assert.equal((await f.api('queue',adults[4],{mode:'priority'})).data.error.code,'NO_PRIORITY_CREDIT');
   await f.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?)',adults[0].player.id,adults[4].player.id,Date.now());
-  await f.ok('queue',adults[4],{mode:'judge'}); assert.equal((await f.ok('queue',adults[0])).status,'waiting');
+  await f.ok('queue',adults[4],{mode:'judge',category:'career'}); assert.equal((await f.ok('queue',adults[0])).status,'waiting');
   await f.sql('UPDATE pitch_queue SET expires_at=? WHERE player_id=?',Date.now()-1,adults[0].player.id);
   assert.equal((await f.ok('queue',adults[0])).status,'expired');
   assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_rooms')).rows[0].n,0);
@@ -126,8 +126,8 @@ test('missing judges cancels unrated; signal and moderation access stay scoped t
 
 test('latest scenarios stay age-scoped and assigned sides are retained in room snapshots', async t => {
   const f=await setup(t), config=await f.ok('config');
-  assert.equal(config.scenarios.length,72); assert.equal(new Set(config.scenarios.map(s=>s.id)).size,72); assert.ok(config.scenarios.every(s=>s.prompt && s.goal && (!s.positions || s.positions.length===2)));
-  for (const band of ['14–17','18–22','23+']) assert.equal(config.scenarios.filter(s=>s.band===band).length,24);
+  assert.equal(config.scenarios.length,108); assert.equal(new Set(config.scenarios.map(s=>s.id)).size,108); assert.ok(config.scenarios.every(s=>s.prompt && s.goal && (!s.positions || s.positions.length===2)));
+  for (const band of ['14–17','18–22','23+']) assert.equal(config.scenarios.filter(s=>s.band===band).length,36);
   const older=await f.signup('1990-01-01'); assert.equal((await f.ok('me',older)).ageBand,'23+');
   const users=await f.group(), room=await f.match(users);
   assert.equal(room.scenario.band,'18–22');
@@ -173,7 +173,7 @@ test('frontend client drives the real signup, queue, voice signaling, judging an
 });
 
 
-test('spectating requires unanimous public consent, respects age and blocks, and cannot participate or refresh seats', async t => {
+test('spectating requires unanimous public consent, respects blocks across ages, and cannot participate or refresh seats', async t => {
   const f=await setup(t), users=await f.group(), viewer=await f.signup(), minor=await f.signup('2010-03-05');
   for(let i=0;i<5;i++) await f.ok('queue',users[i],{mode:i<2?'contestant':'judge',allowSpectators:i!==4});
   const privateRoom=(await f.ok('queue',users[0])).room;
@@ -182,7 +182,7 @@ test('spectating requires unanimous public consent, respects age and blocks, and
   await f.sql("UPDATE pitch_rooms SET status='cancelled' WHERE id=?",privateRoom.id); await f.sql('DELETE FROM pitch_queue WHERE room_id=?',privateRoom.id);
   for(let i=0;i<5;i++) await f.ok('queue',users[i],{mode:i<2?'contestant':'judge',allowSpectators:true});
   const room=(await f.ok('queue',users[0])).room; assert.equal(room.isPublic,true);
-  assert.equal((await f.api('spectate',null)).status,401); assert.equal((await f.api(`spectate/${room.code}`,minor)).status,404);
+  assert.equal((await f.api('spectate',null)).status,401); assert.equal((await f.api(`spectate/${room.code}`,minor)).status,200);
   await f.ok('queue',viewer,{mode:'contestant'});
   assert.equal((await f.ok('spectate',viewer)).rooms[0].code,room.code);
   assert.equal((await f.ok('queue',viewer)).status,'waiting');
@@ -252,12 +252,12 @@ test('two real contestants match after consent and grace, exchange private feedb
   assert.match((await f.ok('history',a)).peerHistory[0].feedback[0].tip,/hidden/);
 });
 
-test('practice matching respects opt-in, blocks and age; leaving or feedback timeout finishes without penalties', async t => {
+test('practice matching respects opt-in, blocks and topics; leaving or feedback timeout finishes without penalties', async t => {
   const f=await setup(t), a=await f.signup(), b=await f.signup(), minor=await f.signup('2010-03-05');
-  await f.ok('queue',a,{mode:'contestant',allowPeerMatch:true});await f.ok('queue',b,{mode:'contestant'});await f.ok('queue',minor,{mode:'contestant',allowPeerMatch:true});
+  await f.ok('queue',a,{mode:'contestant',allowPeerMatch:true,category:'career'});await f.ok('queue',b,{mode:'contestant',category:'career'});await f.ok('queue',minor,{mode:'contestant',allowPeerMatch:true,category:'social'});
   await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);
   assert.equal((await f.ok('queue',a)).status,'waiting');
-  await f.ok('queue',b,undefined,'DELETE');await f.ok('queue',b,{mode:'contestant',allowPeerMatch:true});
+  await f.ok('queue',b,undefined,'DELETE');await f.ok('queue',b,{mode:'contestant',allowPeerMatch:true,category:'career'});
   await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);
   await f.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?)',b.player.id,a.player.id,Date.now());
   assert.equal((await f.ok('queue',a)).status,'waiting');
@@ -266,9 +266,66 @@ test('practice matching respects opt-in, blocks and age; leaving or feedback tim
   await f.ok(`rooms/${room.code}/leave`,a,{});
   assert.equal((await f.ok(`rooms/${room.code}`,b)).status,'cancelled');
   const me=await f.ok('me',a);assert.equal(me.bannedUntil,0);assert.equal(me.rating.games,0);
-  for(const user of [a,b]) await f.ok('queue',user,{mode:'contestant',allowPeerMatch:true});
+  for(const user of [a,b]) await f.ok('queue',user,{mode:'contestant',allowPeerMatch:true,category:'career'});
   await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-16000);room=(await f.ok('queue',a)).room;
   await f.phase(room,245); const done=await f.ok(`rooms/${room.code}`,a);
   assert.equal(done.status,'finished');assert.equal(done.result.reason,'peer_practice');assert.equal(done.feedback.length,0);
   assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_rating_events')).rows[0].n,0);
+});
+
+test('quick play matches friends across ages in their chosen topic', async t => {
+  const f=await setup(t), users=[];
+  for(const birth of ['2010-01-10','2006-01-10','1990-01-10','2007-01-10','1988-01-10'])users.push(await f.signup(birth));
+  for(const user of users)await f.ok('queue',user,{mode:'quick',category:'career',allowPeerMatch:true});
+  const room=(await f.ok('queue',users[0])).room;
+  assert.equal(room.participants.length,5);assert.equal(room.band,'Mixed ages');assert.equal(room.scenario.category,'career');assert.equal(room.scenario.band,'14–17');
+  assert.equal(new Set(room.participants.map(p=>p.ageBand)).size,3);assert.ok(!JSON.stringify(room).includes('birth_date'));
+  for(const user of users)assert.equal((await f.ok('queue',user)).room.id,room.id);
+  const leaders=await f.ok('leaderboard',users[0]);assert.equal(leaders.band,null);
+});
+
+test('specific topics do not cross; any-topic contestants can join a compatible practice duel',async t=>{
+  const f=await setup(t),a=await f.signup('1990-01-10'),b=await f.signup('2010-01-10');
+  assert.equal((await f.api('queue',a,{mode:'quick',category:'unsupported'})).status,400);
+  await f.ok('queue',a,{mode:'contestant',category:'career',allowPeerMatch:true});
+  await f.ok('queue',b,{mode:'contestant',category:'social',allowPeerMatch:true});
+  await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-20000);
+  assert.equal((await f.ok('queue',a)).status,'waiting');
+  await f.ok('queue',b,undefined,'DELETE');
+  await f.ok('queue',b,{mode:'contestant',category:'all',allowPeerMatch:true});
+  await f.sql('UPDATE pitch_queue SET joined_at=?',Date.now()-20000);
+  const room=(await f.ok('queue',b)).room;
+  assert.equal(room.judgingMode,'peer');assert.equal(room.scenario.category,'career');assert.equal(room.participants.length,2);
+});
+
+test('saved avatars appear to opponents; chat is private, repeat-safe, filtered and blocked',async t=>{
+  const f=await setup(t),users=await f.group(),outsider=await f.signup();
+  assert.equal((await f.ok('me',users[0])).avatar,null);
+  const avatar={avatarEnabled:true,skinTone:'tan',hairColor:'brown',outfit:'Smart Casual',accessory:'Round Glasses',background:'Midnight Arena'};
+  await f.ok('avatar',users[0],{avatar});assert.deepEqual((await f.ok('me',users[0])).avatar,avatar);
+  assert.equal((await f.api('avatar',users[0],{avatar:{...avatar,skinTone:'https://invalid.test/image.png'}})).status,400);
+  const room=await f.match(users),url=`rooms/${room.code}/chat`;
+  assert.deepEqual(room.participants.find(p=>p.id===users[0].player.id).avatar,avatar);
+  assert.equal((await f.api(url,outsider)).status,404);assert.equal((await f.api(url,users[2])).status,403);
+  const message={kind:'message',content:'Good luck!',requestId:'greeting'};
+  assert.equal((await f.api(url,users[2],message)).status,403);
+  await Promise.all([f.ok(url,users[0],message),f.ok(url,users[0],message)]);
+  let chat=await f.ok(url,users[1]);assert.equal(chat.messages.length,1);assert.equal(chat.messages[0].content,'Good luck!');
+  await f.ok(url,users[1],{kind:'reaction',content:'👏',requestId:'applause'});
+  assert.equal((await f.ok(url,users[0])).messages.length,2);
+  assert.equal((await f.api(url,users[0],{kind:'reaction',content:'invalid',requestId:'bad-reaction'})).status,400);
+  assert.equal((await f.api(url,users[0],{kind:'message',content:'You are an idiot',requestId:'bad-message'})).status,400);
+  assert.equal((await f.api(url,users[0],{kind:'message',content:'x'.repeat(301),requestId:'too-long'})).status,400);
+  await f.ok(`rooms/${room.code}/block`,users[0],{targetId:users[1].player.id});
+  for(const user of users.slice(0,2)){chat=await f.ok(url,user);assert.equal(chat.messages.length,0);assert.equal(chat.canSend,false);assert.equal((await f.api(url,user,{...message,requestId:'after-block'})).status,409);}
+  await f.ok('avatar',users[0],{avatar:{...avatar,avatarEnabled:false}});assert.equal((await f.ok('me',users[0])).avatar.avatarEnabled,false);
+});
+
+test('chat throttles bursts and stops new messages when a round closes',async t=>{
+  const f=await setup(t),users=await f.group(),room=await f.match(users),url=`rooms/${room.code}/chat`;
+  for(let i=0;i<12;i++)await f.ok(url,users[0],{kind:'message',content:'Ready for this turn.',requestId:`message-${i}`});
+  assert.equal((await f.api(url,users[0],{kind:'reaction',content:'👏',requestId:'extra'})).status,429);
+  await f.sql("UPDATE pitch_rooms SET status='cancelled' WHERE id=?",room.id);
+  const chat=await f.ok(url,users[1]);assert.equal(chat.messages.length,12);assert.equal(chat.canSend,false);
+  assert.equal((await f.api(url,users[1],{kind:'message',content:'Too late',requestId:'closed'})).status,409);
 });

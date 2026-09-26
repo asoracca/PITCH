@@ -6,7 +6,7 @@ export function DemoProfile({ p, equipped, navigate }: { p: Pitch; equipped: Equ
   const changes = [16,12,-10,18,14,0,16,12]
   return <div className="page-stack">
     <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Prototype profile · sample activity</strong><p>The streak, scores, round history and judging activity below are fictional demo data. Your real activity is available using the toggle above.</p></div></div>
-    <div className="profile-hero"><div className="profile-character"><AvatarCharacter compact {...equipped} /></div><div><div className="eyebrow">PITCH REGULAR · DEMO PROFILE</div><h1 className="display">{p.me!.player.name}</h1><p>Practicing conversations. Building confidence.</p></div><Button onClick={() => navigate("Character")}>Customize character</Button></div>
+    <div className="profile-hero"><div className="profile-character"><AvatarCharacter compact {...equipped} /></div><div><div className="eyebrow">PITCH REGULAR · DEMO PROFILE</div><h1 className="display">{p.me!.player.name}</h1><p>Ages {p.me!.ageBand} · Practicing conversations. Building confidence.</p></div><Button onClick={() => navigate("Character")}>Customize character</Button></div>
     <div className="demo-profile-stats">
       <Stat icon="fire" value="500 days" label="Demo streak" tone="orange" />
       <Stat icon="trophy" value="1,742" label="Demo PITCH Elo" tone="purple" />

@@ -1,5 +1,5 @@
 import { PITCH_API_VERSION } from '../shared/pitch';
-import type { Ballot, FeedbackRating, PitchConfig, PitchHistory, PitchLeaderboard, PitchMe, PitchQueue, PitchRoomView, QueueMode, ReportReason, Reports, Session, Signup, SignalPage, VoiceConfig, VoiceMessage, SpectatorList, SpectatorRound, Rubric } from '../shared/pitch';
+import type { Ballot, FeedbackRating, PitchConfig, PitchHistory, PitchLeaderboard, PitchMe, PitchQueue, PitchRoomView, QueueMode, ReportReason, Reports, Session, Signup, SignalPage, VoiceConfig, VoiceMessage, SpectatorList, SpectatorRound, Rubric, AvatarLook, RoomChat } from '../shared/pitch';
 export type * from '../shared/pitch';
 export { PITCH_API_VERSION } from '../shared/pitch';
 
@@ -49,8 +49,11 @@ export class PitchApi {
     try { await this.request('/logout', 'POST', {}); }
     finally { if (this.token === token) this.token = null; }
   }
+  saveAvatar(avatar: AvatarLook) { return this.request<{avatar:AvatarLook}>('/avatar','POST',{avatar}); }
+  chat(code: string, options?: RequestOptions) { return this.request<RoomChat>(this.roomPath(code,'/chat'),'GET',undefined,options); }
+  sendChat(code: string, kind: 'message'|'reaction', content: string, requestId: string, options?: RequestOptions) { return this.request<RoomChat>(this.roomPath(code,'/chat'),'POST',{kind,content,requestId},options); }
   me(options?: RequestOptions) { return this.request<PitchMe>('/me', 'GET', undefined, options); }
-  queue(mode?: QueueMode, options?: RequestOptions & { allowSpectators?: boolean; allowPeerMatch?: boolean }) { return this.request<PitchQueue>('/queue', mode ? 'POST' : 'GET', mode ? { mode, allowSpectators: options?.allowSpectators ?? false, allowPeerMatch: options?.allowPeerMatch ?? false } : undefined, options); }
+  queue(mode?: QueueMode, options?: RequestOptions & { allowSpectators?: boolean; allowPeerMatch?: boolean; category?: string }) { return this.request<PitchQueue>('/queue', mode ? 'POST' : 'GET', mode ? { mode, allowSpectators: options?.allowSpectators ?? false, allowPeerMatch: options?.allowPeerMatch ?? false, category: options?.category ?? "all" } : undefined, options); }
   cancelQueue(options?: RequestOptions) { return this.request<PitchQueue>('/queue', 'DELETE', undefined, options); }
   room(code: string, options?: RequestOptions) { return this.request<PitchRoomView>(this.roomPath(code), 'GET', undefined, options); }
   vote(code: string, ballot: Ballot, options?: RequestOptions) { return this.request<PitchRoomView>(this.roomPath(code, '/vote'), 'POST', ballot, options); }

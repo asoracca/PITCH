@@ -76,7 +76,7 @@ export function Spectate({ p }: { p: Pitch }) {
   }, [p.api, open, selected, retry])
   return <section className="panel form-stack">
     <SectionTitle eyebrow={p.queue.status === "waiting" ? "WHILE YOU WAIT" : "WATCH AND LEARN"} title="Spectate Head-to-Head" />
-    <p>Watch public rounds in your age group. Your queue keeps running, and your own match opens automatically when it’s ready.</p>
+    <p>Watch public rounds across age groups. Your queue keeps running, and your own match opens automatically when it’s ready.</p>
     <Button variant="secondary" onClick={() => { setOpen(!open); setSelected(null) }}>{open ? "Close spectating" : "Watch public rounds"} <Icon name="play" /></Button>
     {open && <>
       <p>Live spectating shows the scenario, round progress, shared text and final result. Spectator audio and video are not available yet.</p>

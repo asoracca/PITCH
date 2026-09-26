@@ -5,6 +5,7 @@ import {
   Stat,
   Icon,
   AvatarCharacter,
+  AvatarBadge,
   cosmeticItems,
   skinTones,
   hairColors,
@@ -89,7 +90,7 @@ export function Auth({ p }: { p: Pitch }) {
               />
             </label>
             <p className="muted">
-              We match ages 14–17, 18–22 and 23+ separately. Your birth date and
+              Players aged 14+ share one pool. Your age band appears on your profile; your birth date and
               email stay private.
             </p>
             <label className="check-label">
@@ -123,8 +124,8 @@ export function Rules({ compact = false }: { compact?: boolean }) {
       <summary>How PITCH works · Conduct & privacy</summary>
       <div className="form-stack">
         <p>
-          Quick play matches two contestants and three peer judges in the same
-          age band. Topics and positions are assigned by the server. Read for 20
+          Quick play matches two contestants and three peer judges in the shared
+          player pool. Topic choice and skill guide matching; age is profile information. Topics and positions are assigned by the server. Read for 20
           seconds; each contestant gets a 60-second opening and a 20-second
           response. Judges then have 60 seconds to vote and give feedback.
           If both contestants allow it and wait 15 seconds, they can instead play
@@ -438,6 +439,7 @@ export function Practice({ p }: { p: Pitch }) {
         )}
         <PracticeMicrophone
           key={scenario.id}
+          coaching prompt={scenario.prompt} goal={scenario.goal}
           deadline={deadline}
           finished={finished}
           onStarted={() => {
@@ -515,7 +517,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
   return (
     <div className="page-stack">
       <SectionTitle
-        eyebrow={`WEEKLY LEAGUE · AGES ${leaders.band}`}
+        eyebrow="WEEKLY LEAGUE · ALL PLAYERS"
         title="Leaderboard"
         action={
           <Button
@@ -533,7 +535,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
         <Button variant={demo ? "ghost" : "secondary"} aria-pressed={!demo} onClick={() => setMode("live")}>Real players</Button>
         <Button variant={demo ? "secondary" : "ghost"} aria-pressed={demo} onClick={() => setMode("demo")}>Demo players</Button>
       </div>
-      {demo && <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Demo leaderboard · fictional profiles</strong><p>These sample players and scores show how PITCH will look with a community. They cannot sign in, and do not affect real rankings.</p>{!leaders.players.length && <p>No rated rounds in your age band yet. Switch to Real players to see live rankings.</p>}</div></div>}
+      {demo && <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Demo leaderboard · fictional profiles</strong><p>These sample players and scores show how PITCH will look with a community. They cannot sign in, and do not affect real rankings.</p>{!leaders.players.length && <p>No rated rounds yet. Switch to Real players to see live rankings.</p>}</div></div>}
       <p>
         Ranked by Elo gained since{" "}
         {new Date(leaders.weekStartsAt).toLocaleDateString()}. Resets each
@@ -547,7 +549,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
                 className={`podium-player ${["first", "second", "third"][i]}`}
                 key={v.playerId}
               >
-                <div className="avatar avatar-xl">{initials(v.name)}</div>
+                <AvatarBadge name={v.name} look={v.avatar} size="xl" />
                 <strong>{v.name}</strong>
                 {demo && <small className="demo-badge">DEMO</small>}
                 <span>{signed(v.weeklyGain)} Elo this week</span>
@@ -564,7 +566,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
                 key={v.playerId}
               >
                 <strong>#{i + 1}</strong>
-                <div className="avatar avatar-small">{initials(v.name)}</div>
+                <AvatarBadge name={v.name} look={v.avatar} />
                 <span className="grow">
                   {v.name}
                   {demo && <small className="demo-badge">DEMO</small>}
@@ -580,7 +582,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
         <div className="panel">
           <h2 className="heading">A fresh week starts here.</h2>
           <p>
-            No rated rounds in your age band yet. Complete a live contestant
+            No rated rounds yet. Complete a live contestant
             round to join the leaderboard.
           </p>
         </div>
@@ -737,10 +739,13 @@ export function Character({
   equipped,
   setEquipped,
   shop = false,
+  onSave, saving = false,
 }: {
   equipped: EquippedItems
   setEquipped: (v: EquippedItems) => void
   shop?: boolean
+  onSave?: () => void
+  saving?: boolean
 }) {
   const [tab, setTab] = useState("Outfit")
   return (
@@ -751,7 +756,7 @@ export function Character({
       />
       <p>
         Try the team’s outfits, accessories and backgrounds for free. Your
-        selection stays on this device. Coins, purchases, earned unlocks and XP
+        selection previews here; save it to show other players. Coins, purchases, earned unlocks and XP
         are not enabled.
       </p>
       <div className="character-layout">
@@ -766,7 +771,7 @@ export function Character({
         </div>
         <div className="inventory-panel">
           <section className="appearance-controls form-stack">
-            <h2 className="heading">Appearance</h2>
+            <h2 className="heading">Appearance</h2>{onSave && <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save avatar to profile"}</Button>}
             <div className="hero-actions"><Button variant="secondary" onClick={() => setEquipped({ ...equipped, avatarEnabled: !equipped.avatarEnabled })}>{equipped.avatarEnabled ? "Remove avatar" : "Create my avatar"}</Button></div>
             <fieldset><legend>Skin tone</legend><div className="appearance-swatches">{skinTones.map((tone) => <button key={tone.id} type="button" className="appearance-swatch" aria-label={tone.name} title={tone.name} aria-pressed={equipped.avatarEnabled && (equipped.skinTone || "brown") === tone.id} style={{backgroundColor:tone.color}} onClick={() => setEquipped({ ...equipped, skinTone:tone.id, avatarEnabled:true })}>{equipped.avatarEnabled && (equipped.skinTone || "brown") === tone.id ? "✓" : ""}</button>)}</div></fieldset>
             <fieldset><legend>Hair color</legend><div className="appearance-swatches">{hairColors.map((color) => <button key={color.id} type="button" className="appearance-swatch" aria-label={color.name} title={color.name} aria-pressed={equipped.avatarEnabled && (equipped.hairColor || "black") === color.id} style={{backgroundColor:color.color}} onClick={() => setEquipped({ ...equipped, hairColor:color.id, avatarEnabled:true })}>{equipped.avatarEnabled && (equipped.hairColor || "black") === color.id ? "✓" : ""}</button>)}</div></fieldset>
@@ -827,18 +832,18 @@ export function Coach({ navigate }: { navigate: (page: Page) => void }) {
   return (
     <div className="page-stack">
       <SectionTitle
-        eyebrow="AI COACH · NOT ENABLED"
-        title="Practice is still free."
+        eyebrow="AI COACH · FREE ON-DEVICE PREVIEW"
+        title="Practice. Reflect. Try again."
       />
-      <section className="panel form-stack"><h2 className="heading">Rehearse with your voice</h2><p>Try answering: “Tell me about a challenge, what you did, and what you learned.” Record your response and listen for one thing to improve.</p><PracticeMicrophone deadline={0} finished={false} onStarted={() => {}} /></section>
+      <section className="panel form-stack"><h2 className="heading">Rehearse with your voice</h2><p>Try answering: “Tell me about a challenge, what you did, and what you learned.” Record your response and listen for one thing to improve.</p><PracticeMicrophone coaching deadline={0} finished={false} onStarted={() => {}} /></section>
       <div className="panel">
         <div className="category-icon cyan">
           <Icon name="spark" />
         </div>
         <h2 className="heading">Get feedback from people.</h2>
         <p>
-          This prototype does not use a paid AI service. AI conversations and
-          automated scoring are unavailable.
+          The optional on-device coach gives feedback on a transcript. It does not
+          listen to audio, interpret facial expressions or award scores. You can also get feedback from people in Head-to-Head.
         </p>
         <div className="hero-actions">
           <Button onClick={() => navigate("Practice")}>Solo practice</Button>

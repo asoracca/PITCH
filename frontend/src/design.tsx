@@ -1,3 +1,4 @@
+import type { AvatarLook } from "../../shared/avatar"
 import { type ReactNode, type ButtonHTMLAttributes } from "react"
 
 export type Page = "Home" | "Dashboard" | "Practice" | "Head-to-Head" | "AI Coach" | "Leaderboard" | "Profile" | "Character" | "Avatar Shop" | "Plans"
@@ -31,6 +32,7 @@ export const hairColors = [
 export type ProfileData = {
   name: string
   avatar: string
+  avatarLook?: EquippedItems | null
   schoolMajor: string
   locationBio: string
 }
@@ -252,13 +254,7 @@ export function Sidebar({
       </nav>
       <div className="sidebar-footer">
         <div className="mini-level">
-          <div className="avatar avatar-small">
-            {profile.avatar.startsWith("http") ? (
-              <img src={profile.avatar} alt="" />
-            ) : (
-              profile.avatar
-            )}
-          </div>
+          <AvatarBadge name={profile.name} look={profile.avatarLook} />
           <div className="grow">
             <div className="mini-name">{profile.name}</div>
             <div className="mini-label">Career skills in practice</div>
@@ -339,7 +335,7 @@ export function Home({ onNavigate }: { onNavigate: (page: Page) => void }) {
     {
       icon: "spark",
       title: "AI Coach",
-      copy: "AI coaching is not enabled. Try free solo practice or peer feedback.",
+      copy: "Review your transcript with a free on-device coach on supported browsers.",
       tone: "cyan",
       page: "AI Coach",
     },
@@ -690,6 +686,7 @@ export function AvatarCharacter({
   accessory = "Round Glasses",
   background = "Midnight Arena",
   compact = false,
+  portrait = false,
   skinTone = "brown",
   hairColor = "black",
   avatarEnabled = false,
@@ -698,6 +695,7 @@ export function AvatarCharacter({
   accessory?: string
   background?: string
   compact?: boolean
+  portrait?: boolean
   skinTone?: string
   hairColor?: string
   avatarEnabled?: boolean
@@ -724,7 +722,7 @@ export function AvatarCharacter({
   return (
     <svg
       className={`pitch-character ${compact ? "character-compact" : ""}`}
-      viewBox="0 0 280 400"
+      viewBox={portrait ? "75 45 130 155" : "0 0 280 400"}
       role="img"
       aria-label="Customizable PITCH character"
     >
@@ -855,4 +853,8 @@ export function ItemTile({
       )}
     </button>
   )
+}
+
+export function AvatarBadge({name,look,size='small'}:{name:string;look?:Partial<AvatarLook>|null;size?:'small'|'xl'}) {
+  return <span className={`avatar avatar-${size} avatar-character-badge ${!look?.avatarEnabled?'avatar-blank':''}`} role="img" aria-label={look?.avatarEnabled?`${name}’s avatar`:`${name} has no avatar`}>{look?.avatarEnabled&&<AvatarCharacter {...look} portrait />}</span>
 }

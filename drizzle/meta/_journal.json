@@ -43,6 +43,13 @@
       "when": 1790462343821,
       "tag": "0005_peer_practice",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790464169962,
+      "tag": "0006_chat_avatars_topics",
+      "breakpoints": true
     }
   ]
 }

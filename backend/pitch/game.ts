@@ -2,7 +2,8 @@ import type { PitchRoomView } from '../../shared/pitch';
 import { fail, textField } from '../http';
 import { Store } from '../store';
 import type { Player } from '../types';
-import { profile } from './auth';
+import { profile, ageBand } from './auth';
+import { storedAvatar } from '../../shared/avatar';
 import { phaseAt, SCENARIOS, type Scenario } from './scenarios';
 import type { Ballot, PitchRoom, Profile, Seat } from './types';
 import { finishPeer, peerRows, incomingPeerFeedback } from './peer';
@@ -14,7 +15,7 @@ export async function roomFor(store: Store, code: string, player: Player) {
   return room;
 }
 export async function seats(store: Store, room: PitchRoom) {
-  return (await store.sql('SELECT s.*,p.name FROM pitch_seats s JOIN players p ON p.id=s.player_id WHERE s.room_id=? ORDER BY s.slot', room.id).all<Seat>()).results;
+  return (await store.sql('SELECT s.*,p.name,pr.avatar_json,a.birth_date FROM pitch_seats s JOIN players p ON p.id=s.player_id JOIN pitch_profiles pr ON pr.player_id=p.id JOIN pitch_accounts a ON a.player_id=p.id WHERE s.room_id=? ORDER BY s.slot', room.id).all<Seat>()).results;
 }
 async function ballots(store: Store, room: PitchRoom) { return (await store.sql('SELECT * FROM pitch_ballots WHERE room_id=? ORDER BY created_at,id', room.id).all<Ballot>()).results; }
 export function scenarioFor(room: PitchRoom): Scenario {
@@ -150,7 +151,7 @@ export async function view(store: Store, room: PitchRoom, player: Player): Promi
   return { id: room.id, code: room.code, status: room.status, band: room.band, scenario, isPublic: room.is_public === 1, judgingMode: peer ? 'peer' : 'judged',
     yourPosition: self.role === 'contestant' ? scenario.positions?.[self.slot] ?? scenario.goal : null,
     serverTime: Date.now(), startedAt: room.started_at, phase, role: self.role, yourSlot: self.slot, left: !!self.left_at,
-    participants: members.map(s => ({ id: s.player_id, name: s.name, role: s.role, slot: s.slot, left: !!s.left_at, position: s.role === 'contestant' ? scenario.positions?.[s.slot] ?? scenario.goal : null,
+    participants: members.map(s => ({ id: s.player_id, name: s.name, avatar: storedAvatar(s.avatar_json), ageBand: ageBand(s.birth_date), role: s.role, slot: s.slot, left: !!s.left_at, position: s.role === 'contestant' ? scenario.positions?.[s.slot] ?? scenario.goal : null,
       submitted: s.role === 'judge' ? votes.some(v => v.judge_id === s.player_id) : responses.results.some(r => r.playerId === s.player_id && r.phase === phase.index) })),
     responses: responses.results.filter(r => r.playerId === player.id || r.phase < phase.index || room.status !== 'active'),
     ballotSubmitted: peer ? peerFeedback.some(v=>v.author_id===player.id) : votes.some(v => v.judge_id === player.id), ballotsReceived: peer ? peerFeedback.length : votes.length, result,

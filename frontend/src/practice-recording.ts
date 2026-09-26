@@ -2,8 +2,9 @@ export interface RecordingState {
   phase: "idle" | "requesting" | "recording" | "stopping"
   url: string
   message: string
+  video: boolean
 }
-export const recordingOff: RecordingState = { phase: "idle", url: "", message: "" }
+export const recordingOff: RecordingState = { phase: "idle", url: "", message: "", video: false }
 
 /** In-memory recording only: no uploads, storage or external speech services. */
 export class PracticeRecording {
@@ -11,6 +12,7 @@ export class PracticeRecording {
   private recorder: MediaRecorder | null = null
   private generation = 0
   private disposed = false
+  private onRelease?: () => void
   private timer?: ReturnType<typeof setTimeout>
   private state = { ...recordingOff }
   constructor(private update: (state: RecordingState) => void) {}
@@ -20,14 +22,14 @@ export class PracticeRecording {
     if (!this.disposed) this.update(this.state)
   }
 
-  async start(remaining: () => number = () => 60000, started: () => void = () => {}) {
+  async start(remaining: () => number = () => 60000, started: () => void = () => {}, options: { video?: boolean; onStream?: (stream: MediaStream) => void; onStop?: () => void } = {}) {
     if (this.disposed || this.state.phase !== "idle") return
     const generation = ++this.generation
-    this.emit({ phase: "requesting", message: "Allow microphone access to record your response." })
+    this.emit({ phase: "requesting", message: options.video ? "Allow microphone and camera access to record your response." : "Allow microphone access to record your response." })
     try {
       if (!globalThis.MediaRecorder || !navigator.mediaDevices?.getUserMedia)
         throw new Error("Voice recording is unavailable in this browser. You can still type your response.")
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false })
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: options.video ? { facingMode: "user", width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15, max: 24 } } : false })
       if (generation !== this.generation || this.disposed) {
         stream.getTracks().forEach((track) => track.stop())
         return
@@ -39,8 +41,8 @@ export class PracticeRecording {
         this.emit({ phase: "idle", message: "This practice has finished. Try again to record a response." })
         return
       }
-      const mimeType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((type) => MediaRecorder.isTypeSupported(type))
-      const recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64000 })
+      const mimeType = (options.video ? ["video/webm;codecs=vp8,opus", "video/mp4", "video/webm"] : ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"]).find((type) => MediaRecorder.isTypeSupported(type))
+      const recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64000, ...(options.video ? { videoBitsPerSecond: 600000 } : {}) })
       this.recorder = recorder
       const chunks: Blob[] = []
       recorder.ondataavailable = (event) => {
@@ -63,19 +65,23 @@ export class PracticeRecording {
       if (this.state.url) URL.revokeObjectURL(this.state.url)
       this.emit({ phase: "recording", url: "", message: "Microphone on · recording your response" })
       this.timer = setTimeout(() => this.stop(), duration)
+      this.onRelease = options.onStop
+      options.onStream?.(stream)
+      this.emit({ video: !!options.video })
       started()
     } catch (error) {
       if (generation !== this.generation || this.disposed) return
       this.releaseMicrophone()
       this.recorder = null
       this.emit({ phase: "idle", message: error instanceof DOMException && error.name === "NotAllowedError"
-        ? "Microphone access was denied. Allow it in your browser’s website settings, then try again. You can still use text."
+        ? "Microphone or camera access was denied. Allow it in your browser’s website settings, then try again. You can still use text."
         : error instanceof Error ? error.message : "The microphone could not start. You can still use text." })
     }
   }
 
   private releaseMicrophone() {
     clearTimeout(this.timer)
+    const released = this.onRelease; this.onRelease = undefined; released?.()
     this.stream?.getTracks().forEach((track) => { track.enabled = false; track.stop() })
     this.stream = null
   }

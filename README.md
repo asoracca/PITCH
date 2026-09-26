@@ -6,15 +6,17 @@ The team's Figma Make design is integrated in `frontend/` (React, Vite and Tailw
 
 ## Implemented
 
-- Email/password accounts, conduct consent, and age-separated matching: 14–17, 18–22, 23+.
+- Email/password accounts and conduct consent for ages 14+. Age is a profile detail; matching and the leaderboard are shared across ages.
 - Five-person rated rounds and optional unrated two-player duels with opponent feedback.
-- Optional camera/video, turn-based voice and text; local solo voice recording/playback.
+- Optional camera/video, turn-based voice and text; local solo voice/video recording, browser transcription and approximate delivery measurements.
 - Labelled demo opponents, leaderboard and 500-day profile; public text spectating while queued.
-- Category chips and scenario cards; optional customizable avatars that start empty.
-- 72 scenarios: the 36 PRD prompts plus 36 additional prototype prompts, including assigned sides for face-offs; each match saves its scenario snapshot.
+- Category chips and scenario cards; customizable avatars that start empty and can be saved to the account.
+- 108 scenarios: the 36 PRD prompts plus 72 additional prototype prompts, including assigned sides for face-offs; each match saves its scenario snapshot.
 - Quick/contestant, judge and earned priority queues; a 120-second timeout and widening Elo range.
 - Server-timed speaking turns, optional text submissions, browser peer-to-peer audio and judge scoring.
-- Majority verdicts, rubric tiebreaks, Elo, leave penalties, feedback helpfulness, history and weekly age-band leaderboards.
+- Majority verdicts, rubric tiebreaks, Elo, leave penalties, feedback helpfulness, history and a shared weekly leaderboard.
+- Private contestant chat with reactions, scripted demo chat, and topic-compatible quick play.
+- Optional free on-device transcript coaching with WebLLM; model download only after the user chooses to load it.
 - Reports, blocking and a moderator review endpoint/UI; moderation requires an assigned moderator.
 - Atomic, repeat-safe ratings and rewards on Vercel/Turso and Sites/D1. No paid AI or API key.
 
@@ -36,7 +38,7 @@ Open `http://127.0.0.1:5173/`. The local API uses an ignored SQLite database and
 
 [Vercel deployment](docs/vercel.md) · [API contract](docs/backend.md) · [Figma frontend handoff](docs/figma-handoff.md) · [Elo rules](docs/ratings.md) · [Sites deployment](docs/deployment.md) · [Scope and follow-up](docs/roadmap.md)
 
-The frontend includes real sign-in, dashboard data, matchmaking, live rounds, scorecards, results, history, leaderboard, reporting and blocking. Solo practice is an unscored local warm-up. Character customization is a device-local design preview; coins, purchases, XP, badges, AI coaching, profile editing and video are not enabled. See the [handoff](docs/figma-handoff.md) before importing future design exports.
+The frontend includes real sign-in, dashboard data, matchmaking, live rounds, scorecards, results, history, leaderboard, reporting and blocking. Solo practice is an unscored local warm-up. Character styles preview locally and can be saved to the account. Coins, purchases, XP, earned badges and general profile editing are not enabled. Browser transcription may use the browser vendor’s speech service. On-device AI requires WebGPU and a large first-use download; it evaluates text and approximate measurements, not audio, emotion or faces. See the [handoff](docs/figma-handoff.md) before importing future design exports.
 
 ## Original project
 

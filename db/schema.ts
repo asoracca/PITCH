@@ -100,6 +100,7 @@ export const pitchAccounts = sqliteTable('pitch_accounts', {
   birthDate: text('birth_date').notNull(), acceptedAt: integer('accepted_at').notNull(),
 });
 export const pitchProfiles = sqliteTable('pitch_profiles', {
+  avatarJson: text('avatar_json'),
   playerId: text('player_id').primaryKey().references(() => players.id), rating: integer('rating').notNull().default(1000),
   games: integer('games').notNull().default(0), reliability: integer('reliability').notNull().default(75),
   judged: integer('judged').notNull().default(0), priorityCredits: integer('priority_credits').notNull().default(0), bannedUntil: integer('banned_until').notNull().default(0),
@@ -122,6 +123,7 @@ export const pitchQueue = sqliteTable('pitch_queue', {
   band: text('band').notNull(), joinedAt: integer('joined_at').notNull(), expiresAt: integer('expires_at').notNull(), roomId: text('room_id').references(() => pitchRooms.id),
   spectateOptIn: integer('spectate_opt_in').notNull().default(0),
   allowPeer: integer('allow_peer').notNull().default(0),
+  category: text('category').notNull().default('all'),
 }, t => [index('pitch_queue_waiting').on(t.band, t.roomId, t.expiresAt), check('pitch_queue_role', sql`${t.role} IN ('contestant','judge','mixed')`)]);
 export const pitchBallots = sqliteTable('pitch_ballots', {
   id: text('id').primaryKey(), roomId: text('room_id').notNull().references(() => pitchRooms.id), judgeId: text('judge_id').notNull().references(() => players.id),
@@ -161,3 +163,9 @@ export const pitchSignals = sqliteTable('pitch_signals', {
   id: integer('id').primaryKey({ autoIncrement: true }), roomId: text('room_id').notNull().references(() => pitchRooms.id), senderId: text('sender_id').notNull().references(() => players.id),
   targetId: text('target_id').notNull().references(() => players.id), kind: text('kind').notNull(), payload: text('payload').notNull(), createdAt: integer('created_at').notNull(),
 }, t => [index('pitch_signal_receive').on(t.roomId, t.targetId, t.id)]);
+
+export const pitchChat = sqliteTable('pitch_chat', {
+  id: integer('id').primaryKey({autoIncrement:true}), roomId: text('room_id').notNull().references(()=>pitchRooms.id),
+  playerId: text('player_id').notNull().references(()=>players.id), requestId: text('request_id').notNull(),
+  kind: text('kind').notNull(), content: text('content').notNull(), createdAt: integer('created_at').notNull(),
+}, t=>[index('pitch_chat_room').on(t.roomId,t.id),uniqueIndex('pitch_chat_once').on(t.roomId,t.playerId,t.requestId),check('pitch_chat_kind',sql`${t.kind} IN ('message','reaction')`)]);

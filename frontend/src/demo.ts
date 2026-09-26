@@ -6,7 +6,7 @@ export const demoPlayers: PitchLeaderboard["players"] = [
   ["Avery Brooks", 1256, 112], ["Sam Rivera", 1220, 96], ["Zoe Park", 1188, 80],
   ["Kai Morgan", 1164, 64], ["Isla Bennett", 1128, 48], ["Theo Lin", 1096, 32],
   ["Amara Ellis", 1068, 24], ["Riley Quinn", 1040, 16], ["Eli Torres", 1016, 8],
-].map(([name, rating, weeklyGain], index) => ({ playerId: `demo-${index + 1}`, name: String(name), rating: Number(rating), weeklyGain: Number(weeklyGain), games: 24 - index, weeklyGames: 12 - Math.floor(index / 2) }))
+].map(([name, rating, weeklyGain], index) => ({ playerId: `demo-${index + 1}`, name: String(name), rating: Number(rating), weeklyGain: Number(weeklyGain), avatar: {avatarEnabled:true,skinTone:['light','warm','tan','brown','deep','rich'][index%6],hairColor:['black','brown','auburn','blond','silver','violet'][(index*5)%6],outfit:['Varsity Pitch','Smart Casual','The Closer','Game Show Glow'][index%4],accessory:['Round Glasses','Focus Headphones','Great Communicator','Day One Backpack'][index%4],background:['Midnight Arena','Violet Voltage','Flame Streak','Leaderboard Elite'][index%4]}, games: 24 - index, weeklyGames: 12 - Math.floor(index / 2) }))
 
 export function demoScript(scenario: Scenario) {
   const opening: Record<string, string> = {

@@ -11,13 +11,13 @@ import type { Account, PitchRoom } from './types';
 // Spectator reads never refresh a seat, join a queue, resolve a room, or reveal private ballots/tips.
 export async function spectate(store: Store, player: Player, account: Account, code?: string): Promise<SpectatorRound | SpectatorList> {
   const now = Date.now();
-  const filters = `r.is_public=1 AND r.band=? AND NOT EXISTS (
+  const filters = `r.is_public=1 AND NOT EXISTS (
     SELECT 1 FROM pitch_seats s JOIN pitch_blocks b ON
       (b.player_id=? AND b.target_id=s.player_id) OR (b.target_id=? AND b.player_id=s.player_id)
     WHERE s.room_id=r.id)`;
   const rooms = (await store.sql(`SELECT r.* FROM pitch_rooms r WHERE ${filters}
     ${code ? 'AND r.code=?' : "AND r.status='active' AND r.started_at>?"}
-    ORDER BY r.started_at DESC LIMIT 12`, ageBand(account.birth_date), player.id, player.id, code?.toUpperCase() ?? now - 240_000).all<PitchRoom>()).results;
+    ORDER BY r.started_at DESC LIMIT 12`, player.id, player.id, code?.toUpperCase() ?? now - 240_000).all<PitchRoom>()).results;
   if (code && !rooms.length) fail(404, 'PUBLIC_ROUND_NOT_FOUND', 'This public round is not available to you.');
   const views = await Promise.all(rooms.map(async room => {
     const timedPhase = phaseAt(room.started_at, now);
