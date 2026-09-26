@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790443962374,
+      "tag": "0000_lying_stature",
+      "breakpoints": true
+    }
+  ]
+}
