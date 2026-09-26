@@ -11,7 +11,7 @@ export async function match(store: Store, band: string) {
     JOIN pitch_profiles p ON p.player_id=q.player_id JOIN pitch_accounts a ON a.player_id=q.player_id
     WHERE q.band=? AND q.room_id IS NULL AND q.expires_at>? AND p.banned_until<=?
     AND (q.priority=0 OR p.priority_credits>0) ORDER BY q.priority DESC,q.joined_at LIMIT 80`, band, now, now).all<QueueRow>()).results.filter(r => ageBand(r.birth_date, now) === band);
-  if (rows.length < 5) return;
+  if (rows.length < 2) return;
   const ids = rows.map(r => r.player_id); const marks = ids.map(() => '?').join(',');
   const blocked = (await store.sql(`SELECT player_id,target_id FROM pitch_blocks WHERE player_id IN (${marks}) OR target_id IN (${marks})`, ...ids, ...ids).all<{player_id:string;target_id:string}>()).results;
   const compatible = (a: QueueRow, b: QueueRow) => a.player_id !== b.player_id && !blocked.some(r => (r.player_id === a.player_id && r.target_id === b.player_id) || (r.player_id === b.player_id && r.target_id === a.player_id));
@@ -32,11 +32,11 @@ export async function match(store: Store, band: string) {
       const groupIds = group.map(r => r.player_id); const gMarks = group.map(() => '?').join(',');
       const guard = group.map(() => '(q.player_id=? AND q.ticket=?)').join(' OR ');
       const result = await store.env.DB.batch([
-        store.sql(`INSERT INTO pitch_rooms(id,code,band,scenario_id,scenario_json,a_id,b_id,started_at)
-          SELECT ?,?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM pitch_queue q JOIN pitch_profiles p ON p.player_id=q.player_id
+        store.sql(`INSERT INTO pitch_rooms(id,code,band,scenario_id,scenario_json,a_id,b_id,started_at,is_public)
+          SELECT ?,?,?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM pitch_queue q JOIN pitch_profiles p ON p.player_id=q.player_id
           WHERE (${guard}) AND q.room_id IS NULL AND q.expires_at>? AND p.banned_until<=? AND (q.priority=0 OR p.priority_credits>0))=5
           AND NOT EXISTS(SELECT 1 FROM pitch_blocks WHERE player_id IN (${gMarks}) AND target_id IN (${gMarks}))`,
-        roomId, code, band, scenario.id, JSON.stringify(scenario), group[0].player_id, group[1].player_id, now, ...group.flatMap(r => [r.player_id, r.ticket]), now, now, ...groupIds, ...groupIds),
+        roomId, code, band, scenario.id, JSON.stringify(scenario), group[0].player_id, group[1].player_id, now, group.every(r => r.spectate_opt_in === 1) ? 1 : 0, ...group.flatMap(r => [r.player_id, r.ticket]), now, now, ...groupIds, ...groupIds),
         ...group.map((r, index) => store.sql(`INSERT INTO pitch_seats(room_id,player_id,role,slot,last_seen)
           SELECT id,?,?,?,? FROM pitch_rooms WHERE id=?`, r.player_id, index < 2 ? 'contestant' : 'judge', index, now, roomId)),
         ...group.slice(0, 2).filter(r => r.priority).map(r => store.sql(`UPDATE pitch_profiles SET priority_credits=priority_credits-1
@@ -48,9 +48,32 @@ export async function match(store: Store, band: string) {
       return;
     }
   }
+  // Give judged matching first choice. A duel starts only after both players opt in and wait 15s.
+  const peerPool = contestants.filter(r => r.allow_peer === 1 && r.joined_at <= now - 15_000);
+  for (const a of peerPool) {
+    const b = peerPool.find(other => compatible(a, other) && Math.abs(a.rating - other.rating) <= 150 + Math.floor(Math.max(now - a.joined_at, now - other.joined_at) / 20_000) * 200);
+    if (!b) continue;
+    const group = crypto.getRandomValues(new Uint8Array(1))[0] % 2 ? [a,b] : [b,a];
+    const id = crypto.randomUUID(), code = id.replaceAll('-', '').slice(0,8).toUpperCase();
+    const library = SCENARIOS.filter(s => s.band === band), scenario = library[crypto.getRandomValues(new Uint32Array(1))[0] % library.length];
+    await store.env.DB.batch([
+      store.sql(`INSERT INTO pitch_rooms(id,code,band,scenario_id,scenario_json,a_id,b_id,started_at,is_public,judging_mode)
+        SELECT ?,?,?,?,?,?,?,?,?,'peer' WHERE (SELECT COUNT(*) FROM pitch_queue q JOIN pitch_profiles p ON p.player_id=q.player_id
+        WHERE ((q.player_id=? AND q.ticket=?) OR (q.player_id=? AND q.ticket=?)) AND q.room_id IS NULL AND q.allow_peer=1
+          AND q.role!='judge' AND q.expires_at>? AND p.banned_until<=?)=2
+        AND NOT EXISTS(SELECT 1 FROM pitch_blocks WHERE (player_id=? AND target_id=?) OR (player_id=? AND target_id=?))`,
+        id,code,band,scenario.id,JSON.stringify(scenario),group[0].player_id,group[1].player_id,now,group.every(r=>r.spectate_opt_in===1)?1:0,
+        a.player_id,a.ticket,b.player_id,b.ticket,now,now,a.player_id,b.player_id,b.player_id,a.player_id),
+      ...group.map((r,index)=>store.sql(`INSERT INTO pitch_seats(room_id,player_id,role,slot,last_seen) SELECT id,?,'contestant',?,? FROM pitch_rooms WHERE id=?`,r.player_id,index,now,id)),
+      store.sql('UPDATE pitch_queue SET room_id=? WHERE player_id IN (?,?) AND EXISTS(SELECT 1 FROM pitch_rooms WHERE id=?)',id,a.player_id,b.player_id,id),
+    ]);
+    return;
+  }
 }
 
-export async function enqueue(store: Store, player: Player, account: Account, mode: unknown) {
+export async function enqueue(store: Store, player: Player, account: Account, mode: unknown, allowSpectators: unknown = false, allowPeer: unknown = false) {
+  if (typeof allowSpectators !== 'boolean') fail(400, 'INVALID_SPECTATOR_CHOICE', 'Choose whether to allow spectators.');
+  if (typeof allowPeer !== 'boolean') fail(400, 'INVALID_PEER_CHOICE', 'Choose whether to allow a two-player practice duel.');
   const band = ageBand(account.birth_date);
   if (!band) fail(403, 'AGE_GATE', 'This prototype supports ages 14 and up.');
   const stats = await profile(store, player.id);
@@ -63,9 +86,9 @@ export async function enqueue(store: Store, player: Player, account: Account, mo
   if (current?.room_id) return;
   if (current && current.expires_at > Date.now()) { await match(store, band); return; }
   const now = Date.now();
-  await store.sql(`INSERT INTO pitch_queue(player_id,ticket,role,priority,band,joined_at,expires_at) VALUES(?,?,?,?,?,?,?)
+  await store.sql(`INSERT INTO pitch_queue(player_id,ticket,role,priority,band,joined_at,expires_at,spectate_opt_in,allow_peer) VALUES(?,?,?,?,?,?,?,?,?)
     ON CONFLICT(player_id) DO UPDATE SET ticket=excluded.ticket,role=excluded.role,priority=excluded.priority,band=excluded.band,
-    joined_at=excluded.joined_at,expires_at=excluded.expires_at WHERE pitch_queue.room_id IS NULL AND pitch_queue.expires_at<=?`,
-  player.id, crypto.randomUUID(), role, priority, band, now, now + 120_000, now).run();
+    joined_at=excluded.joined_at,expires_at=excluded.expires_at,spectate_opt_in=excluded.spectate_opt_in,allow_peer=excluded.allow_peer WHERE pitch_queue.room_id IS NULL AND pitch_queue.expires_at<=?`,
+  player.id, crypto.randomUUID(), role, priority, band, now, now + 120_000, allowSpectators ? 1 : 0, allowPeer && mode !== 'judge' && mode !== 'priority' ? 1 : 0, now).run();
   await match(store, band);
 }

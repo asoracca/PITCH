@@ -5,6 +5,7 @@ import type { Player } from '../types';
 import { profile } from './auth';
 import { phaseAt, SCENARIOS, type Scenario } from './scenarios';
 import type { Ballot, PitchRoom, Profile, Seat } from './types';
+import { finishPeer, peerRows, incomingPeerFeedback } from './peer';
 
 export async function roomFor(store: Store, code: string, player: Player) {
   const room = await store.sql(`SELECT r.* FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id
@@ -40,6 +41,7 @@ export function ratingChange(stats: Profile, opponent: Profile, actual: number, 
 }
 
 async function finish(store: Store, room: PitchRoom, forfeitPlayer: string | null = null, forceCancel = false) {
+  if (room.judging_mode === 'peer') { await finishPeer(store,room,!!forfeitPlayer || forceCancel); return; }
   if (room.status !== 'active') return;
   const [members, votes] = await Promise.all([seats(store, room), ballots(store, room)]);
   const phase = phaseAt(room.started_at);
@@ -99,6 +101,10 @@ async function finish(store: Store, room: PitchRoom, forfeitPlayer: string | nul
 export async function leave(store: Store, room: PitchRoom, playerId: string) {
   const seat = await store.sql('SELECT * FROM pitch_seats WHERE room_id=? AND player_id=?', room.id, playerId).first<Seat>();
   if (!seat || seat.left_at || room.status !== 'active') return;
+  if (room.judging_mode === 'peer') {
+    await store.sql('UPDATE pitch_seats SET left_at=? WHERE room_id=? AND player_id=? AND left_at IS NULL',Date.now(),room.id,playerId).run();
+    await finishPeer(store,room,true); return;
+  }
   // A judge who has submitted a valid ballot has completed their job.
   if (seat.role === 'judge' && await store.sql('SELECT 1 FROM pitch_ballots WHERE room_id=? AND judge_id=?', room.id, playerId).first()) return;
   const claim = crypto.randomUUID(), now = Date.now();
@@ -135,17 +141,20 @@ export async function view(store: Store, room: PitchRoom, player: Player): Promi
     store.sql('SELECT player_id AS playerId,phase,content,created_at AS createdAt FROM pitch_responses WHERE room_id=? ORDER BY phase', room.id).all<{playerId:string;phase:number;content:string;createdAt:number}>(),
     store.sql(`SELECT f.ballot_id,f.value FROM pitch_feedback_ratings f JOIN pitch_ballots b ON b.id=f.ballot_id WHERE b.room_id=? AND f.player_id=?`, room.id, player.id).all<{ballot_id:string;value:string}>(),
   ]);
-  const phase = phaseAt(room.started_at); const self = members.find(s => s.player_id === player.id)!;
+  const timedPhase = phaseAt(room.started_at); const self = members.find(s => s.player_id === player.id)!;
+  const peer = room.judging_mode === 'peer';
+  const phase = peer && timedPhase.index === 5 ? {...timedPhase,label:'Exchange opponent feedback'} : timedPhase;
+  const peerFeedback = peer ? await peerRows(store,room) : [];
   const result = room.result ? JSON.parse(room.result) : null;
   const scenario = scenarioFor(room);
-  return { id: room.id, code: room.code, status: room.status, band: room.band, scenario,
+  return { id: room.id, code: room.code, status: room.status, band: room.band, scenario, isPublic: room.is_public === 1, judgingMode: peer ? 'peer' : 'judged',
     yourPosition: self.role === 'contestant' ? scenario.positions?.[self.slot] ?? scenario.goal : null,
     serverTime: Date.now(), startedAt: room.started_at, phase, role: self.role, yourSlot: self.slot, left: !!self.left_at,
     participants: members.map(s => ({ id: s.player_id, name: s.name, role: s.role, slot: s.slot, left: !!s.left_at, position: s.role === 'contestant' ? scenario.positions?.[s.slot] ?? scenario.goal : null,
       submitted: s.role === 'judge' ? votes.some(v => v.judge_id === s.player_id) : responses.results.some(r => r.playerId === s.player_id && r.phase === phase.index) })),
     responses: responses.results.filter(r => r.playerId === player.id || r.phase < phase.index || room.status !== 'active'),
-    ballotSubmitted: votes.some(v => v.judge_id === player.id), ballotsReceived: votes.length, result,
-    feedback: result ? votes.flatMap(v => (self.role === 'contestant' ? [self.slot] : [0, 1]).map(slot => ({
+    ballotSubmitted: peer ? peerFeedback.some(v=>v.author_id===player.id) : votes.some(v => v.judge_id === player.id), ballotsReceived: peer ? peerFeedback.length : votes.length, result,
+    feedback: peer ? (result ? incomingPeerFeedback(peerFeedback,player.id) : []) : result ? votes.flatMap(v => (self.role === 'contestant' ? [self.slot] : [0, 1]).map(slot => ({
       ballotId: v.id, playerId: slot === 0 ? room.a_id : room.b_id,
       tip: feedback.results.find(f => f.ballot_id === v.id)?.value === 'abusive' ? '[Feedback hidden after your report]' : slot === 0 ? v.a_tip : v.b_tip,
       clarity: slot === 0 ? v.a_clarity : v.b_clarity, persuasiveness: slot === 0 ? v.a_persuasiveness : v.b_persuasiveness,

@@ -109,6 +109,8 @@ export const pitchRooms = sqliteTable('pitch_rooms', {
   aId: text('a_id').notNull().references(() => players.id), bId: text('b_id').notNull().references(() => players.id), startedAt: integer('started_at').notNull(),
   status: text('status').notNull().default('active'), result: text('result'), resolutionToken: text('resolution_token'), finishedAt: integer('finished_at'),
   scenarioJson: text('scenario_json').notNull().default('{}'),
+  isPublic: integer('is_public').notNull().default(0),
+  judgingMode: text('judging_mode').notNull().default('judged'),
 }, t => [check('pitch_room_players', sql`${t.aId} != ${t.bId}`), check('pitch_room_status', sql`${t.status} IN ('active','finished','cancelled')`)]);
 export const pitchSeats = sqliteTable('pitch_seats', {
   roomId: text('room_id').notNull().references(() => pitchRooms.id), playerId: text('player_id').notNull().references(() => players.id),
@@ -118,6 +120,8 @@ export const pitchSeats = sqliteTable('pitch_seats', {
 export const pitchQueue = sqliteTable('pitch_queue', {
   playerId: text('player_id').primaryKey().references(() => players.id), ticket: text('ticket').notNull(), role: text('role').notNull(), priority: integer('priority').notNull(),
   band: text('band').notNull(), joinedAt: integer('joined_at').notNull(), expiresAt: integer('expires_at').notNull(), roomId: text('room_id').references(() => pitchRooms.id),
+  spectateOptIn: integer('spectate_opt_in').notNull().default(0),
+  allowPeer: integer('allow_peer').notNull().default(0),
 }, t => [index('pitch_queue_waiting').on(t.band, t.roomId, t.expiresAt), check('pitch_queue_role', sql`${t.role} IN ('contestant','judge','mixed')`)]);
 export const pitchBallots = sqliteTable('pitch_ballots', {
   id: text('id').primaryKey(), roomId: text('room_id').notNull().references(() => pitchRooms.id), judgeId: text('judge_id').notNull().references(() => players.id),
@@ -146,6 +150,13 @@ export const pitchFeedback = sqliteTable('pitch_feedback_ratings', {
 export const pitchResponses = sqliteTable('pitch_responses', {
   roomId: text('room_id').notNull().references(() => pitchRooms.id), playerId: text('player_id').notNull().references(() => players.id), phase: integer('phase').notNull(), content: text('content').notNull(), createdAt: integer('created_at').notNull(),
 }, t => [primaryKey({ columns: [t.roomId, t.playerId, t.phase] })]);
+export const pitchPeerFeedback = sqliteTable('pitch_peer_feedback', {
+  id: text('id').primaryKey(), roomId: text('room_id').notNull().references(() => pitchRooms.id),
+  authorId: text('author_id').notNull().references(() => players.id), targetId: text('target_id').notNull().references(() => players.id),
+  clarity: integer('clarity').notNull(), persuasiveness: integer('persuasiveness').notNull(), composure: integer('composure').notNull(),
+  tip: text('tip').notNull(), rating: text('rating'), createdAt: integer('created_at').notNull(),
+}, t => [uniqueIndex('pitch_peer_feedback_once').on(t.roomId, t.authorId), check('pitch_peer_feedback_target', sql`${t.authorId} != ${t.targetId}`),
+  check('pitch_peer_feedback_scores', sql`${t.clarity} BETWEEN 1 AND 5 AND ${t.persuasiveness} BETWEEN 1 AND 5 AND ${t.composure} BETWEEN 1 AND 5`)]);
 export const pitchSignals = sqliteTable('pitch_signals', {
   id: integer('id').primaryKey({ autoIncrement: true }), roomId: text('room_id').notNull().references(() => pitchRooms.id), senderId: text('sender_id').notNull().references(() => players.id),
   targetId: text('target_id').notNull().references(() => players.id), kind: text('kind').notNull(), payload: text('payload').notNull(), createdAt: integer('created_at').notNull(),

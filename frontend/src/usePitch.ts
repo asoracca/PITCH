@@ -182,9 +182,9 @@ export function usePitch() {
       acceptQueue(await api.queue())
     })
   }
-  async function join(mode: QueueMode) {
+  async function join(mode: QueueMode, allowSpectators = false, allowPeerMatch = false) {
     await act(async () => {
-      acceptQueue(await api.queue(mode))
+      acceptQueue(await api.queue(mode, { allowSpectators, allowPeerMatch }))
     })
   }
   async function logout() {

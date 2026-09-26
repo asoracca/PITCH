@@ -6,6 +6,8 @@ import {
   Logo,
   Sidebar,
   cosmeticItems,
+  skinTones,
+  hairColors,
   type EquippedItems,
   type Page,
 } from "./design"
@@ -19,6 +21,7 @@ import {
   Profile,
 } from "./screens"
 import { Match } from "./Match"
+import { Pricing } from "./Pricing"
 import { initials } from "./model"
 import { usePitch } from "./usePitch"
 import "./integration.css"
@@ -33,11 +36,15 @@ const pages: Page[] = [
   "Profile",
   "Character",
   "Avatar Shop",
+  "Plans",
 ]
 const defaultLook: EquippedItems = {
   outfit: "Varsity Pitch",
   accessory: "Round Glasses",
   background: "Midnight Arena",
+  skinTone: "brown",
+  hairColor: "black",
+  avatarEnabled: false,
 }
 function currentPage(): Page {
   try {
@@ -54,14 +61,14 @@ function storedLook(): EquippedItems {
     )
     if (
       look &&
-      Object.values(look).every((name) =>
-        cosmeticItems.some((i) => i.name === name),
-      ) &&
+      [look.outfit, look.accessory, look.background].every((name) => cosmeticItems.some((i) => i.name === name)) &&
       ["outfit", "accessory", "background"].every(
         (k) => typeof look[k] === "string",
       )
     )
-      return look
+      return { ...look, avatarEnabled: look.avatarEnabled ?? true,
+        skinTone: skinTones.some((tone) => tone.id === look.skinTone) ? look.skinTone : "brown",
+        hairColor: hairColors.some((color) => color.id === look.hairColor) ? look.hairColor : "black" }
   } catch {
     /* Device-local appearance is optional. */
   }
@@ -75,7 +82,7 @@ export default function App() {
   const [equipped, updateLook] = useState<EquippedItems>(storedLook)
   const profile = {
     name: p.me?.player.name || "Welcome to PITCH",
-    avatar: initials(p.me?.player.name || "PITCH"),
+    avatar: equipped.avatarEnabled ? initials(p.me?.player.name || "PITCH") : "",
     schoolMajor: "",
     locationBio: "",
   }
@@ -83,7 +90,7 @@ export default function App() {
     setPage(next)
     location.hash = encodeURIComponent(next)
     setMenuOpen(false)
-    if (next !== "Home" && !p.session) setAuth(true)
+    if (next !== "Home" && next !== "Plans" && !p.session) setAuth(true)
     else setAuth(false)
   }
   function setEquipped(look: EquippedItems) {
@@ -122,6 +129,8 @@ export default function App() {
         Restoring your session…
       </div>
     )
+  else if (page === "Plans" && !auth)
+    content = <Pricing navigate={navigate} />
   else if (!p.session)
     content =
       auth || page !== "Home" ? <Auth p={p} /> : <Home onNavigate={navigate} />
@@ -195,9 +204,10 @@ export default function App() {
             <Icon name="menu" />
           </button>
           <div className="mobile-only">
-            <Logo />
+            <Logo onHome={() => navigate("Home")} />
           </div>
           <div className="topbar-right">
+            <Button variant="ghost" onClick={() => navigate("Plans")}>View plans</Button>
             {p.me && (
               <>
                 <button

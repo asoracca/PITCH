@@ -13,14 +13,14 @@ export function voiceConfig(store: Store) {
 }
 export async function signals(store: Store, room: PitchRoom, player: Player, after: string | null, body?: Record<string, unknown>) {
   const members = await seats(store, room); const self = members.find(s => s.player_id === player.id)!;
-  if (room.status !== 'active' || self.left_at) fail(409, 'VOICE_CLOSED', 'Audio connections close when you leave or the round ends.');
+  if (room.status !== 'active' || self.left_at) fail(409, 'VOICE_CLOSED', 'Voice and video connections close when you leave or the round ends.');
   if (body) {
     const targetId = textField(body.targetId, 'Audio recipient', 100);
     const target = members.find(s => s.player_id === targetId && !s.left_at);
     if (!target || targetId === player.id || (target.role === 'judge' && self.role === 'judge')) fail(400, 'INVALID_TARGET', 'Audio is only shared with participants in this round.');
     const kind = body.kind as string; const payload = body.payload as Record<string, unknown> | undefined;
     if (!['offer', 'answer', 'candidate'].includes(kind) || !payload || typeof payload !== 'object') fail(400, 'INVALID_SIGNAL', 'Invalid audio connection message.');
-    if (kind === 'candidate' ? typeof payload.candidate !== 'string' || payload.candidate.length > 2000 : payload.type !== kind || typeof payload.sdp !== 'string' || payload.sdp.length > 6000) fail(400, 'INVALID_SIGNAL', 'Invalid audio connection message.');
+    if (kind === 'candidate' ? typeof payload.candidate !== 'string' || payload.candidate.length > 2000 : payload.type !== kind || typeof payload.sdp !== 'string' || payload.sdp.length > 24000) fail(400, 'INVALID_SIGNAL', 'Invalid voice or video connection message.');
     await store.limit(`pitch-signal:${player.id}`, 150);
     const now = Date.now();
     await store.env.DB.batch([

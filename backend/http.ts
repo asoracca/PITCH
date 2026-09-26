@@ -2,13 +2,13 @@ export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
 export function fail(status: number, code: string, message: string): never { throw new ApiError(status, code, message); }
-export async function jsonBody(request: Request): Promise<Record<string, unknown>> {
+export async function jsonBody(request: Request, maxBytes = 8192): Promise<Record<string, unknown>> {
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) fail(415, 'JSON_REQUIRED', 'Send an application/json body.');
   const reader = request.body?.getReader();
   if (!reader) fail(400, 'INVALID_JSON', 'A JSON object is required.');
   const chunks: Uint8Array[] = []; let length = 0;
   while (true) { const part = await reader.read(); if (part.done) break; length += part.value.byteLength;
-    if (length > 8192) { await reader.cancel(); fail(413, 'BODY_TOO_LARGE', 'Request body exceeds 8 KB.'); } chunks.push(part.value); }
+    if (length > maxBytes) { await reader.cancel(); fail(413, 'BODY_TOO_LARGE', `Request body exceeds ${maxBytes / 1024} KB.`); } chunks.push(part.value); }
   const bytes = new Uint8Array(length); let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
   let value: unknown; try { value = JSON.parse(new TextDecoder().decode(bytes)); } catch { fail(400, 'INVALID_JSON', 'The request body is not valid JSON.'); }

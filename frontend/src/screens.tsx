@@ -6,10 +6,16 @@ import {
   Icon,
   AvatarCharacter,
   cosmeticItems,
+  skinTones,
+  hairColors,
   type Page,
   type EquippedItems,
 } from "./design"
 import { countdown, initials, signed, skills } from "./model"
+import { PracticeMicrophone } from "./PracticeMicrophone"
+import { demoPlayers } from "./demo"
+import { ScenarioPicker } from "./ScenarioPicker"
+import { DemoProfile } from "./DemoProfile"
 import type { Pitch } from "./usePitch"
 import type { FeedbackRating, Scenario, Reports } from "../../shared/pitch"
 
@@ -121,6 +127,8 @@ export function Rules({ compact = false }: { compact?: boolean }) {
           age band. Topics and positions are assigned by the server. Read for 20
           seconds; each contestant gets a 60-second opening and a 20-second
           response. Judges then have 60 seconds to vote and give feedback.
+          If both contestants allow it and wait 15 seconds, they can instead play
+          an unrated two-player duel and exchange feedback without judges.
         </p>
         <p>
           Judges score clarity, persuasiveness and composure from 1–5 and give
@@ -135,10 +143,11 @@ export function Rules({ compact = false }: { compact?: boolean }) {
           two minutes.
         </p>
         <p>
-          Leaving an active round or disconnecting for 60 seconds triggers a
+          Leaving a rated round or disconnecting for 60 seconds triggers a
           five-minute queue break, or ten minutes after a repeat within 24
           hours. Contestants forfeit; the winner receives a reduced Elo gain.
-          Judges lose 10 reliability points.
+          Judges lose 10 reliability points. Leaving an unrated practice duel simply
+          ends it without a rating penalty or queue break.
         </p>
         <p>
           Respect people, critique the response, and avoid contact details,
@@ -149,14 +158,15 @@ export function Rules({ compact = false }: { compact?: boolean }) {
         <p>
           We store your display name, email, birth date, password hash, game
           results, submitted text, peer feedback, blocks and reports. Other
-          players see your display name and age band. Audio travels between
-          browsers and is not recorded; peer connections can reveal network
+          players see your display name and age band. Live audio and optional camera
+          video travel between browsers and are not recorded by PITCH; peer connections can reveal network
           addresses. Some networks need the text fallback.
         </p>
         <p>
           Your session token stays in this tab until sign-out or expiry. Solo
           practice drafts stay on the current screen and are not submitted or
-          scored. Character previews save only on this device. Contact the
+          scored. Solo voice recordings stay in memory for playback and are discarded
+          on navigation or deletion. Character previews save only on this device. Contact the
           person who invited you to request deletion of prototype records.
           Scores are peer opinions, not predictions of career outcomes. Use this
           prototype for a supervised team playtest.
@@ -367,8 +377,12 @@ export function Practice({ p }: { p: Pitch }) {
   const [deadline, setDeadline] = useState(0)
   const [now, setNow] = useState(Date.now())
   const [done, setDone] = useState(false)
-  const [response, setResponse] = useState("")
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [notice, setNotice] = useState("")
   const scenario = scenarios.find((s) => s.id === selected) || scenarios[0]
+  const response = drafts[scenario?.id] || ""
+  const eligible = scenarios.filter((s) => category === "all" || s.category === category)
+  const alternatives = eligible.filter((s) => s.id !== scenario?.id)
   useEffect(() => {
     if (!deadline || done) return
     const id = setInterval(() => setNow(Date.now()), 250)
@@ -379,48 +393,31 @@ export function Practice({ p }: { p: Pitch }) {
     setSelected(s.id)
     setDeadline(0)
     setDone(false)
-    setResponse("")
+    setNotice("")
   }
   if (!scenario) return <p>No scenarios are available for this age band.</p>
   return (
     <div className="page-stack">
-      <SectionTitle eyebrow="SOLO TRAINING · UNRATED" title="Practice Arena" />
-      <div className="scenario-controls">
-        <label>
-          Category
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="all">All categories</option>
-            {[...new Set(scenarios.map((s) => s.category))].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Scenario
-          <select
-            value={scenario.id}
-            onChange={(e) =>
-              choose(scenarios.find((s) => s.id === e.target.value)!)
-            }
-          >
-            {scenarios
-              .filter(
-                (s) =>
-                  category === "all" ||
-                  s.category === category ||
-                  s.id === selected,
-              )
-              .map((s) => (
-                <option value={s.id} key={s.id}>
-                  {s.title}
-                </option>
-              ))}
-          </select>
-        </label>
-      </div>
+      <SectionTitle
+        eyebrow="SOLO TRAINING · UNRATED"
+        title="Practice Arena"
+        action={<Button variant="secondary" disabled={!alternatives.length} onClick={() => {
+          const next = alternatives[Math.floor(Math.random() * alternatives.length)]
+          if (!next) return
+          choose(next)
+          setNotice(`New scenario: ${next.title}. The timer is reset; your previous draft is kept for this visit.`)
+        }}>Random scenario <Icon name="spark" /></Button>}
+      />
+      <ScenarioPicker scenarios={scenarios} selected={scenario.id} category={category}
+        onCategory={(next) => {
+          setCategory(next)
+          const matching = scenarios.find((s) => next === "all" || s.category === next)
+          if (matching && next !== "all" && scenario.category !== next) choose(matching)
+          else setNotice("")
+        }} onSelect={choose} />
+      <p className="practice-random-hint">Random picks stay in your age group and selected category. Switching scenarios resets the timer and keeps your drafts for this visit.</p>
+      {notice && <p role="status">{notice}</p>}
+      {!alternatives.length && <p>Choose another category for more random scenarios.</p>}
       <div className="arena">
         <div className="arena-top">
           <span className="live-pill capitalize">{scenario.category}</span>
@@ -439,6 +436,18 @@ export function Practice({ p }: { p: Pitch }) {
             ))}
           </div>
         )}
+        <PracticeMicrophone
+          key={scenario.id}
+          deadline={deadline}
+          finished={finished}
+          onStarted={() => {
+            if (!deadline || finished) {
+              setDone(false)
+              setNow(Date.now())
+              setDeadline(Date.now() + 60000)
+            }
+          }}
+        />
         <label className="form-stack">
           Your practice response
           <textarea
@@ -446,7 +455,7 @@ export function Practice({ p }: { p: Pitch }) {
             value={response}
             maxLength={1200}
             readOnly={finished}
-            onChange={(e) => setResponse(e.target.value)}
+            onChange={(e) => setDrafts((current) => ({ ...current, [scenario.id]: e.target.value }))}
             placeholder="Draft your response here, or practice speaking aloud."
           />
         </label>
@@ -499,7 +508,10 @@ export function Practice({ p }: { p: Pitch }) {
 
 export function Leaderboard({ p }: { p: Pitch }) {
   const leaders = p.leaders
+  const [mode, setMode] = useState<"live" | "demo" | null>(null)
   if (!leaders) return <p>Loading leaderboard…</p>
+  const demo = mode === "demo" || (mode === null && !leaders.players.length)
+  const players = demo ? demoPlayers : leaders.players
   return (
     <div className="page-stack">
       <SectionTitle
@@ -517,28 +529,34 @@ export function Leaderboard({ p }: { p: Pitch }) {
           </Button>
         }
       />
+      <div className="hero-actions" role="group" aria-label="Leaderboard view">
+        <Button variant={demo ? "ghost" : "secondary"} aria-pressed={!demo} onClick={() => setMode("live")}>Real players</Button>
+        <Button variant={demo ? "secondary" : "ghost"} aria-pressed={demo} onClick={() => setMode("demo")}>Demo players</Button>
+      </div>
+      {demo && <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Demo leaderboard · fictional profiles</strong><p>These sample players and scores show how PITCH will look with a community. They cannot sign in, and do not affect real rankings.</p>{!leaders.players.length && <p>No rated rounds in your age band yet. Switch to Real players to see live rankings.</p>}</div></div>}
       <p>
         Ranked by Elo gained since{" "}
         {new Date(leaders.weekStartsAt).toLocaleDateString()}. Resets each
         Monday at 00:00 UTC.
       </p>
-      {leaders.players.length > 0 ? (
+      {players.length > 0 ? (
         <>
           <div className="podium">
-            {leaders.players.slice(0, 3).map((v, i) => (
+            {players.slice(0, 3).map((v, i) => (
               <div
                 className={`podium-player ${["first", "second", "third"][i]}`}
                 key={v.playerId}
               >
                 <div className="avatar avatar-xl">{initials(v.name)}</div>
                 <strong>{v.name}</strong>
+                {demo && <small className="demo-badge">DEMO</small>}
                 <span>{signed(v.weeklyGain)} Elo this week</span>
                 <div>{i + 1}</div>
               </div>
             ))}
           </div>
           <div className="leader-list">
-            {leaders.players.map((v, i) => (
+            {players.map((v, i) => (
               <div
                 className={`leader-row ${
                   v.playerId === p.me!.player.id ? "you" : ""
@@ -549,6 +567,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
                 <div className="avatar avatar-small">{initials(v.name)}</div>
                 <span className="grow">
                   {v.name}
+                  {demo && <small className="demo-badge">DEMO</small>}
                   {v.playerId === p.me!.player.id && <small>YOU</small>}
                 </span>
                 <span>{v.rating} Elo</span>
@@ -615,8 +634,12 @@ export function Profile({
 }) {
   const me = p.me!
   const history = p.history
+  const [demoProfile, setDemoProfile] = useState(true)
+  const profileToggle = <div className="hero-actions" role="group" aria-label="Profile activity view"><Button variant={demoProfile ? "secondary" : "ghost"} aria-pressed={demoProfile} onClick={() => setDemoProfile(true)}>Demo profile</Button><Button variant={demoProfile ? "ghost" : "secondary"} aria-pressed={!demoProfile} onClick={() => setDemoProfile(false)}>Real activity</Button></div>
+  if (demoProfile) return <div className="page-stack">{profileToggle}<DemoProfile p={p} equipped={equipped} navigate={navigate} /></div>
   return (
     <div className="page-stack">
+      {profileToggle}
       <div className="profile-hero">
         <div className="profile-character">
           <AvatarCharacter compact {...equipped} />
@@ -703,6 +726,7 @@ export function Profile({
           <p>Your first rated round and peer feedback will appear here.</p>
         </div>
       )}
+      {!!history?.peerHistory?.length && <section className="form-stack"><SectionTitle eyebrow="UNRATED · OPPONENT FEEDBACK" title="Practice duels" />{history.peerHistory.map((round) => <details className="panel" key={round.code}><summary>{round.scenario.title}<strong>Unrated practice</strong></summary><p>{round.finishedAt ? new Date(round.finishedAt).toLocaleString() : ""} · Elo unchanged</p>{round.feedback.length ? round.feedback.map((feedback) => <div className="feedback-card" key={feedback.ballotId}><p>{feedback.tip}</p><div className="score-row">{skills.map((skill) => <span key={skill} className="capitalize">{skill}: {feedback[skill]}/5</span>)}</div><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></div>) : <p>No opponent feedback was submitted.</p>}</details>)}</section>}
       <Rules />
       {me.moderator && <Moderator p={p} />}
     </div>
@@ -741,6 +765,12 @@ export function Character({
           </div>
         </div>
         <div className="inventory-panel">
+          <section className="appearance-controls form-stack">
+            <h2 className="heading">Appearance</h2>
+            <div className="hero-actions"><Button variant="secondary" onClick={() => setEquipped({ ...equipped, avatarEnabled: !equipped.avatarEnabled })}>{equipped.avatarEnabled ? "Remove avatar" : "Create my avatar"}</Button></div>
+            <fieldset><legend>Skin tone</legend><div className="appearance-swatches">{skinTones.map((tone) => <button key={tone.id} type="button" className="appearance-swatch" aria-label={tone.name} title={tone.name} aria-pressed={equipped.avatarEnabled && (equipped.skinTone || "brown") === tone.id} style={{backgroundColor:tone.color}} onClick={() => setEquipped({ ...equipped, skinTone:tone.id, avatarEnabled:true })}>{equipped.avatarEnabled && (equipped.skinTone || "brown") === tone.id ? "✓" : ""}</button>)}</div></fieldset>
+            <fieldset><legend>Hair color</legend><div className="appearance-swatches">{hairColors.map((color) => <button key={color.id} type="button" className="appearance-swatch" aria-label={color.name} title={color.name} aria-pressed={equipped.avatarEnabled && (equipped.hairColor || "black") === color.id} style={{backgroundColor:color.color}} onClick={() => setEquipped({ ...equipped, hairColor:color.id, avatarEnabled:true })}>{equipped.avatarEnabled && (equipped.hairColor || "black") === color.id ? "✓" : ""}</button>)}</div></fieldset>
+          </section>
           <div className="inventory-tabs">
             {["Outfit", "Accessories", "Background"].map((t) => (
               <button
@@ -769,7 +799,7 @@ export function Character({
                     }`}
                     key={item.id}
                     onClick={() =>
-                      setEquipped({ ...equipped, [key]: item.name })
+                      setEquipped({ ...equipped, [key]: item.name, avatarEnabled: true })
                     }
                   >
                     <div className="item-state">
@@ -800,6 +830,7 @@ export function Coach({ navigate }: { navigate: (page: Page) => void }) {
         eyebrow="AI COACH · NOT ENABLED"
         title="Practice is still free."
       />
+      <section className="panel form-stack"><h2 className="heading">Rehearse with your voice</h2><p>Try answering: “Tell me about a challenge, what you did, and what you learned.” Record your response and listen for one thing to improve.</p><PracticeMicrophone deadline={0} finished={false} onStarted={() => {}} /></section>
       <div className="panel">
         <div className="category-icon cyan">
           <Icon name="spark" />

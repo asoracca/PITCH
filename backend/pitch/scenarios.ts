@@ -1,3 +1,5 @@
+import { EXTRA_SCENARIOS } from './extra-scenarios';
+
 export const SCENARIOS = [
   {
     "id": "teen-first-job",
@@ -337,7 +339,8 @@ export const SCENARIOS = [
       "Choose the stable corporate job.",
       "Join the friend’s early-stage startup."
     ]
-  }
+  },
+  ...EXTRA_SCENARIOS,
 ];
 
 export type Scenario = typeof SCENARIOS[number];

@@ -47,12 +47,21 @@ export interface RoundResult {
 }
 export interface Feedback extends Rubric { ballotId: string; playerId: string; rating: string | null }
 export interface PitchRoomView {
+  isPublic: boolean;
+  judgingMode: 'judged' | 'peer';
   id: string; code: string; status: 'active' | 'finished' | 'cancelled'; band: string; scenario: Scenario;
   yourPosition: string | null; serverTime: number; startedAt: number; phase: RoomPhase; role: Role; yourSlot: number; left: boolean;
   participants: (Player & { role: Role; slot: number; left: boolean; position: string | null; submitted: boolean })[];
   responses: { playerId: string; phase: number; content: string; createdAt: number }[];
   ballotSubmitted: boolean; ballotsReceived: number; result: RoundResult | null; feedback: Feedback[];
 }
+export interface SpectatorRound {
+  code: string; status: PitchRoomView['status']; band: string; scenario: Scenario; serverTime: number; phase: RoomPhase;
+  participants: { id: string; name: string; role: Role; slot: number; left: boolean }[];
+  responses: PitchRoomView['responses'];
+  result: Pick<RoundResult, 'winnerId' | 'reason' | 'scores'> | null;
+}
+export interface SpectatorList { rooms: SpectatorRound[]; serverTime: number }
 export type PitchQueue =
   | { status: 'idle'; serverTime: number }
   | { status: 'expired'; serverTime: number; message: string }
@@ -60,6 +69,7 @@ export type PitchQueue =
   | { status: 'matched'; serverTime: number; room: PitchRoomView };
 export interface HistoryFeedback extends Rubric { ballotId: string; roomId: string; rating: string | null }
 export interface PitchHistory {
+  peerHistory: { code: string; scenario: Scenario; finishedAt: number | null; feedback: Feedback[] }[];
   history: { code: string; scenario: Scenario; result: string; before: number; after: number; delta: number; finishedAt: number | null; feedback: HistoryFeedback[] }[];
   averages: RubricAverages; scope: string;
   byCategory: { category: string; games: number; wins: number; winRate: number | null }[];
