@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import {
   Button,
   AvatarBadge,
-  Home,
   Icon,
   Logo,
   Sidebar,
@@ -23,6 +22,7 @@ import {
 } from "./screens"
 import { Match } from "./Match"
 import { Pricing } from "./Pricing"
+import { Home } from "./LandingHome"
 import { initials } from "./model"
 import { usePitch } from "./usePitch"
 import "./integration.css"
@@ -136,7 +136,7 @@ export default function App() {
     content = <Pricing navigate={navigate} />
   else if (!p.session)
     content =
-      auth || page !== "Home" ? <Auth p={p} /> : <Home onNavigate={navigate} />
+      auth || page !== "Home" ? <Auth p={p} /> : <Home onNavigate={navigate} onSignIn={() => setAuth(true)} signedIn={false} />
   else if (!p.me || !p.config)
     content = (
       <div className="panel">
@@ -149,7 +149,7 @@ export default function App() {
   else {
     switch (page) {
       case "Home":
-        content = <Home onNavigate={navigate} />
+        content = <Home onNavigate={navigate} onSignIn={() => setAuth(true)} signedIn />
         break
       case "Dashboard":
         content = <Dashboard p={p} navigate={navigate} equipped={equipped} />
@@ -182,7 +182,7 @@ export default function App() {
     }
   }
   return (
-    <div className="app-shell">
+    <div className={`app-shell${page === 'Home' && !auth && !p.booting && (!p.session || (p.me && p.config)) ? ' landing-shell' : ''}${page === 'Practice' ? ' practice-shell' : ''}`}>
       <Sidebar
         page={page}
         onNavigate={navigate}

@@ -125,24 +125,24 @@ export function Rules({ compact = false }: { compact?: boolean }) {
       <summary>How PITCH works · Conduct & privacy</summary>
       <div className="form-stack">
         <p>
-          Quick play matches two contestants and three peer judges in the shared
+          Quick play matches two contestants and one or three peer judges in the shared
           player pool. Topic choice and skill guide matching; age is profile information. Topics and positions are assigned by the server. Read for 20
           seconds; each contestant gets a 60-second opening and a 20-second
           response. Judges then have 60 seconds to vote and give feedback.
-          If both contestants allow it and wait 15 seconds, they can instead play
-          an unrated two-player duel and exchange feedback without judges.
+          If both contestants allow it and wait two minutes without a judge, they can play
+          an unrated duel with one automated text-rubric judge and exchange opponent feedback.
         </p>
         <p>
           Judges score clarity, persuasiveness and composure from 1–5 and give
           each contestant a constructive tip. A majority wins; two tied ballots
-          use total rubric scores, then a draw. Fewer than two ballots cancels
-          the rating update.
+          use total rubric scores, then a draw. A single-judge round needs that judge’s
+          ballot; a three-judge round needs at least two. Otherwise no rating changes.
         </p>
         <p>
           Elo starts at 1000. Your first 10 rated rounds use K=32, then K=16.
           Every two completed judged rounds earns one contestant priority
           credit. Priority cannot create missing players. Queues expire after
-          two minutes.
+          2½ minutes if no opponent is available.
         </p>
         <p>
           Leaving a rated round or disconnecting for 60 seconds triggers a
@@ -810,34 +810,7 @@ export function Character({
   )
 }
 
-export function Coach({ navigate }: { navigate: (page: Page) => void }) {
-  return (
-    <div className="page-stack">
-      <SectionTitle
-        eyebrow="AI COACH · FREE ON-DEVICE PREVIEW"
-        title="Practice. Reflect. Try again."
-      />
-      <section className="panel form-stack"><h2 className="heading">Rehearse with your voice</h2><p>Try answering: “Tell me about a challenge, what you did, and what you learned.” Record your response and listen for one thing to improve.</p><PracticeMicrophone coaching deadline={0} finished={false} onStarted={() => {}} /></section>
-      <div className="panel">
-        <div className="category-icon cyan">
-          <Icon name="spark" />
-        </div>
-        <h2 className="heading">Get feedback from people.</h2>
-        <p>
-          The optional on-device coach gives feedback on a transcript. It does not
-          listen to audio, interpret facial expressions or award scores. You can also get feedback from people in Head-to-Head.
-        </p>
-        <div className="hero-actions">
-          <Button onClick={() => navigate("Practice")}>Solo practice</Button>
-          <Button variant="secondary" onClick={() => navigate("Head-to-Head")}>
-            Get peer feedback
-            <Icon name="arrow" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+export { Coach } from "./RoleplayCoach"
 
 function Moderator({ p }: { p: Pitch }) {
   const [reports, setReports] = useState<Reports | null>(null)

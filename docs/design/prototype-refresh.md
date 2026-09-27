@@ -1,0 +1,13 @@
+# PITCH prototype refresh
+
+The Home page uses an original student-to-professional scene inspired by the composition of [Alex Bender’s Etail landing page](https://dribbble.com/shots/25571331-Etail-landing-page-web-design-3D-animation). The artwork is generated for PITCH; source prompts are in `home-art-prompts.txt`. PITCH retains its navy/cyan/white palette, DM Sans and Space Grotesk. Animation can be paused and respects reduced-motion preferences.
+
+Practice keeps the scenario, recording and editable response in one wider workspace. Delivery measurements appear only after recording and transcription finish. Feedback appears after evaluation. Text-only responses still work, and saved practice logs retain their existing privacy and deletion behavior.
+
+AI Coach is a separate three-turn roleplay with ten personas, three difficulty levels and three personalities. Guided demo uses clearly labelled scripted replies immediately. Optional WebGPU AI uses the existing Qwen model entirely on-device after an approximately 1 GB initial download. Browser dictation and optional browser read-aloud are separate controls. No paid API, new secrets or user exports are required. Conversations are ephemeral.
+
+Quick play prefers three human judges, but after a 15-second assembly window can start two contestants with one human judge. Two available judges never produce an even panel. A single-judge match needs one ballot; existing three-judge quorum rules remain in place.
+
+When both contestants opt into the fallback and each has waited two minutes, one automated rubric judge replaces unavailable human judges. Queue expiry is 150 seconds to allow polling after the fallback threshold. Automated rounds are explicitly unrated, retain opponent feedback, and do not generate Elo events or judging credits. The stand-in checks submitted text for sentence structure, an example and a next step. These transparent checks are not AI, audio analysis or a skill assessment. Existing peer-only room records remain supported. No database migration is necessary.
+
+Validation: production build and frontend/backend type checks; 57 automated tests cover access boundaries, recording lifecycle, roleplay prompts, practice UI states, three- and five-person matches, the two-minute fallback, privacy and unchanged ratings on automated rounds. Optional on-device model inference was not exercised on a physical GPU as part of this change.

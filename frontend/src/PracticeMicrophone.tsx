@@ -29,6 +29,8 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
   useEffect(()=>{if(finished)controller.current?.stop()},[finished])
   useEffect(()=>{if(speech.text)updateTranscript(speech.text)},[speech.text])
   const recording=state.phase==='recording', requesting=state.phase==='requesting', busy=recording||requesting||state.phase==='stopping'
+  const processed = !busy && !speech.listening && !!state.url && !!delivery
+  const canReview = !busy && !speech.listening && transcript.trim().length >= 30
   const transcriptId = useId()
   const signature = JSON.stringify({transcript,feedback,delivery})
   async function save(){
@@ -59,9 +61,9 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
         {speech.interim&&<p className="transcript-interim" aria-live="polite">{speech.interim}</p>}
         {speech.message&&!speech.listening&&!speech.message.startsWith('Live transcription')&&<p className="review-caption" role="status">{speech.message}</p>}
       </section>
-      <DeliverySummary transcript={transcript} delivery={delivery} />
-      <LocalCoach transcript={transcript} prompt={prompt} goal={goal} delivery={delivery} disabled={busy||speech.listening} onFeedbackChange={setFeedback}/>
-      {onSave && <footer className="practice-save">
+      {processed && <DeliverySummary transcript={transcript} delivery={delivery} />}
+      <LocalCoach available={canReview} transcript={transcript} prompt={prompt} goal={goal} delivery={delivery} disabled={busy||speech.listening} onFeedbackChange={setFeedback}/>
+      {onSave && !busy && !speech.listening && !!transcript.trim() && <footer className="practice-save">
         <div><strong>Keep this practice</strong><p>Save your response and feedback to Profile → Real activity. Video stays on this page.</p></div>
         <Button variant="secondary" disabled={saving||busy||speech.listening||!transcript.trim()||saved===signature} onClick={()=>void save()}>{saving?'Saving…':saved===signature?'Saved to profile':saved?'Update saved practice':'Save practice'}</Button>
         {saveError && <p role="alert">{saveError}</p>}

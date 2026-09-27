@@ -146,7 +146,7 @@ export function Match({ p }: { p: Pitch }) {
               </label>
             ))}
           </fieldset>
-          {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>If judges aren’t available after 15 seconds, start an unrated two-player duel and exchange opponent feedback.</span></label>}
+          {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>If no judge is available after two minutes, start with one automated rubric judge. This fallback is unrated; you can also exchange opponent feedback.</span></label>}
           <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators to see my display name, shared text and round result. The round is public only if every participant agrees. Camera and microphone feeds stay within the room.</span></label>
           {p.me!.bannedUntil > Date.now() && (
             <p>
@@ -164,8 +164,7 @@ export function Match({ p }: { p: Pitch }) {
             <Icon name="bolt" />
           </Button>
           <p>
-            Queues last up to two minutes. Invite teammates to open the website
-            and queue at the same time. Two contestants can practice without judges; rated rounds need three judges.
+            Invite a friend and pick the same topic. Human rounds use one or three judges. After two minutes, the automated fallback can start with just two contestants. The queue closes after 2½ minutes if no opponent is available.
           </p>
         </div>
       )}
@@ -610,7 +609,8 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
   const now = useServerNow(room.serverTime)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const active = room.status === "active" && !room.left
-  const peer = room.judgingMode === "peer"
+  const automated = room.judgingMode === "automated"
+  const peer = room.judgingMode === "peer" || automated
   const players = room.participants
     .filter((v) => v.role === "contestant")
     .sort((a, b) => a.slot - b.slot)
@@ -662,7 +662,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
         <div className="matchup-vs match-center">
           <span>{room.band}</span>
           <strong>VS</strong>
-          <small>{peer ? "Two-player practice · unrated" : "Peer judged"}</small>
+          <small>{automated ? "One automated judge · unrated" : peer ? "Two-player practice · unrated" : `${room.participants.filter(v => v.role === 'judge').length} human judge${room.participants.filter(v => v.role === 'judge').length === 1 ? '' : 's'}`}</small>
         </div>
       </div>
       <div className="scenario-reveal">
@@ -677,9 +677,10 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
         </div>
       </div>
       {active && <p>{room.isPublic ? "Public round: viewers can follow shared text and results." : "Private round: only its participants can view it."}</p>}
-      {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>Two-player practice · no judges needed</strong><p>Take your turns, then give each other feedback. This round does not change Elo or award judging credits.</p></div></div>}
+      {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>{automated ? "Automated rubric judge · text only" : "Two-player practice · no judges needed"}</strong><p>{automated ? "One free stand-in checks submitted text for structure, examples and next steps. It is not AI and cannot judge your audio or video. " : "Take your turns, then give each other feedback. "}This round does not change Elo or award judging credits.</p></div></div>}
       <OpponentChat p={p} room={room} />
       <div className="live-judge-cards">
+        {automated && <div className="panel"><Icon name="gavel" /><strong>Automated rubric judge</strong><span>{room.result ? 'Text checks complete' : '1 stand-in · submit text during your turn'}</span></div>}
         {room.participants
           .filter((v) => v.role === "judge")
           .map((v) => (
@@ -750,7 +751,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
                   : "DRAW"}
             </span>
             <p>
-              {room.result.voteCount} {peer ? "opponent feedback submissions · Elo unchanged" : `scorecards · ${room.result.reason.replaceAll("_", " ")}`}
+              {room.result.voteCount} {automated ? "automated judge · Elo unchanged" : peer ? "opponent feedback submissions · Elo unchanged" : `scorecards · ${room.result.reason.replaceAll("_", " ")}`}
             </p>
           </div>
           {peer && !room.feedback.length && <p>No opponent feedback was submitted before this round ended.</p>}
@@ -772,11 +773,12 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
                   ) : (
                     <p>No Elo change</p>
                   )}
-                  {skills.map((k) => (
+                  {!automated && skills.map((k) => (
                     <p className="capitalize" key={k}>
                       {k}: {score.averages?.[k] ?? "—"}/5
                     </p>
                   ))}
+                  {automated && room.result?.automatedFeedback?.filter(f => f.playerId === score.playerId).map(f => <div key={f.playerId}><p>{f.tip}</p><ul className="automated-checks">{Object.entries(f.checks).map(([key,value]) => <li key={key}>{value ? '✓' : '—'} {key === 'nextStep' ? 'Clear next step' : key === 'specificity' ? 'Specific example' : 'Sentence structure'}</li>)}</ul><small>Simple text checks, not a skill score.</small></div>)}
                 </div>
               )
             })}

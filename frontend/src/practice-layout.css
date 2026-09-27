@@ -1,0 +1,57 @@
+/* One open workspace: controls first, results only when they exist. */
+.app-shell:not(.landing-shell) .page-content { max-width: 112rem; padding-inline: clamp(1rem,3vw,3.5rem); }
+.practice-shell .arena { max-width: none; padding: 2rem 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; }
+.practice-shell .arena-prompt { max-width: 62rem; font-size: clamp(1.5rem,2.5vw,2.4rem); margin: 2rem auto .8rem; }
+.practice-shell .arena-hint { margin-bottom: 2rem; }
+.practice-microphone { border: 0; border-radius: 0; background: none; padding: 1.5rem 0 0; margin: 1.5rem 0; border-top: 1px solid var(--line); }
+.practice-review { gap: 1.75rem; }
+.practice-review .review-step { border: 0; border-radius: 0; padding: 0; background: none; box-shadow: none; }
+.practice-review .review-step + .review-step { border-top: 1px solid var(--line); padding-top: 1.75rem; }
+.practice-review .review-step-number { display: none; }
+.practice-review .review-heading { gap: 1rem; margin-bottom: 1rem; }
+.practice-review .review-heading h3 { font-size: 1.15rem; font-weight: 650; }
+.practice-review .review-badge { border: 0; padding: .15rem 0; }
+.practice-review .review-transcript { gap: .65rem; }
+.practice-review textarea { min-height: 10rem; padding: 1.1rem 1.25rem; background: rgba(255,255,255,.025); }
+.practice-review .delivery-grid { gap: 1rem 2rem; }
+.practice-review .delivery-grid > div { padding: .5rem 0; border: 0; border-radius: 0; background: none; }
+.practice-review .delivery-grid dd { font-size: 2.1rem; }
+.practice-review .coach-feedback { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.8rem; }
+.practice-review .coach-feedback-card { background: none; border: 0; border-radius: 0; padding: 0; }
+.practice-review .feedback-example { grid-column: 1/-1; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.practice-review .coach-feedback-card h4 { font-size: .8rem; margin-bottom: .65rem; }
+.practice-review .practice-save { padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.coach-setup-heading { font-size: 1.05rem; }
+.coach-availability { margin: .5rem 0; }
+.practice-microphone .practice-playback { gap: 1.25rem; margin: 1.25rem 0; }
+.practice-microphone .practice-playback video,.practice-microphone .practice-camera { width: min(100%,46rem); max-height: 32rem; }
+/* Keep one level of grouping across the app. Inner content uses dividers. */
+.app-shell:not(.landing-shell) .panel .panel,
+.app-shell:not(.landing-shell) .panel .arena,
+.app-shell:not(.landing-shell) .panel .feedback-panel,
+.app-shell:not(.landing-shell) .panel .feedback-card,
+.app-shell:not(.landing-shell) .panel .voice-state { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; padding: 1.25rem 0; }
+.app-shell:not(.landing-shell) .panel .stat-card { background: none; border: 0; border-radius: 0; padding-inline: 0; }
+.app-shell:not(.landing-shell) .panel > fieldset { border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 1rem 0; }
+.app-shell:not(.landing-shell) .panel > fieldset legend { padding-left: 0; }
+.app-shell:not(.landing-shell) .queue-option { border: 0; border-left: 2px solid var(--line); border-radius: 0; background: none; }
+.app-shell:not(.landing-shell) .queue-option.selected { border-left-color: var(--cyan); background: rgba(136,244,245,.04); }
+.automated-checks { list-style: none; padding: 0; color: var(--muted); font-size: .85rem; line-height: 1.9; }
+.app-shell:not(.landing-shell) .panel .coach-feedback-card { background: none; border: 0; border-radius: 0; padding: 1rem 0; }
+.app-shell:not(.landing-shell) .panel .coach-feedback-card + .coach-feedback-card { border-top: 1px solid var(--line); }
+.app-shell:not(.landing-shell) .stats .stat-card,
+.app-shell:not(.landing-shell) .demo-profile-stats .stat-card { border: 0; border-radius: 0; background: none; padding: 1rem .5rem; }
+.app-shell:not(.landing-shell) .lower-grid,
+.app-shell:not(.landing-shell) .profile-grid { gap: 2rem; }
+.app-shell:not(.landing-shell) .lower-grid > .panel,
+.app-shell:not(.landing-shell) .profile-grid > .panel { padding: 1.5rem 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
+.app-shell:not(.landing-shell) .leader-list { border-inline: 0; border-radius: 0; background: none; }
+.app-shell:not(.landing-shell) .leader-row { padding-block: 1rem; }
+.app-shell:not(.landing-shell) .character-identity { background: none; border: 0; border-radius: 0; text-align: center; backdrop-filter: none; }
+.app-shell:not(.landing-shell) .appearance-controls fieldset { border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 1rem 0; }
+.app-shell:not(.landing-shell) .appearance-controls legend { padding: 0 .5rem 0 0; font-size: .85rem; }
+.app-shell:not(.landing-shell) .cosmetic-tile { background: none; border-color: transparent; border-radius: .5rem; }
+.app-shell:not(.landing-shell) .cosmetic-equipped { border-color: var(--cyan); }
+.app-shell:not(.landing-shell) .plan-card { border-inline: 0; border-bottom: 0; border-radius: 0; background: none; padding: 1.5rem .5rem; }
+.app-shell:not(.landing-shell) .plan-featured { border-top: 2px solid var(--cyan); }
+@media(max-width:550px) { .practice-review .review-heading-aside { width: auto; margin-left: 0; } .practice-review .coach-feedback { grid-template-columns: 1fr; } .practice-review .delivery-grid { column-gap: 1rem; } .practice-review .delivery-grid dd { font-size: 1.8rem; } .practice-review .practice-save > div { min-width: 0; } }

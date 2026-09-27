@@ -18,7 +18,7 @@ import type { Account, PitchRoom, QueueRow } from './types';
 function method(request: Request, expected: string) { if (request.method !== expected) fail(405, 'METHOD_NOT_ALLOWED', `Use ${expected} for this endpoint.`); }
 export const RULES = { version: 'pitch-elo-v2', initialRating: 1000, provisionalGames: 10, provisionalK: 32, establishedK: 16,
   floor: 100, forfeitWinMultiplier: 0.25, judgesPerRound: 3, contestantsPerRound: 2, judgedRoundsPerPriorityCredit: 2,
-  queueTimeoutSeconds: 120, disconnectGraceSeconds: 60, firstLeaveBanSeconds: 300, repeatLeaveBanSeconds: 600, phases: PHASES,
+  queueTimeoutSeconds: 150, disconnectGraceSeconds: 60, firstLeaveBanSeconds: 300, repeatLeaveBanSeconds: 600, phases: PHASES,
   rubric: ['clarity', 'persuasiveness', 'composure'], scoreRange: [1, 5], aiEnabled: false };
 
 async function queueView(store: Store, player: Player, account: Account): Promise<PitchQueue> {
@@ -39,7 +39,7 @@ async function queueView(store: Store, player: Player, account: Account): Promis
     return { status: 'matched', room: await view(store, await syncRoom(store, room, player), player), serverTime: Date.now() };
   }
   return { status: 'waiting', mode: row.role, priority: !!row.priority, band: row.band, joinedAt: row.joined_at, expiresAt: row.expires_at, serverTime: Date.now(),
-    message: row.allow_peer ? 'Finding an opponent for your topic. After 15 seconds, two willing contestants can start an unrated practice duel without judges.' : 'Matching two contestants and three judges for your topic. Priority improves queue order; it cannot guarantee an instant match.' };
+    message: row.allow_peer ? 'Finding an opponent for your topic. After two minutes, two willing contestants can start with one automated rubric judge. Fallback rounds are unrated.' : 'Matching two contestants with one or three judges for your topic. Priority improves queue order; it cannot guarantee an instant match.' };
 }
 
 async function history(store: Store, player: Player): Promise<PitchHistory> {
@@ -58,7 +58,7 @@ async function history(store: Store, player: Player): Promise<PitchHistory> {
   const usable = tips.filter(f => f.rating !== 'abusive');
   const averages = Object.fromEntries(['clarity', 'persuasiveness', 'composure'].map(k => [k, usable.length ? Math.round(usable.reduce((n, f) => n + Number(f[k as keyof typeof f]), 0) / usable.length * 10) / 10 : null]));
   const peerRooms=(await store.sql(`SELECT r.*,opponent.id AS opponent_id,opponent.name AS opponent_name FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id JOIN players opponent ON opponent.id=CASE WHEN r.a_id=s.player_id THEN r.b_id ELSE r.a_id END
-    WHERE s.player_id=? AND r.judging_mode='peer' AND r.status IN ('finished','cancelled') ORDER BY r.finished_at DESC LIMIT 20`,player.id).all<PitchRoom & {opponent_id:string;opponent_name:string}>()).results;
+    WHERE s.player_id=? AND r.judging_mode IN ('peer','automated') AND r.status IN ('finished','cancelled') ORDER BY r.finished_at DESC LIMIT 20`,player.id).all<PitchRoom & {opponent_id:string;opponent_name:string}>()).results;
   const peerHistory=await Promise.all(peerRooms.map(async r=>({opponent:{id:r.opponent_id,name:r.opponent_name},code:r.code,scenario:scenarioFor(r),finishedAt:r.finished_at,feedback:incomingPeerFeedback(await peerRows(store,r),player.id)})));
   return { practices: await practiceLogs(store,player.id), peerHistory, history: rounds.map(r => ({ opponent:{id:r.opponent_id,name:r.opponent_name}, code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
     delta: r.delta, finishedAt: r.finished_at, feedback: tips.filter(t => t.roomId === r.id) })), averages,

@@ -21,7 +21,7 @@ export async function spectate(store: Store, player: Player, account: Account, c
   if (code && !rooms.length) fail(404, 'PUBLIC_ROUND_NOT_FOUND', 'This public round is not available to you.');
   const views = await Promise.all(rooms.map(async room => {
     const timedPhase = phaseAt(room.started_at, now);
-    const phase = room.judging_mode === 'peer' && timedPhase.index === 5 ? {...timedPhase,label:'Exchange opponent feedback'} : timedPhase;
+    const phase = room.judging_mode !== 'judged' && timedPhase.index === 5 ? {...timedPhase,label:'Exchange opponent feedback'} : timedPhase;
     const [members, responses] = await Promise.all([
       seats(store, room),
       store.sql(`SELECT player_id AS playerId,phase,content,created_at AS createdAt FROM pitch_responses

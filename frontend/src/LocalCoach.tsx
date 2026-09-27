@@ -6,7 +6,7 @@ import { coachMessages } from './coach-prompt'
 import { ReviewHeading } from './PracticeReview'
 import { CoachFeedback } from './CoachFeedback'
 
-export function LocalCoach({ transcript, prompt, goal, delivery, disabled, onFeedbackChange }: { transcript: string; prompt: string; goal: string; delivery: Delivery | null; disabled: boolean; onFeedbackChange?: (answer: string) => void }) {
+export function LocalCoach({ transcript, prompt, goal, delivery, disabled, available = true, onFeedbackChange }: { transcript: string; prompt: string; goal: string; delivery: Delivery | null; disabled: boolean; available?: boolean; onFeedbackChange?: (answer: string) => void }) {
   const worker = useRef<Worker | null>(null), engine = useRef<WebWorkerMLCEngine | null>(null), generation = useRef(0)
   const input = JSON.stringify({ transcript, prompt, goal, delivery, disabled })
   const latestInput = useRef(input); latestInput.current = input
@@ -44,9 +44,13 @@ export function LocalCoach({ transcript, prompt, goal, delivery, disabled, onFee
   const busy=status==='loading'||status==='evaluating'
   const missing = Math.max(0,30-transcript.trim().length)
   const hint = disabled ? 'Finish recording before asking for feedback.' : missing ? `Add a little more detail (${missing} more characters).` : 'Your response is ready for feedback.'
+  if (!available) return null
   return <section className="review-step local-coach">
-    <ReviewHeading step={3} title="Your feedback" description="One strength. One improvement. An example to try."
-      aside={<span className={`review-badge ${status==='ready'?'badge-ready':''}`}>{status==='loading'?'Setting up':status==='evaluating'?'Thinking':status==='ready'?'Coach ready':'Free · optional'}</span>} />
+    {answer && <ReviewHeading step={3} title="Your feedback" description="One strength. One improvement. An example to try."
+      />}
+    {!answer && <div className="coach-setup-heading"><strong>Ready for feedback?</strong></div>}
+    <div className="coach-availability">
+      <span className={`review-badge ${status==='ready'?'badge-ready':''}`}>{status==='loading'?'Setting up':status==='evaluating'?'Thinking':status==='ready'?'Coach ready':'Free · optional'}</span></div>
     {supported===false ? <p>This browser cannot run the free coach. You can still review your words and delivery above.</p> : <>
       {(status==='idle'||status==='loading') && <p className="coach-setup-note">First setup: about 1 GB to download. Allow a few minutes.</p>}
       <div className="coach-controls">

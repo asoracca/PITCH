@@ -1,0 +1,47 @@
+HERO
+
+Use case: stylized-concept.
+Asset type: full-bleed homepage hero background for PITCH, without any lettering or interface.
+Primary request: an original premium 3D clay miniature career-practice booth scene on a seamless warm ivory and very pale lilac studio floor, in a wide 3:2 landscape canvas.
+Subject: a single compact rounded rectangular booth centered near x=68%, y=47%, glossy off-white ceramic walls, thick softly rounded roof, a frosted pale-violet side window, and a large luminous cyan rounded doorway on its front face facing the lower-right corner. A tasteful small muted pink architectural accent and discreet navy edge detail. The booth is miniature architecture, playful yet refined.
+Composition: high three-quarter isometric view. A simple elegant low white conveyor-like pathway approaches the back of the booth diagonally from the upper middle-left and exits from the front doorway toward the lower-right edge. Keep the entire leftmost 42% quiet and empty, especially the lower-left, leaving generous uninterrupted floor for webpage headline text. Place all interesting architecture in the right 58%. Keep booth fully visible with some spacious floor around it, not cropped. The pathway must visually connect to the booth.
+Lighting/mood: soft high-end studio daylight, creamy contact shadows, gentle lilac ambient fill, airy editorial polish. No hard horizon line.
+Materials: smooth tactile ceramic clay, frosted glass, subtle glossy highlights, softly bevelled geometry.
+Constraints: no people, no characters, no boxes, no packages, no coins, no signage, no text, no letters, no symbols, no logo, no UI, no watermark. No extra buildings or decorative objects. Finished background illustration only.
+
+---
+
+STUDENTS
+
+Use case: stylized-concept.
+Asset type: reusable transparent PNG character sprite for PITCH homepage animation.
+Primary request: TWO full-body early-twenties college students standing together as original premium 3D clay toy characters, isolated on a genuinely transparent alpha background. One medium-brown-skinned woman with dark curly hair and one light-skinned man with short dark hair. Both friendly neutral expressions, slightly oversized toy heads and rounded tactile sculpted features, attractive simple miniature design.
+Clothing: casual slightly rumpled college hoodies, relaxed trousers and sneakers; one small worn backpack per person. Palette of cream, soft lilac, muted cyan, and navy. They should feel like ordinary students before interview practice.
+Composition: the woman on the left and man on the right, a slight comfortable gap between them, both facing right/down-right in a three-quarter isometric view, standing upright in relaxed poses. Show full bodies and all feet with generous clear margins, neither cropped. Same scale and camera angle, their feet aligned on the same invisible ground plane.
+Lighting: soft studio light from upper left, delicate local soft contact shadows immediately under their feet only, no floor plane or backdrop. Cohesive premium clay-render quality.
+Constraints: exactly two people; true transparency with an alpha channel, no white/colored background, no checkerboard drawn in image; no text, letters, logo, watermark, furniture or extra objects. Preserve clean sprite silhouette and separated legs and arms.
+
+---
+
+PROFESSIONALS
+
+Use case: identity-preserve.
+Asset type: transparent PNG professional character sprite for PITCH homepage animation.
+Input image: Image 1 is the exact two-character edit target and identity reference.
+Primary request: change ONLY these two students' clothing, accessories, and posture into interview-ready business casual. Keep the exact same two people: the medium-brown-skinned woman with her exact dark curly hairstyle, face, eyes, nose, small gold earrings, skin tone, toy body proportions and age; and the light-skinned man with his exact short dark hair, face, eyes, nose, skin tone, toy body proportions and age. Retain the original premium 3D clay character rendering style and lighting.
+Changes: remove hoodies, casual baggy trousers, sneakers, and backpacks. Give the woman a beautifully tailored navy blazer, cream blouse, tailored navy trousers, and simple polished flats; she holds a slim cyan folio. Give the man a cream blazer over a muted cyan fine-knit top, tailored navy trousers, and simple polished navy shoes; one hand relaxed at his side. Neat confident upright posture, still friendly and approachable.
+Invariants: woman remains on the left, man on the right, exactly the same relative sizes, same full-body framing, same 3/4 view facing right/down-right, same faces and hairstyles, same early-twenties age. Preserve clean full silhouettes and all feet, without cropping.
+Background: preserve genuinely transparent alpha background. Only extremely subtle local contact shadows beneath feet, no ground plane, backdrop, white rectangle, or drawn checkerboard.
+Constraints: exactly two people, full bodies visible with generous margins, no extra people or objects beyond the slim folio, no lettering, logo, watermark or text. The result must clearly be the same students after career practice, recognizable immediately.
+HERO NAVY PALETTE CORRECTION
+
+Use case: precise-object-edit.
+Asset type: PITCH homepage hero background, brand palette correction.
+Input image: Image 1 is the edit target. Perform a color-and-lighting-only edit.
+Primary request: preserve the exact booth and conveyor geometry, camera angle, perspective, canvas crop, proportions, every object location, and all composition. Recolor the entire studio environment and floor to deep midnight navy #090f21. Keep the leftmost 42% clear, uninterrupted dark navy for white webpage text. Recolor the booth and conveyor to soft cool ivory/white with subtle blue shadows, maintaining their polished ceramic materials. Make the doorway glow icy cyan #88f4f5, the frosted side window blue-gray rather than lavender, and the vertical architectural accent icy cyan rather than pink.
+Lighting: rich, premium, polished soft 3D studio rendering, gentle cool blue/cyan ambient light and soft contact shadows, restrained highlights. The white booth must remain readable against the deep navy surroundings without harsh contrast or noisy lighting.
+Invariants: identical shape, exact objects, same location, same camera, same crop, same layout and negative space as input. Only color and lighting changes.
+Constraints: absolutely no purple, lilac, lavender, pink, magenta or warm rosy environment or accents anywhere. No people, text, logos, icons, watermarks, extra objects, or decorations. Preserve original wide 1536 by 1024 framing.
+
+---
+
