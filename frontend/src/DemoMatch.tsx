@@ -32,15 +32,15 @@ export function DemoMatch({ scenario, name, avatar, onClose }: { scenario: Scena
     <div className="page-stack">
       <SectionTitle eyebrow="SOLO DEMO · NO ELO" title={finished ? "Demo round complete" : demoSteps[stage.index].title} action={<Button variant="ghost" onClick={onClose}>Exit demo</Button>} />
       <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Simulated round</strong><p>Scripted opponents and results. Not AI. No Elo or history changes.</p></div></div>
+      <section className="panel form-stack">
+        <span className="capitalize">{scenario.category}</span><h2 className="heading">{scenario.title}</h2><p className="arena-prompt">{scenario.prompt}</p><p>{scenario.goal}</p>
+        {scenario.positions && <p><strong>Your side:</strong> {scenario.positions[0]}<br /><strong>Demo opponent:</strong> {scenario.positions[1]}</p>}
+      </section>
       <div className="matchup-intro">
         <div className="matchup-player"><AvatarBadge name={name} look={avatar} size="xl" /><strong>{name}</strong><span>YOU</span></div>
         <div className="matchup-vs"><strong>VS</strong><span className="countdown">{finished ? "COMPLETE" : countdown(stage.deadline, now)}</span></div>
         <div className="matchup-player"><PlayerLink player={{id:demoPlayers[0].playerId,name:demoPlayers[0].name,avatar:demoPlayers[0].avatar}} className="player-link-stack"><AvatarBadge name="Maya Chen" look={demoPlayers[0].avatar} size="xl" /><strong>{demoPlayers[0].name}</strong></PlayerLink><span>DEMO OPPONENT</span></div>
       </div>
-      <section className="panel form-stack">
-        <span className="capitalize">{scenario.category}</span><h2 className="heading">{scenario.title}</h2><p className="arena-prompt">{scenario.prompt}</p><p>{scenario.goal}</p>
-        {scenario.positions && <p><strong>Your side:</strong> {scenario.positions[0]}<br /><strong>Demo opponent:</strong> {scenario.positions[1]}</p>}
-      </section>
       {!finished && <div className="phase-track">{demoSteps.map((step, i) => <span key={step.title} className={stage.index === i ? "current" : ""}>{step.title}</span>)}</div>}
       {yours && !finished && <section className="panel form-stack">
         <PracticeMicrophone key={stage.index} deadline={stage.deadline} finished={ending || now >= stage.deadline} onStarted={() => {}} transcribing draft={draft} onDraftChange={setDraft} maxLength={1200} onFinished={(text) => { setResponses((r) => ({ ...r, [stage.index]: text.trim() })); advance() }} />

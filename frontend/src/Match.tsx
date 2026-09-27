@@ -639,6 +639,17 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           {active ? countdown(room.phase.deadline, now) : "ROUND CLOSED"}
         </span>
       </div>
+      <div className="scenario-reveal">
+        <div>
+          <span className="capitalize">{room.scenario.category}</span>
+          <h2 className="heading">{room.scenario.title}</h2>
+          <p className="arena-prompt">{room.scenario.prompt}</p>
+          <p>{room.scenario.goal}</p>
+          {room.yourPosition && (
+            <strong>Your assigned position: {room.yourPosition}</strong>
+          )}
+        </div>
+      </div>
       <div className="matchup-intro">
         {players.map((v, i) => (
           <div className="matchup-player" key={v.id}>
@@ -661,17 +672,6 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           <span>{room.band}</span>
           <strong>VS</strong>
           <small>{automated ? "One automated judge · unrated" : peer ? "Two-player practice · unrated" : `${room.participants.filter(v => v.role === 'judge').length} human judge${room.participants.filter(v => v.role === 'judge').length === 1 ? '' : 's'}`}</small>
-        </div>
-      </div>
-      <div className="scenario-reveal">
-        <div>
-          <span className="capitalize">{room.scenario.category}</span>
-          <h2 className="heading">{room.scenario.title}</h2>
-          <p className="arena-prompt">{room.scenario.prompt}</p>
-          <p>{room.scenario.goal}</p>
-          {room.yourPosition && (
-            <strong>Your assigned position: {room.yourPosition}</strong>
-          )}
         </div>
       </div>
       {active && <p>{room.isPublic ? "Public round: viewers can follow shared text and results." : "Private round: only its participants can view it."}</p>}
