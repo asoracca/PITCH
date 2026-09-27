@@ -10,6 +10,7 @@ export type EquippedItems = {
   skinTone?: string
   hairColor?: string
   style?: string
+  hairstyle?: string
   avatarEnabled?: boolean
 }
 
@@ -410,6 +411,29 @@ export const cosmeticItems = [
   },
 ]
 
+/** Hair uses the wardrobe head coordinates; portraits reuse it at a larger scale. */
+export function AvatarHair({hairstyle="Short",color,layer}:{hairstyle?:string;color:string;layer:"back"|"front"}) {
+  const back: Record<string,string> = {
+    Bob: "M58 83Q52 27 100 26Q148 27 143 83L147 138Q132 150 116 138L83 139Q62 151 53 136Z",
+    Long: "M58 80Q52 26 100 25Q149 26 144 80L153 170Q149 187 130 179L112 170H85L68 181Q49 186 47 170Z",
+    Curls: "M60 66Q42 60 51 44Q45 28 64 27Q64 11 82 17Q94 4 108 17Q128 10 132 29Q153 29 149 48Q165 59 148 72Q159 89 145 102Q150 121 131 126L69 128Q49 125 53 106Q37 93 51 79Q43 70 60 66Z",
+    Ponytail: "M127 52Q155 29 167 58Q175 76 162 107Q155 130 172 145Q145 149 138 128Q132 104 143 82Q149 66 130 68Z",
+  }
+  const front: Record<string,string> = {
+    Short: "M62 89Q50 38 84 28Q113 16 136 44Q147 60 137 90L128 61Q104 79 76 62L69 92Z",
+    Bob: "M58 88Q49 30 91 26Q137 18 145 64L140 116L128 101L129 59Q103 78 72 61L69 111L56 123Z",
+    Long: "M57 95Q48 32 91 26Q140 16 145 66L140 140L127 149L130 59Q111 67 100 48Q88 68 73 63L71 147L57 137Z",
+    Curls: "M59 86Q48 77 55 66Q43 52 57 41Q54 24 73 26Q75 10 92 22Q108 10 119 25Q137 18 141 38Q156 43 145 59Q153 74 137 86L130 74Q117 80 111 64Q100 76 90 65Q76 78 68 67L67 88Z",
+    Ponytail: "M61 85Q55 29 99 28Q145 27 139 86L129 69L126 51Q109 69 74 62L68 86Z",
+    'Buzz cut': "M63 76Q62 38 99 38Q138 39 138 76L130 68L125 52Q99 43 75 54L70 72Z",
+  }
+  const path=layer==='back'?back[hairstyle]:front[hairstyle]||front.Short
+  return <g className="wardrobe-hair" data-hairstyle={hairstyle} data-hair-layer={layer} fill={color}>
+    {path&&<path d={path}/>}
+    {hairstyle==='Ponytail'&&layer==='back'&&<path d="M136 55L145 61" stroke="var(--lime, #88f4f5)" strokeWidth="5" strokeLinecap="round"/>}
+  </g>
+}
+
 export function AvatarCharacter({
   outfit = "Varsity Pitch",
   accessory = "Round Glasses",
@@ -420,6 +444,7 @@ export function AvatarCharacter({
   hairColor = "black",
   avatarEnabled = false,
   style = "masculine",
+  hairstyle = "Short",
 }: {
   outfit?: string
   accessory?: string
@@ -429,6 +454,7 @@ export function AvatarCharacter({
   skinTone?: string
   hairColor?: string
   style?: string
+  hairstyle?: string
   avatarEnabled?: boolean
 }) {
   const feminine = style === "feminine"
@@ -454,9 +480,9 @@ export function AvatarCharacter({
   return (
     <svg
       className={`pitch-character ${compact ? "character-compact" : ""}`}
-      viewBox={portrait ? "75 45 130 155" : "0 0 280 400"}
+      viewBox={portrait ? hairstyle === "Short" ? "75 45 130 155" : "55 15 185 185" : "0 0 280 400"}
       role="img"
-      aria-label={`${feminine ? "Feminine" : "Masculine"} PITCH character, ${outfit}, ${accessory === "None" ? "no accessories" : accessory}`}
+      aria-label={`${feminine ? "Feminine" : "Masculine"} PITCH character, ${outfit}, ${hairstyle} hair, ${accessory === "None" ? "no accessories" : accessory}`}
     >
       <rect width="280" height="400" rx="30" fill={backdrop} />
       <path
@@ -464,11 +490,9 @@ export function AvatarCharacter({
         fill="#0a0f20"
         opacity=".65"
       />
+      <g transform="translate(0 -8) scale(1.4)"><AvatarHair hairstyle={hairstyle} color={hair.color} layer="back" /></g>
       <ellipse cx="140" cy="115" rx={feminine ? 48 : 54} ry="54" fill={skin.color} />
-      <path
-        d="M87 112Q86 46 145 48Q205 50 193 123L178 90Q135 103 99 80Z"
-        fill={hair.color}
-      />
+      {hairstyle === "Short" ? <path d="M87 112Q86 46 145 48Q205 50 193 123L178 90Q135 103 99 80Z" fill={hair.color} /> : <g transform="translate(0 -8) scale(1.4)"><AvatarHair hairstyle={hairstyle} color={hair.color} layer="front" /></g>}
       <path
         d="M109 135q12 10 24 0M151 135q12 10 24 0"
         fill="none"

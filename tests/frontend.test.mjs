@@ -265,13 +265,31 @@ test('stopping transcription keeps late final words and pending words without du
 
 test('avatar style and accessory choices render consistently in wardrobe and profile', () => {
   const look={avatarEnabled:true,style:'feminine',outfit:'The Closer',accessory:'None',background:'Midnight Arena',skinTone:'tan',hairColor:'brown'};
-  const selected={style:true,outfit:true,accessory:true,background:true,skinTone:true,hairColor:true};
-  const wardrobe=render(ui.WardrobeFigure,{look,selected,count:6});
+  const selected={style:true,hairstyle:true,outfit:true,accessory:true,background:true,skinTone:true,hairColor:true};
+  const wardrobe=render(ui.WardrobeFigure,{look,selected,count:7});
   const profile=render(ui.AvatarCharacter,look);
   assert.match(wardrobe,/Feminine style/); assert.match(profile,/Feminine PITCH character/);
   assert.match(wardrobe,/No accessories/); assert.match(profile,/no accessories/);
   assert.doesNotMatch(profile,/<circle cx="116" cy="126"/);
   assert.match(render(ui.AvatarCharacter,{...look,accessory:'Round Glasses'}),/<circle cx="116" cy="126"/);
   assert.notEqual(profile,render(ui.AvatarCharacter,{...look,style:'masculine'}));
-  assert.notEqual(wardrobe,render(ui.WardrobeFigure,{look:{...look,style:'masculine'},selected,count:6}));
+  assert.notEqual(wardrobe,render(ui.WardrobeFigure,{look:{...look,style:'masculine'},selected,count:7}));
+});
+
+
+test('all six hairstyles render distinctly with either avatar style and keep hair color', () => {
+  const selected={style:true,hairstyle:true,outfit:true,accessory:true,background:true,skinTone:true,hairColor:true};
+  for(const style of ['feminine','masculine']) {
+    const shapes=new Set();
+    for(const hairstyle of ['Short','Bob','Long','Curls','Ponytail','Buzz cut']) {
+      const look={avatarEnabled:true,style,hairstyle,outfit:'Smart Casual',accessory:'None',background:'Midnight Arena',skinTone:'tan',hairColor:'auburn'};
+      const wardrobe=render(ui.WardrobeFigure,{look,selected,count:7});
+      const portrait=render(ui.AvatarCharacter,{...look,portrait:true});
+      assert.ok(wardrobe.includes(`${hairstyle} hairstyle`));assert.ok(portrait.includes(`${hairstyle} hair`));
+      assert.match(wardrobe,/fill="#914c36"/);assert.match(portrait,/fill="#914c36"/);
+      const hair=wardrobe.match(/data-hair-layer="front"[^>]*>(.*?)<\/g>/)[1];
+      shapes.add(hair);
+    }
+    assert.equal(shapes.size,6,'every hairstyle has its own silhouette');
+  }
 });

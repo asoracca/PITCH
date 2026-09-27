@@ -14,9 +14,9 @@ const labels: Record<string,string> = {
   'None':'No accessories', 'Round Glasses':'Clarity', 'Focus Headphones':'Clarity', 'Great Communicator':'Persuasiveness', 'Day One Backpack':'Composure',
   'Midnight Arena':'Composure', 'Violet Voltage':'Persuasiveness', 'Flame Streak':'Persuasiveness', 'Leaderboard Elite':'Clarity',
 }
-const selection = (enabled:boolean):WardrobeSelection => ({style:enabled,outfit:enabled,accessory:enabled,background:enabled,skinTone:enabled,hairColor:enabled})
+const selection = (enabled:boolean):WardrobeSelection => ({style:enabled,hairstyle:enabled,outfit:enabled,accessory:enabled,background:enabled,skinTone:enabled,hairColor:enabled})
 function normalized(look:EquippedItems):EquippedItems {
-  return {...look,style:look.style||'masculine',skinTone:look.skinTone||'brown',hairColor:look.hairColor||'black',avatarEnabled:!!look.avatarEnabled}
+  return {...look,style:look.style||'masculine',hairstyle:look.hairstyle||'Short',skinTone:look.skinTone||'brown',hairColor:look.hairColor||'black',avatarEnabled:!!look.avatarEnabled}
 }
 function randomChoice(values:string[],current:string|undefined) {
   const alternatives=values.filter(value=>value!==current)
@@ -58,6 +58,7 @@ export function Wardrobe({equipped,setEquipped,shop=false,onSave,saving=false}:{
     <div className="wardrobe-layout">
       <div className="wardrobe-rail">
         <fieldset className="wardrobe-group"><legend>Avatar style</legend><div className="wardrobe-options">{avatarChoices.style.map(style=><button type="button" className="wardrobe-option" key={style} aria-pressed={selected.style&&(equipped.style||'masculine')===style} disabled={saving} onClick={()=>choose('style',style)}><strong>{style==='feminine'?'Feminine':'Masculine'}</strong><span className="wardrobe-check" aria-hidden="true">{selected.style&&(equipped.style||'masculine')===style?<Icon name="check" size={15}/>:'+'}</span></button>)}</div></fieldset>
+        <fieldset className="wardrobe-group"><legend>Hairstyle</legend><div className="wardrobe-options">{avatarChoices.hairstyle.map(hairstyle=><button type="button" className="wardrobe-option" key={hairstyle} aria-pressed={selected.hairstyle&&(equipped.hairstyle||'Short')===hairstyle} disabled={saving} onClick={()=>choose('hairstyle',hairstyle)}><strong>{hairstyle}</strong><span className="wardrobe-check" aria-hidden="true">{selected.hairstyle&&(equipped.hairstyle||'Short')===hairstyle?<Icon name="check" size={15}/>:'+'}</span></button>)}</div></fieldset>
         {groups.map(group=><fieldset className="wardrobe-group" key={group.key}><legend>{group.title}</legend><div className="wardrobe-options">{cosmeticItems.filter(item=>item.category===group.category&&avatarChoices[group.key].includes(item.name)).map(item=><button type="button" className="wardrobe-option" key={item.id} aria-pressed={selected[group.key]&&equipped[group.key]===item.name} disabled={saving} onClick={()=>choose(group.key,item.name)}><span><strong>{item.name}</strong><small>{labels[item.name]}</small></span><span className="wardrobe-check" aria-hidden="true">{selected[group.key]&&equipped[group.key]===item.name?<Icon name="check" size={15}/>:'+'}</span></button>)}</div></fieldset>)}
         {swatches.map(group=><fieldset className="wardrobe-group wardrobe-palette" key={group.key}><legend>{group.title}</legend><div className="wardrobe-swatches">{group.values.map(value=><button type="button" key={value.id} className="wardrobe-swatch" disabled={saving} aria-label={`${group.title}: ${value.name}`} title={value.name} aria-pressed={selected[group.key]&&equipped[group.key]===value.id} onClick={()=>choose(group.key,value.id)}><span style={{backgroundColor:value.color}}/><Icon name="check" size={14}/></button>)}</div></fieldset>)}
       </div>
