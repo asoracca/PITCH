@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-const result = await build({ stdin: { contents: `export * from './src/model'; export * from './src/roleplay'; export { Home } from './src/LandingHome'; export * from './src/practice-transcript'; export * from './src/delivery'; export * from './src/coach-prompt'; export * from './src/coach-feedback'; export { CoachFeedback } from './src/CoachFeedback'; export { DeliverySummary } from './src/PracticeReview'; export { PracticeLogs } from './src/PracticeLogs'; export { demoPracticeLogs } from './src/demo-practices'; export { demoPlayers } from './src/demo'; export { OpponentChat } from './src/OpponentChat'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
+const result = await build({ stdin: { contents: `export * from './src/model'; export * from './src/roleplay'; export { Home } from './src/LandingHome'; export * from './src/practice-transcript'; export * from './src/delivery'; export * from './src/coach-prompt'; export * from './src/coach-feedback'; export { CoachFeedback } from './src/CoachFeedback'; export { DeliverySummary } from './src/PracticeReview'; export { PracticeLogs } from './src/PracticeLogs'; export { demoPracticeLogs } from './src/demo-practices'; export { demoPlayers } from './src/demo'; export { OpponentChat } from './src/OpponentChat'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { WardrobeFigure } from './src/WardrobeFigure'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, loader: { '.css': 'empty' }, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
 const temp = mkdtempSync(join(tmpdir(), 'pitch-ui-test-'));
 const file = join(temp, 'render.cjs'); writeFileSync(file, result.outputFiles[0].text);
 const ui = createRequire(import.meta.url)(file); rmSync(temp, { recursive: true, force: true });
@@ -239,5 +239,57 @@ test('roleplay follows the selected role and difficulty and reserves final AI ou
   const chat=ui.roleplayMessages(role,'Hard','Direct',messages);
   assert.match(chat[0].content,/Client/);assert.match(chat[0].content,/ONE relevant follow-up/);assert.deepEqual(chat.slice(1),messages);
   const summary=ui.roleplayMessages(role,'Medium','Neutral',messages,true);assert.match(summary[0].content,/STRENGTH, IMPROVE, EXAMPLE/);assert.match(summary[0].content,/Do not judge voice/);
-  const home=render(ui.Home,{onNavigate(){}});assert.match(home,/Practice real conversations/);assert.match(home,/Build real confidence/);assert.match(home,/career-studio-runway.webp/);assert.match(home,/A line of illustrated students/);assert.doesNotMatch(home,/Student life|Find your voice|Career-ready|career-story-controls/);
+  const home=render(ui.Home,{onNavigate(){}});assert.match(home,/Pitch\. Practice\. Perform\./);assert.match(home,/Build real confidence/);assert.match(home,/career-studio-runway.webp/);assert.match(home,/A line of illustrated students/);assert.doesNotMatch(home,/Student life|Find your voice|Career-ready|career-story-controls/);
+});
+
+
+test('stopping transcription keeps late final words and pending words without duplicates', async () => {
+  const descriptor=Object.getOwnPropertyDescriptor(globalThis,'SpeechRecognition');let instance,latest;
+  class Recognition {constructor(){instance=this;}start(){}stop(){}abort(){}}
+  Object.defineProperty(globalThis,'SpeechRecognition',{configurable:true,value:Recognition});
+  const speech=new ui.PracticeTranscript(value=>{latest=value;});
+  try {
+    speech.start();instance.onresult({results:[{isFinal:false,0:{transcript:'Could we agree'}}]});
+    speech.stop();assert.equal(latest.listening,true);
+    instance.onresult({results:[{isFinal:true,0:{transcript:'Could we agree on Friday?'}}]});instance.onend();
+    assert.equal(latest.text,'Could we agree on Friday?');assert.equal(latest.listening,false);
+    speech.start();instance.onresult({results:[{isFinal:true,0:{transcript:'Thank you.'}},{isFinal:false,0:{transcript:'I will follow up'}}]});
+    speech.stop();instance.onend();
+    assert.equal(latest.text,'Thank you. I will follow up');assert.equal(latest.interim,'');
+    speech.start();instance.onresult({results:[{isFinal:false,0:{transcript:'Keep these words'}}]});speech.stop();
+    await new Promise(resolve=>setTimeout(resolve,1550));
+    assert.equal(latest.text,'Keep these words');assert.equal(latest.listening,false);
+  } finally {speech.abort();if(descriptor)Object.defineProperty(globalThis,'SpeechRecognition',descriptor);else delete globalThis.SpeechRecognition;}
+});
+
+
+test('avatar style and accessory choices render consistently in wardrobe and profile', () => {
+  const look={avatarEnabled:true,style:'feminine',outfit:'The Closer',accessory:'None',background:'Midnight Arena',skinTone:'tan',hairColor:'brown'};
+  const selected={style:true,hairstyle:true,outfit:true,accessory:true,background:true,skinTone:true,hairColor:true};
+  const wardrobe=render(ui.WardrobeFigure,{look,selected,count:7});
+  const profile=render(ui.AvatarCharacter,look);
+  assert.match(wardrobe,/Feminine style/); assert.match(profile,/Feminine PITCH character/);
+  assert.match(wardrobe,/No accessories/); assert.match(profile,/no accessories/);
+  assert.doesNotMatch(profile,/<circle cx="116" cy="126"/);
+  assert.match(render(ui.AvatarCharacter,{...look,accessory:'Round Glasses'}),/<circle cx="116" cy="126"/);
+  assert.notEqual(profile,render(ui.AvatarCharacter,{...look,style:'masculine'}));
+  assert.notEqual(wardrobe,render(ui.WardrobeFigure,{look:{...look,style:'masculine'},selected,count:7}));
+});
+
+
+test('all six hairstyles render distinctly with either avatar style and keep hair color', () => {
+  const selected={style:true,hairstyle:true,outfit:true,accessory:true,background:true,skinTone:true,hairColor:true};
+  for(const style of ['feminine','masculine']) {
+    const shapes=new Set();
+    for(const hairstyle of ['Short','Bob','Long','Curls','Ponytail','Buzz cut']) {
+      const look={avatarEnabled:true,style,hairstyle,outfit:'Smart Casual',accessory:'None',background:'Midnight Arena',skinTone:'tan',hairColor:'auburn'};
+      const wardrobe=render(ui.WardrobeFigure,{look,selected,count:7});
+      const portrait=render(ui.AvatarCharacter,{...look,portrait:true});
+      assert.ok(wardrobe.includes(`${hairstyle} hairstyle`));assert.ok(portrait.includes(`${hairstyle} hair`));
+      assert.match(wardrobe,/fill="#914c36"/);assert.match(portrait,/fill="#914c36"/);
+      const hair=wardrobe.match(/data-hair-layer="front"[^>]*>(.*?)<\/g>/)[1];
+      shapes.add(hair);
+    }
+    assert.equal(shapes.size,6,'every hairstyle has its own silhouette');
+  }
 });

@@ -1,0 +1,51 @@
+.wardrobe { --wardrobe-accent: var(--lime); width: 100%; min-width: 0; font-family: "DM Sans", sans-serif; }
+.wardrobe-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.6rem; }
+.wardrobe h1 { font: 700 clamp(1.8rem,3vw,2.65rem)/1.12 "Space Grotesk",sans-serif; letter-spacing: -.045em; }
+.wardrobe-tools { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; }
+.wardrobe-tools .btn { min-height: 44px; padding: .7rem .95rem; }
+.wardrobe-layout { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,1fr); align-items: start; gap: clamp(1.5rem,4vw,4rem); }
+.wardrobe-rail { min-width: 0; display: grid; gap: 1.25rem; }
+.wardrobe-group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.wardrobe-group legend { float: left; width: 100%; padding: 0; margin-bottom: .65rem; font: 600 1rem/1.3 "Space Grotesk",sans-serif; }
+.wardrobe-options { clear: both; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .5rem; }
+.wardrobe-option { display: flex; justify-content: space-between; align-items: center; gap: .35rem; width: 100%; min-width: 0; min-height: 70px; text-align: left; color: var(--text); border: 1px solid var(--line); border-radius: .8rem; background: var(--surface); padding: .75rem; cursor: pointer; transition: border-color .2s,background-color .2s; }
+.wardrobe-option strong { display: block; font-weight: 600; font-size: .9rem; line-height: 1.35; overflow-wrap: anywhere; }
+.wardrobe-option small { display: block; font-size: .875rem; color: var(--muted); margin-top: .22rem; }
+.wardrobe-option:hover { border-color: var(--wardrobe-accent); }
+.wardrobe-option[aria-pressed="true"] { border-color: var(--wardrobe-accent); background: color-mix(in srgb,var(--wardrobe-accent) 8%,var(--surface)); }
+.wardrobe-check { width: 1.25rem; height: 1.25rem; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: .9rem; color: var(--muted); }
+.wardrobe-option[aria-pressed="true"] .wardrobe-check { color: var(--bg); border-color: transparent; background: var(--wardrobe-accent); }
+.wardrobe-swatches { clear: both; display: flex; flex-wrap: wrap; gap: .6rem; }
+.wardrobe-swatch { position: relative; display: grid; place-items: center; width: 44px; height: 44px; padding: 4px; border: 2px solid transparent; background: none; border-radius: 50%; cursor: pointer; }
+.wardrobe-swatch > span { display: block; width: 100%; height: 100%; border-radius: 50%; box-shadow: inset 0 0 0 1px #ffffff28; }
+.wardrobe-swatch > svg { display: none; position: absolute; right: -3px; bottom: -3px; color: var(--bg); background: var(--wardrobe-accent); border-radius: 50%; width: 18px; height: 18px; padding: 2px; }
+.wardrobe-swatch[aria-pressed="true"] { border-color: var(--wardrobe-accent); }
+.wardrobe-swatch[aria-pressed="true"] > svg { display: block; }
+.wardrobe button:focus-visible,.wardrobe summary:focus-visible { outline: 3px solid var(--wardrobe-accent); outline-offset: 4px; }
+.wardrobe-live { position: sticky; top: 1.5rem; min-width: 0; }
+.wardrobe-preview { display: flex; flex-direction: column; align-items: center; position: relative; isolation: isolate; border-radius: 1.25rem; padding: 1rem 1.2rem 1.2rem; overflow: hidden; background: var(--surface); transition: background-color .5s ease; }
+.wardrobe-preview::before { content: ""; position: absolute; inset: 20% -25% -30%; z-index: -1; background: radial-gradient(ellipse at center,color-mix(in srgb,var(--wardrobe-accent) 12%,transparent),transparent 62%); transition: background .5s; pointer-events: none; }
+.wardrobe-preview[data-background="Midnight Arena"] { background: var(--sidebar); --wardrobe-accent: var(--lime); }
+.wardrobe-preview[data-background="Violet Voltage"] { background: color-mix(in srgb,var(--purple) 18%,var(--bg)); --wardrobe-accent: var(--purple); }
+.wardrobe-preview[data-background="Flame Streak"] { background: color-mix(in srgb,var(--orange) 15%,var(--bg)); --wardrobe-accent: var(--orange); }
+.wardrobe-preview[data-background="Leaderboard Elite"] { background: color-mix(in srgb,var(--lime) 12%,var(--bg)); --wardrobe-accent: var(--lime); }
+.wardrobe-preview-heading { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: .65rem; font-size: .875rem; color: var(--muted); }
+.wardrobe-preview-heading > span { font-size: .75rem; letter-spacing: .12em; font-weight: 700; }
+.wardrobe-preview-heading output { color: var(--text); white-space: nowrap; }
+.wardrobe-figure { display: block; width: min(100%,300px); height: auto; max-height: 540px; margin: .5rem auto 0; flex-shrink: 0; overflow: visible; }
+.wardrobe-preview-label { font: 500 1rem/1.4 "Space Grotesk",sans-serif; color: var(--text); }
+.wardrobe-layer { transition: opacity 420ms ease-in-out; }
+.wardrobe-pose,.wardrobe-head { transition: transform 550ms cubic-bezier(.2,.7,.3,1); }
+.wardrobe-hair { transition: fill .3s; }
+.wardrobe-idle { transform-origin: 100px 333px; animation: wardrobe-breathe 5s ease-in-out infinite; }
+@keyframes wardrobe-breathe { 0%,100% { transform: translateY(0) rotate(-.35deg); } 50% { transform: translateY(-1.8px) rotate(.35deg); } }
+.wardrobe-save { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.wardrobe-save .btn:first-child { flex: 1; min-width: 0; }
+.wardrobe-note { font-size: .875rem; margin: .65rem 0 0; color: var(--muted); }
+.wardrobe-details { margin-top: .75rem; font-size: .875rem; color: var(--muted); }
+.wardrobe-details summary { font-weight: 400; }
+.wardrobe-details p { margin: .5rem 0 0; }
+@media(max-width:1050px) { .wardrobe-layout { gap: 1.5rem; } .wardrobe-options { grid-template-columns: 1fr; } }
+@media(max-width:760px) { .wardrobe-layout { grid-template-columns: minmax(0,1fr); } .wardrobe-options { grid-template-columns: repeat(2,minmax(0,1fr)); } .wardrobe-live { position: static; } .wardrobe-heading { gap: .8rem; } .wardrobe-heading h1 { width: 100%; } .wardrobe-preview { padding-inline: 1rem; } .wardrobe-figure { width: min(100%,260px); } }
+@media(max-width:350px) { .wardrobe-options { grid-template-columns: 1fr; } }
+@media(prefers-reduced-motion:reduce) { .wardrobe-idle { animation: none; } .wardrobe-layer,.wardrobe-pose,.wardrobe-head,.wardrobe-hair,.wardrobe-preview,.wardrobe-preview::before,.wardrobe-option { transition: none; } }

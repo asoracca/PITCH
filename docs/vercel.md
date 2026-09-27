@@ -6,7 +6,7 @@ Project `pitch`, scope `anggunsoracca`, uses the repository root, Node 24, `pnpm
 
 ## Native GitHub automatic deployment
 
-The native Vercel GitHub app is connected to `asoracca/Pitch` after the user authorized the transferred repository. The deployment branch is `backend/quick-match`, with the repository root unchanged. Pushes to this branch update the website; other branches produce previews. This does not merge into or modify `main`.
+The native Vercel GitHub app is connected to `asoracca/Pitch` after the user authorized the transferred repository. The production branch is `main`, with the repository root unchanged. Pushes and merged pull requests to `main` deploy both `frontend/` and the shared API together. Other branches, including `backend/quick-match`, produce previews. Bring frontend and backend work into `main` through reviewed pull requests; Vercel deploys the code already in GitHub and does not push or merge code for you.
 
 GitHub Actions runs checks without a Vercel secret. Native Vercel builds run type checks and a packaged-entry/database check; GitHub CI separately runs the complete integration suite. See https://vercel.com/docs/git/vercel-for-github. Verify deployment status and its source commit after each push; a failed build does not replace the working website.
 

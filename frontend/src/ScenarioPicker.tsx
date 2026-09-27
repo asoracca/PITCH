@@ -11,6 +11,14 @@ const categories: { id: string; name: string; icon: IconName }[] = [
   { id: "social", name: "Friends & relationships", icon: "user" },
 ]
 
+const categoryKey = "pitch.practice-category.v1"
+export function practiceCategory() {
+  try { const value = sessionStorage.getItem(categoryKey); return categories.some(item => item.id === value) ? value! : "all" } catch { return "all" }
+}
+export function rememberPracticeCategory(value: string) {
+  try { sessionStorage.setItem(categoryKey, value) } catch { /* Navigation still works without storage. */ }
+}
+
 export function ScenarioPicker({ scenarios, selected, category, onCategory, onSelect }: {
   scenarios: Scenario[]; selected: string; category: string;
   onCategory: (category: string) => void; onSelect: (scenario: Scenario) => void;

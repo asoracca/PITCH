@@ -54,17 +54,21 @@ export class PracticeTranscript {
       if (generation !== this.generation) return
       clearTimeout(this.finishTimer)
       this.recognition = null
-      this.emit({ listening: false, interim: '' })
+      this.keepPendingWords()
+      this.emit({ listening: false, interim: '', ...(this.running ? {} : {message: this.state.message.startsWith('Live transcription ·') ? (this.state.text ? 'Transcript ready. Review your words.' : 'No speech detected. Try again or type your response.') : this.state.message}) })
       if (this.running && ++this.retries <= 3) this.retry = setTimeout(() => this.listen(generation), 300)
       else if (this.running) { this.running = false; this.emit({ message: 'Transcription paused after repeated interruptions. Type missing words below or try a new recording.' }) }
     }
     try { recognition.start(); this.emit({ listening: true, message: 'Live transcription · English. Review it for mistakes before evaluating.' }) }
     catch { this.running = false; this.emit({ listening: false, message: 'Transcription could not start. You can still record and type your response.' }) }
   }
+  private keepPendingWords() {
+    if(this.state.interim)this.emit({text: [this.state.text,this.state.interim].filter(Boolean).join(' ').slice(0,6000),interim: ''})
+  }
   stop() {
     this.running = false; clearTimeout(this.retry)
     try { this.recognition?.stop() } catch { this.abort() }
-    this.finishTimer = setTimeout(() => this.abort(), 1500)
+    if(this.recognition)this.finishTimer = setTimeout(() => { this.keepPendingWords(); this.abort() }, 1500)
   }
   abort() {
     this.generation++; this.running = false; clearTimeout(this.retry); clearTimeout(this.finishTimer)
