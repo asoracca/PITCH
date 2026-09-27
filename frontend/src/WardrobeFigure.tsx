@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { hairColors, skinTones, type EquippedItems } from './design'
 
-export type WardrobeGroup = 'outfit' | 'accessory' | 'background' | 'skinTone' | 'hairColor'
+export type WardrobeGroup = 'style' | 'outfit' | 'accessory' | 'background' | 'skinTone' | 'hairColor'
 export type WardrobeSelection = Record<WardrobeGroup, boolean>
 
 const suits = [
@@ -17,11 +17,13 @@ export function WardrobeFigure({ look, selected, count }: { look: EquippedItems;
   const hair = hairColors.find(color => color.id === look.hairColor) || hairColors[0]
   const skinFill = selected.skinTone ? skin.color : '#adb6c6'
   const skinShade = selected.skinTone ? skin.shade : '#8792a5'
-  const strength = count / 5
+  const feminine = selected.style && look.style === 'feminine'
+  const strength = count / Object.keys(selected).length
   const active = (group: WardrobeGroup, value: string) => selected[group] && look[group] === value ? 1 : 0
   const label = count ? [
+    feminine ? 'Feminine style' : 'Masculine style',
     selected.outfit ? look.outfit : 'No outfit',
-    selected.accessory ? look.accessory : 'No accessory',
+    selected.accessory && look.accessory!=='None' ? look.accessory : 'No accessories',
     selected.background ? look.background : 'Plain background',
     selected.skinTone ? skin.name + ' skin' : 'Skin tone unset',
     selected.hairColor ? hair.name + ' hair' : 'Hair color unset',
@@ -36,12 +38,12 @@ export function WardrobeFigure({ look, selected, count }: { look: EquippedItems;
         </g>
         <g className="wardrobe-layer" style={{opacity:selected.outfit?0:1}}>
           <path d="M69 237H99L96 323H68ZM101 237H130L139 323H111Z" fill="#737f93"/>
-          <path d="M83 138L62 145Q50 146 46 162L34 237L50 241L66 182L64 243Q100 253 137 243L133 182L149 241L165 237L151 162Q148 148 134 145L116 138Z" fill="#909bad" stroke="#606d82" strokeWidth="2"/>
+          <path d={feminine ? "M83 138L67 145Q55 148 51 163L36 237L50 241L69 180L77 212L66 243Q100 253 134 243L123 212L131 180L149 241L163 237L149 163Q145 149 133 145L116 138Z" : "M83 138L62 145Q50 146 46 162L34 237L50 241L66 182L64 243Q100 253 137 243L133 182L149 241L165 237L151 162Q148 148 134 145L116 138Z"} fill="#909bad" stroke="#606d82" strokeWidth="2"/>
         </g>
         {suits.map(suit=><g key={suit.name} className="wardrobe-layer wardrobe-outfit" data-outfit={suit.name} style={{opacity:active('outfit',suit.name)}}>
           <path d="M69 237H99L96 323H68ZM101 237H130L139 323H111Z" fill={suit.trousers}/>
           <path d="M84 257L81 315M116 258L124 315" fill="none" stroke="var(--muted)" opacity=".3" strokeWidth="1.5"/>
-          <path d="M83 138L62 145Q50 146 46 162L34 237L50 241L66 182L64 243Q100 253 137 243L133 182L149 241L165 237L151 162Q148 148 134 145L116 138Z" fill={suit.jacket} stroke="var(--sidebar)" strokeWidth="2.5" strokeLinejoin="round"/>
+          <path d={feminine ? "M83 138L67 145Q55 148 51 163L36 237L50 241L69 180L77 212L66 243Q100 253 134 243L123 212L131 180L149 241L163 237L149 163Q145 149 133 145L116 138Z" : "M83 138L62 145Q50 146 46 162L34 237L50 241L66 182L64 243Q100 253 137 243L133 182L149 241L165 237L151 162Q148 148 134 145L116 138Z"} fill={suit.jacket} stroke="var(--sidebar)" strokeWidth="2.5" strokeLinejoin="round"/>
           <path d="M82 140H118L116 235H86Z" fill="var(--text)"/>
           {suit.detail==='varsity'?<>
             <path d="M81 141L100 162L119 141M65 231H85M116 231H136M37 227L52 231M147 231L162 227" fill="none" stroke="var(--lime)" strokeWidth="6"/>
@@ -49,7 +51,7 @@ export function WardrobeFigure({ look, selected, count }: { look: EquippedItems;
             <path d="M98 163V243" stroke="var(--sidebar)" strokeWidth="3"/>
           </>:<>
             <path d="M82 139L100 180L75 164L80 158L72 148ZM118 139L100 180L124 164L120 158L128 148Z" fill={suit.detail==='formal'?'var(--purple)':'var(--text)'} opacity={suit.detail==='formal'?'.8':'.72'}/>
-            {suit.detail==='formal'&&<path d="M96 151H104L107 174L100 191L93 174Z" fill="var(--lime)"/>}
+            {suit.detail==='formal'&&!feminine&&<path d="M96 151H104L107 174L100 191L93 174Z" fill="var(--lime)"/>}
             {suit.detail==='glow'&&<path d="M128 171L129 176L134 177L129 179L128 184L126 179L121 177L126 176Z" fill="var(--text)"/>}
             <path d="M73 204L86 205M117 205L130 204" stroke="var(--sidebar)" strokeWidth="2" opacity=".6"/>
             <circle cx="101" cy="205" r="2" fill="var(--sidebar)"/><circle cx="102" cy="222" r="2" fill="var(--sidebar)"/>
@@ -61,7 +63,7 @@ export function WardrobeFigure({ look, selected, count }: { look: EquippedItems;
         <path d="M86 116H114V145L100 158L86 145Z" fill={skinShade}/>
         <g className="wardrobe-head" style={{transform:`translateY(${(1-strength)*5}px) rotate(${-8+strength*8}deg)`,transformOrigin:'100px 136px'} as CSSProperties}>
           <ellipse cx="63" cy="94" rx="7" ry="11" fill={skinShade}/><ellipse cx="137" cy="94" rx="7" ry="11" fill={skinShade}/>
-          <path d="M63 76Q62 38 99 38Q138 39 138 76L135 102Q129 132 100 133Q71 133 65 104Z" fill={skinFill}/>
+          <path d={feminine ? "M65 76Q64 38 99 38Q136 39 136 76L133 102Q124 132 100 133Q76 133 67 104Z" : "M63 76Q62 38 99 38Q138 39 138 76L135 102Q129 132 100 133Q71 133 65 104Z"} fill={skinFill}/>
           <path className="wardrobe-hair" d="M62 89Q50 38 84 28Q113 16 136 44Q147 60 137 90L128 61Q104 79 76 62L69 92Z" fill={selected.hairColor?hair.color:'#667287'}/>
           <path d="M79 88L89 86M111 86L121 88" stroke="var(--sidebar)" strokeWidth="2.5" strokeLinecap="round" opacity=".7"/>
           <ellipse cx="84" cy="96" rx="2.5" ry={2.1+strength*.8} fill="var(--sidebar)"/><ellipse cx="116" cy="96" rx="2.5" ry={2.1+strength*.8} fill="var(--sidebar)"/>

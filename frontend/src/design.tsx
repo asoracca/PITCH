@@ -9,6 +9,7 @@ export type EquippedItems = {
   background: string
   skinTone?: string
   hairColor?: string
+  style?: string
   avatarEnabled?: boolean
 }
 
@@ -342,6 +343,7 @@ export const cosmeticItems = [
     rarity: "LIMITED",
     requirement: "",
   },
+  { id: "none", name: "None", category: "Accessories", price: 0, rarity: "OWNED", requirement: "" },
   {
     id: "glasses",
     name: "Round Glasses",
@@ -417,6 +419,7 @@ export function AvatarCharacter({
   skinTone = "brown",
   hairColor = "black",
   avatarEnabled = false,
+  style = "masculine",
 }: {
   outfit?: string
   accessory?: string
@@ -425,8 +428,10 @@ export function AvatarCharacter({
   portrait?: boolean
   skinTone?: string
   hairColor?: string
+  style?: string
   avatarEnabled?: boolean
 }) {
+  const feminine = style === "feminine"
   const skin = skinTones.find((tone) => tone.id === skinTone) || skinTones[3]
   const hair = hairColors.find((color) => color.id === hairColor) || hairColors[0]
   if (!avatarEnabled) return <span className={`avatar-placeholder ${compact || portrait ? "avatar-placeholder-compact" : ""}`} role="img" aria-label="No avatar selected"><Icon name="user" size={96} /></span>
@@ -451,7 +456,7 @@ export function AvatarCharacter({
       className={`pitch-character ${compact ? "character-compact" : ""}`}
       viewBox={portrait ? "75 45 130 155" : "0 0 280 400"}
       role="img"
-      aria-label="Customizable PITCH character"
+      aria-label={`${feminine ? "Feminine" : "Masculine"} PITCH character, ${outfit}, ${accessory === "None" ? "no accessories" : accessory}`}
     >
       <rect width="280" height="400" rx="30" fill={backdrop} />
       <path
@@ -459,7 +464,7 @@ export function AvatarCharacter({
         fill="#0a0f20"
         opacity=".65"
       />
-      <circle cx="140" cy="115" r="54" fill={skin.color} />
+      <ellipse cx="140" cy="115" rx={feminine ? 48 : 54} ry="54" fill={skin.color} />
       <path
         d="M87 112Q86 46 145 48Q205 50 193 123L178 90Q135 103 99 80Z"
         fill={hair.color}
@@ -480,11 +485,11 @@ export function AvatarCharacter({
       />
       <path d="M112 181h56v30h-56z" fill={skin.shade} />
       <path
-        d="M63 263Q68 198 112 190h56q45 10 50 73l-20 83H82Z"
+        d={feminine ? "M70 263Q75 202 112 190h56q38 12 43 73l-23 34 11 49H81l11-49Z" : "M63 263Q68 198 112 190h56q45 10 50 73l-20 83H82Z"}
         fill={jacket}
       />
       <path d="m112 190 28 42 28-42-8 88h-40Z" fill="#f5f3ee" />
-      <path d="m132 207 8 25 8-25-8-8Z" fill="#88f4f5" />
+      {!feminine && <path d="m132 207 8 25 8-25-8-8Z" fill="#88f4f5" />}
       <path
         d="M82 250 56 340M198 250l26 90"
         stroke={jacket}

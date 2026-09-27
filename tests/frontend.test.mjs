@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-const result = await build({ stdin: { contents: `export * from './src/model'; export * from './src/roleplay'; export { Home } from './src/LandingHome'; export * from './src/practice-transcript'; export * from './src/delivery'; export * from './src/coach-prompt'; export * from './src/coach-feedback'; export { CoachFeedback } from './src/CoachFeedback'; export { DeliverySummary } from './src/PracticeReview'; export { PracticeLogs } from './src/PracticeLogs'; export { demoPracticeLogs } from './src/demo-practices'; export { demoPlayers } from './src/demo'; export { OpponentChat } from './src/OpponentChat'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, loader: { '.css': 'empty' }, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
+const result = await build({ stdin: { contents: `export * from './src/model'; export * from './src/roleplay'; export { Home } from './src/LandingHome'; export * from './src/practice-transcript'; export * from './src/delivery'; export * from './src/coach-prompt'; export * from './src/coach-feedback'; export { CoachFeedback } from './src/CoachFeedback'; export { DeliverySummary } from './src/PracticeReview'; export { PracticeLogs } from './src/PracticeLogs'; export { demoPracticeLogs } from './src/demo-practices'; export { demoPlayers } from './src/demo'; export { OpponentChat } from './src/OpponentChat'; export { LiveAudio } from './src/voice'; export { Dashboard, Profile, Leaderboard, Coach, Auth } from './src/screens'; export { WardrobeFigure } from './src/WardrobeFigure'; export { AvatarCharacter, Logo } from './src/design'; export { Match } from './src/Match'; export { PracticeRecording } from './src/practice-recording'; export { Practice } from './src/screens'; export { DemoMatch } from './src/DemoMatch'; export { createElement } from 'react'; export { renderToStaticMarkup } from 'react-dom/server';`, resolveDir: resolve('frontend'), loader: 'tsx' }, bundle: true, write: false, loader: { '.css': 'empty' }, platform: 'node', format: 'cjs', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' }, external: ['node:*'] });
 const temp = mkdtempSync(join(tmpdir(), 'pitch-ui-test-'));
 const file = join(temp, 'render.cjs'); writeFileSync(file, result.outputFiles[0].text);
 const ui = createRequire(import.meta.url)(file); rmSync(temp, { recursive: true, force: true });
@@ -260,4 +260,18 @@ test('stopping transcription keeps late final words and pending words without du
     await new Promise(resolve=>setTimeout(resolve,1550));
     assert.equal(latest.text,'Keep these words');assert.equal(latest.listening,false);
   } finally {speech.abort();if(descriptor)Object.defineProperty(globalThis,'SpeechRecognition',descriptor);else delete globalThis.SpeechRecognition;}
+});
+
+
+test('avatar style and accessory choices render consistently in wardrobe and profile', () => {
+  const look={avatarEnabled:true,style:'feminine',outfit:'The Closer',accessory:'None',background:'Midnight Arena',skinTone:'tan',hairColor:'brown'};
+  const selected={style:true,outfit:true,accessory:true,background:true,skinTone:true,hairColor:true};
+  const wardrobe=render(ui.WardrobeFigure,{look,selected,count:6});
+  const profile=render(ui.AvatarCharacter,look);
+  assert.match(wardrobe,/Feminine style/); assert.match(profile,/Feminine PITCH character/);
+  assert.match(wardrobe,/No accessories/); assert.match(profile,/no accessories/);
+  assert.doesNotMatch(profile,/<circle cx="116" cy="126"/);
+  assert.match(render(ui.AvatarCharacter,{...look,accessory:'Round Glasses'}),/<circle cx="116" cy="126"/);
+  assert.notEqual(profile,render(ui.AvatarCharacter,{...look,style:'masculine'}));
+  assert.notEqual(wardrobe,render(ui.WardrobeFigure,{look:{...look,style:'masculine'},selected,count:6}));
 });

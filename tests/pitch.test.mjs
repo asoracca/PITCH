@@ -423,3 +423,21 @@ test('blocking a participant removes friendship and prevents requests or profile
     assert.equal((await f.ok('friends',from)).friends.length,0);
   }
 });
+
+
+test('avatar styles and no accessories persist without changing legacy avatars', async t => {
+  const f=await setup(t),users=await f.group();
+  const legacy={avatarEnabled:true,skinTone:'tan',hairColor:'brown',outfit:'Smart Casual',accessory:'Round Glasses',background:'Midnight Arena'};
+  await f.ok('avatar',users[0],{avatar:legacy});
+  assert.deepEqual((await f.ok('me',users[0])).avatar,legacy);
+  const avatar={...legacy,style:'feminine',accessory:'None'};
+  await f.ok('avatar',users[0],{avatar});
+  assert.deepEqual((await f.ok('me',users[0])).avatar,avatar);
+  const room=await f.match(users);
+  assert.deepEqual(room.participants.find(p=>p.id===users[0].player.id).avatar,avatar);
+  for(const patch of [{style:'invalid'},{style:null},{accessory:'invalid'}])
+    assert.equal((await f.api('avatar',users[0],{avatar:{...avatar,...patch}})).status,400);
+  const removed={...avatar,style:'masculine',avatarEnabled:false};
+  await f.ok('avatar',users[0],{avatar:removed});
+  assert.deepEqual((await f.ok('me',users[0])).avatar,removed);
+});
