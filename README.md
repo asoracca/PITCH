@@ -1,6 +1,6 @@
 # PITCH prototype
 
-[Website](https://pitch-prototype-asoracca.vercel.app) · [Backend branch](https://github.com/asoracca/Pitch/tree/backend/quick-match)
+[Website](https://pitch-prototype-asoracca.vercel.app) · [Shared release branch](https://github.com/asoracca/PITCH/tree/main)
 
 The team's Figma Make design is integrated in `frontend/` (React, Vite and Tailwind). It uses the existing authenticated PITCH backend. The teammate's Next.js/Socket.IO development workspace remains in `beef/`; the previous plain UI is retained as reference in `prototype/`.
 

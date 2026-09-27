@@ -1,7 +1,7 @@
 name: Backend checks
 on:
   push:
-    branches: ['backend/quick-match']
+    branches: ['main', 'backend/quick-match']
   pull_request:
   workflow_dispatch:
 permissions:

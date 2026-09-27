@@ -14,7 +14,7 @@ The design's five example scoring dimensions are replaced by the agreed three pe
 - A typed client for every current PITCH endpoint in `client/pitch-api.ts`; `beef/src/pitch-api.ts` re-exports it for the Next.js team.
 - Live contract discovery: `GET /api/pitch/config` reports `apiVersion: "pitch.v1"`, rules, scenarios and supported capabilities. Use its flags to hide unsupported features. Browser transcription and on-device coaching are optional client capabilities; server AI remains disabled. Google sign-in, password recovery, tournaments and voice effects are not enabled.
 - Cancelable queue/room subscriptions, session-error handling, server-controlled results and a full real-database client integration test.
-- Automatic deployment from `asoracca/Pitch` branch `backend/quick-match` to the existing Vercel website. GitHub CI checks backend and Next.js builds.
+- Automatic deployment from the shared `asoracca/PITCH` branch `main` to the existing Vercel website, building the frontend and API together. GitHub CI checks backend and Next.js builds.
 
 No paid service or second game server is required for this contract.
 
@@ -79,7 +79,7 @@ Figma's standard Make integration creates its own repository and pushes to that 
 2. Compare against the recorded upstream commit in `frontend/IMPORT.md`; import the relevant visual changes into `frontend/`. Keep `src/usePitch.ts`, `src/Match.tsx`, shared API types and root server configuration intact unless the reviewed change requires an update.
 3. Wire new interactions to real capabilities. Keep any labelled demo mode separate from real opponents and account data. Do not present canned replies as AI.
 4. Run `pnpm check` and `pnpm build:vercel` with a local test database; review the scope and the new UI states.
-5. Push the integrated result to `asoracca/Pitch` branch `backend/quick-match`. Native Vercel deployment updates the existing project. Publish the matching private Sites version as well.
+5. Open a pull request with the integrated changes into `asoracca/PITCH` branch `main`. Once merged, native Vercel deployment updates the frontend and API together. Other branches create previews. Publish the matching private Sites version separately; GitHub pushes do not automatically update Sites.
 
 The first import and build cutover are implemented. Root deployment now serves `frontend/dist`; `prototype/` is retained only as reference. Future Figma export pushes are **not** automatically merged into this integration repository. Do not repoint Vercel at the raw export repository, which has no PITCH API or database configuration.
 
