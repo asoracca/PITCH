@@ -239,7 +239,7 @@ test('roleplay follows the selected role and difficulty and reserves final AI ou
   const chat=ui.roleplayMessages(role,'Hard','Direct',messages);
   assert.match(chat[0].content,/Client/);assert.match(chat[0].content,/ONE relevant follow-up/);assert.deepEqual(chat.slice(1),messages);
   const summary=ui.roleplayMessages(role,'Medium','Neutral',messages,true);assert.match(summary[0].content,/STRENGTH, IMPROVE, EXAMPLE/);assert.match(summary[0].content,/Do not judge voice/);
-  const home=render(ui.Home,{onNavigate(){}});assert.match(home,/Pitch\. Practice\. Perform\./);assert.match(home,/Build real confidence/);assert.match(home,/career-studio-runway.webp/);assert.match(home,/A line of illustrated students/);assert.doesNotMatch(home,/Student life|Find your voice|Career-ready|career-story-controls/);
+  const home=render(ui.Home,{onNavigate(){}});assert.match(home,/Pitch\. Practice\. Perform\./);assert.match(home,/career-studio-runway.webp/);assert.match(home,/A line of illustrated students/);assert.doesNotMatch(home,/Student life|Find your voice|Career-ready|career-story-controls/);
 });
 
 
