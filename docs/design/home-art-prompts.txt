@@ -99,3 +99,33 @@ IDENTITIES: row 1 a brown-skinned young woman with one simple rounded dark-curly
 DIRECTION AND GAIT: gentle three-quarter view moving toward screen right and slightly downward, same direction in all cells. Four successive walking phases across columns: left-leg forward contact, weight transfer with bending legs, opposite leg forward contact, opposite weight transfer. Clearly alternate left and right legs and counter-swing arms. Full bodies including hands and feet; distinct readable stride silhouettes. Walking, not running. No duplicate standing poses.
 CRITICAL UNIFORM GRID REGISTRATION: canvas remains a full square, no automatic trimming. Four equal columns, three equal rows; exactly twelve invisible equal cells. With a 1536 canvas each cell is384px wide×512px high. Character hip/torso center at local x=192 in EVERY cell. Heads at local y=72 and identical feet baseline at local y=452 in EVERY cell. Identical apparent height, scale and center for all four poses in each row. Keep left-right limb swings inside local x=55..329, leaving safe margins. Each person must remain completely inside their own cell, with no overlap into neighbors and no changes to centering or camera across frames. Keep all12 feet baselines at the same local position452. No objects except each character's specified worn backpack.
 BACKGROUND: actual fully transparent alpha in all empty pixels, NOT white, NOT black, NOT a rendered checkerboard. No floor, environment, gridlines, borders, text, labels, frame numbers, logo or watermark. Exactly FOUR columns, THREE rows. Minimal professional FLAT 2D drawn silhouettes only.
+
+
+---
+
+TRANSPARENT MACHINE
+
+Use case: background-extraction.
+Asset type: transparent architectural hero cutout for PITCH website.
+Input image: Image1 is the exact edit target.
+Primary request: remove ALL dark navy floor, background, environment, and reflected floor illumination. Replace every pixel outside the physical machine, conveyor ramps, and their support legs with GENUINELY TRANSPARENT alpha. Output a clean isolated cutout of the existing machine plus connected conveyor plus supports ONLY. No rectangular backdrop, no dark gradient, no ground plane, no glow panel, no shadow plane.
+LOCKED INVARIANTS: preserve the machine, physical mounted PITCH plaque, exact PITCH lettering, cyan door, blue side window, white roof and walls, cyan vertical trim, all conveyor segments and support legs, geometry, materials, object colors and lighting. Preserve exactly the original camera, crop, object positions and scale on the SAME1536×1024 canvas. The leftmost empty42% becomes transparent while the machine stays in its existing location. Do NOT recenter, enlarge, crop tightly, trim transparent margins, reshape, rotate or move any physical object. Keep the upper-left ramp and lower-right ramp intersecting the same canvas edges as before.
+TRANSPARENCY: real alpha channel, fully transparent empty space including underneath and between supports; clean anti-aliased physical edges without navy rectangular residue. Remove cast ground shadows and floor reflections along with the ground. Keep the cyan illumination only inside the doorway and on actual object surfaces. Do not render a checkerboard, black, white, colored or patterned backdrop.
+Constraints: no people, no additional objects, no new text, no missing supports or ramp segments, no extra signage, no border, no watermark. Exact existing geometry and composition, only background removed.
+
+---
+
+FORMAL ILLUSTRATED WALKERS
+
+Use case: identity-preserve.
+Asset type: matching FORMAL PROFESSIONAL flat illustrated walking sprite sheet.
+Input image: Image1 is the exact edit target.
+Primary request: change ONLY the clothing and worn accessories of ALL TWELVE figures into full tailored formal professional attire. These figures are three people repeated in four consecutive walk phases per row; preserve exactly the same identities, hair, skin tones, body sizes, featureless faces and flat outlined illustration style.
+ALL THREE PEOPLE must visibly wear fitted suit jackets with clearly drawn lapels, crisp collared shirts or blouses, matching FULL-LENGTH tailored suit trousers, and formal closed-toe shoes. No exposed ankles.
+Row1 brown-skinned curly-haired woman: tailored navy blazer with lapels, cream collared blouse, matching full-length navy suit trousers and navy formal low-heeled shoes. Remove hoodie and backpack completely.
+Row2 light-skinned short-haired man: tailored navy suit jacket with lapels, cream collared shirt, clearly visible cyan necktie, matching full-length navy suit trousers, navy formal oxford shoes. Remove casual T-shirt and sneakers completely.
+Row3 tan-skinned bob-haired woman: tailored cyan blazer with lapels, cream collared blouse, matching full-length cyan suit trousers and dark navy formal closed-toe pumps.
+LOCKED INVARIANTS: same1254×1254 square canvas, exact4columns×3rows, same twelve frame positions and same per-cell character centers/baselines/scale as input, identical exact walking leg phases, arm poses and orientation in every corresponding cell. Do not recenter or trim canvas. Keep each complete figure inside its original cell. Preserve head/hair/skin silhouette and face simplicity. The result must align with the original sheet for a clothing transformation during animation.
+STYLE: strictly FLAT2D drawn vector-like navy/cyan/cream shapes with crisp clean navy outlines. Featureless faces. No facial features, gradients, textures, 3D modeling, clay, realistic people, realistic shading or rendered humans. Small clear silhouettes appropriate for40–55px-tall display.
+TRANSPARENCY: genuine transparent alpha background, no checkerboard, backdrop, floor, shadow, text, labels, borders, gridlines or watermark.
+Avoid: hoodies, backpacks, sneakers, casual T-shirts, shorts, cropped trousers, casual jackets without lapels. ALL12 figures must read as FORMAL SUITS.

@@ -235,11 +235,12 @@ export function Sidebar({
           <Icon name="close" />
         </button>
       </div>
-      <nav className="nav-list">
+      <nav className="nav-list" aria-label="Main navigation">
         {navItems.map((item) => (
           <button
             key={item.label}
             className={`nav-item ${page === item.label ? "nav-active" : ""}`}
+            aria-current={page === item.label ? "page" : undefined}
             onClick={() => {
               onNavigate(item.label)
               onClose()

@@ -136,7 +136,7 @@ export default function App() {
     content = <Pricing navigate={navigate} />
   else if (!p.session)
     content =
-      auth || page !== "Home" ? <Auth p={p} /> : <Home onNavigate={navigate} onSignIn={() => setAuth(true)} signedIn={false} />
+      auth || page !== "Home" ? <Auth p={p} /> : <Home onNavigate={navigate} />
   else if (!p.me || !p.config)
     content = (
       <div className="panel">
@@ -149,7 +149,7 @@ export default function App() {
   else {
     switch (page) {
       case "Home":
-        content = <Home onNavigate={navigate} onSignIn={() => setAuth(true)} signedIn />
+        content = <Home onNavigate={navigate} />
         break
       case "Dashboard":
         content = <Dashboard p={p} navigate={navigate} equipped={equipped} />
