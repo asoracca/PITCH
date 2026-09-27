@@ -176,3 +176,14 @@ export const pitchPracticeLogs = sqliteTable('pitch_practice_logs', {
   transcript: text('transcript').notNull(), feedback: text('feedback').notNull(), deliveryJson: text('delivery_json'),
   createdAt: integer('created_at').notNull(), updatedAt: integer('updated_at').notNull(),
 }, t=>[primaryKey({columns:[t.playerId,t.id]}),index('pitch_practice_player_date').on(t.playerId,t.createdAt)]);
+
+export const pitchFriendships = sqliteTable('pitch_friendships', {
+  playerA: text('player_a').notNull().references(() => players.id),
+  playerB: text('player_b').notNull().references(() => players.id),
+  requesterId: text('requester_id').notNull().references(() => players.id),
+  status: text('status').notNull().default('pending'),
+  createdAt: integer('created_at').notNull(), updatedAt: integer('updated_at').notNull(),
+}, t => [primaryKey({ columns: [t.playerA,t.playerB] }), index('pitch_friends_recipient').on(t.playerB),
+  check('pitch_friend_pair',sql`${t.playerA} < ${t.playerB}`),
+  check('pitch_friend_requester',sql`${t.requesterId} IN (${t.playerA},${t.playerB})`),
+  check('pitch_friend_status',sql`${t.status} IN ('pending','accepted')`)]);

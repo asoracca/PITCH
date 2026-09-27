@@ -8,11 +8,11 @@ export function Pricing({ navigate }: { navigate: (page: Page) => void }) {
       <div className="pricing-heading">
         <div className="eyebrow">PITCH PLANS</div>
         <h1 className="display">Find your next level.</h1>
-        <p>Start practicing for free. Explore what’s planned for Pro and Campus.</p>
+
       </div>
       <div className="pricing-preview-note">
         <Icon name="spark" />
-        <div><strong>Pricing preview</strong><p>The prototype stays free. These plans and match limits are not active yet, and no payment is collected.</p></div>
+        <div><strong>Pricing preview</strong><p>Free prototype. Plans and limits aren’t active; no payments.</p></div>
       </div>
       <div className="plan-billing" role="group" aria-label="PITCH Pro billing period">
         <Button variant={annual ? "ghost" : "secondary"} aria-pressed={!annual} onClick={() => setAnnual(false)}>Monthly</Button>
@@ -23,14 +23,12 @@ export function Pricing({ navigate }: { navigate: (page: Page) => void }) {
           <div className="eyebrow">FOR STUDENTS</div>
           <h2 className="heading">Free</h2>
           <div className="plan-price"><strong>$0</strong><span>to get started</span></div>
-          <p>Build confidence, one round at a time.</p>
           <dl className="plan-features">
             <div><dt>Matches</dt><dd>3 per week, plus credits earned by judging</dd></div>
             <div><dt>Scenarios</dt><dd>Core library</dd></div>
             <div><dt>Feedback</dt><dd>Match score</dd></div>
           </dl>
           <Button variant="secondary" onClick={() => navigate("Practice")}>Continue free <Icon name="arrow" /></Button>
-          <small>The weekly limit is not enforced in this prototype.</small>
         </article>
         <article className="panel plan-card plan-featured">
           <div className="eyebrow">FOR STUDENTS SERIOUS ABOUT RECRUITING</div>
@@ -43,7 +41,6 @@ export function Pricing({ navigate }: { navigate: (page: Page) => void }) {
             <div><dt>Feedback</dt><dd>Full score history and skill progress</dd></div>
           </dl>
           <Button disabled>PITCH Pro · coming soon</Button>
-          <small>Preview only. Subscriptions are not available yet.</small>
         </article>
         <article className="panel plan-card">
           <div className="eyebrow">FOR UNIVERSITY CAREER CENTERS</div>
@@ -56,10 +53,8 @@ export function Pricing({ navigate }: { navigate: (page: Page) => void }) {
             <div><dt>Feedback</dt><dd>Career-center dashboard with cohort analytics</dd></div>
           </dl>
           <Button variant="secondary" disabled>Campus · coming soon</Button>
-          <small>Preview only. Campus plans are not available yet.</small>
         </article>
       </div>
-      <p className="pricing-footer">Keep using the prototype’s current features for free while we build PITCH.</p>
     </div>
   )
 }

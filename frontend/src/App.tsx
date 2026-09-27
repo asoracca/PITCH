@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import {
   Button,
   AvatarBadge,
-  Home,
   Icon,
   Logo,
   Sidebar,
@@ -21,8 +20,10 @@ import {
   Practice,
   Profile,
 } from "./screens"
+import { PlayerProfiles } from "./PlayerProfiles"
 import { Match } from "./Match"
 import { Pricing } from "./Pricing"
+import { Home } from "./LandingHome"
 import { initials } from "./model"
 import { usePitch } from "./usePitch"
 import "./integration.css"
@@ -79,6 +80,7 @@ export default function App() {
   const p = usePitch()
   const [page, setPage] = useState<Page>(currentPage)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [demoProfile, setDemoProfile] = useState(true)
   const [auth, setAuth] = useState(false)
   const [equipped, updateLook] = useState<EquippedItems>(storedLook)
   const profile = {
@@ -167,7 +169,7 @@ export default function App() {
         content = <Leaderboard p={p} />
         break
       case "Profile":
-        content = <Profile p={p} navigate={navigate} equipped={equipped} />
+        content = <Profile p={p} navigate={navigate} equipped={equipped} demoProfile={demoProfile} setDemoProfile={setDemoProfile} />
         break
       case "Character":
       case "Avatar Shop":
@@ -182,7 +184,7 @@ export default function App() {
     }
   }
   return (
-    <div className="app-shell">
+    <PlayerProfiles p={p}><div className={`app-shell${page === 'Home' && !auth && !p.booting && (!p.session || (p.me && p.config)) ? ' landing-shell' : ''}${page === 'Practice' ? ' practice-shell' : ''}`}>
       <Sidebar
         page={page}
         onNavigate={navigate}
@@ -221,6 +223,7 @@ export default function App() {
                   <strong>{p.me.rating.value}</strong>
                   <span>ELO</span>
                 </button>
+                {demoProfile && <button className="topbar-streak" aria-label="500-day demo streak" onClick={() => navigate("Profile")}><Icon name="fire" size={16}/><strong>500</strong><span>days</span><small>DEMO</small></button>}
                 <button
                   className="avatar avatar-small"
                   aria-label="Open profile"
@@ -289,6 +292,6 @@ export default function App() {
           {content}
         </div>
       </main>
-    </div>
+    </div></PlayerProfiles>
   )
 }

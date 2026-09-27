@@ -29,6 +29,8 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
   useEffect(()=>{if(finished)controller.current?.stop()},[finished])
   useEffect(()=>{if(speech.text)updateTranscript(speech.text)},[speech.text])
   const recording=state.phase==='recording', requesting=state.phase==='requesting', busy=recording||requesting||state.phase==='stopping'
+  const processed = !busy && !speech.listening && !!state.url && !!delivery
+  const canReview = !busy && !speech.listening && transcript.trim().length >= 30
   const transcriptId = useId()
   const signature = JSON.stringify({transcript,feedback,delivery})
   async function save(){
@@ -38,7 +40,7 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
   }
   function clear(){practiceId.current=null;setSaved('');setSaveError('');setFeedback('');controller.current?.clear();recognizer.current?.abort();setSpeech({...transcriptOff});updateTranscript('');setDelivery(null);if(preview.current)preview.current.srcObject=null}
   return <section className="practice-microphone" aria-label="Practice microphone">
-    <div className="practice-mic-header"><div><strong>Practice with your voice</strong><p>Up to 60 seconds. Video is optional.</p></div><Button variant={recording?'secondary':'primary'} aria-pressed={recording} disabled={state.phase==='stopping'} onClick={()=>{
+    <div className="practice-mic-header"><div><strong>Practice with your voice</strong><p>60 seconds · optional video</p></div><Button variant={recording?'secondary':'primary'} aria-pressed={recording} disabled={state.phase==='stopping'} onClick={()=>{
       if(recording||requesting)controller.current?.stop()
       else {practiceId.current=null;setSaved('');setSaveError('');recognizer.current?.abort();updateTranscript('');setSpeech({...transcriptOff});setDelivery(null);void controller.current?.start(
         ()=>latest.current.deadline&&!latest.current.finished?latest.current.deadline-Date.now():60000,
@@ -49,20 +51,20 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
     <p role="status" className={recording?'positive':''}>{state.message||'Microphone off.'}</p>
     <video ref={preview} className="practice-camera" hidden={!camera||!recording} muted autoPlay playsInline aria-label="Your practice camera preview"/>
     {state.url&&<div className="practice-playback">{state.video?<video controls playsInline src={state.url} aria-label="Your recorded practice response"/>:<audio controls src={state.url} aria-label="Your recorded practice response"/>}<Button variant="ghost" onClick={clear}>Delete recording</Button></div>}
-    <details className="review-details"><summary>Recording &amp; privacy</summary><p>Recording stays on this page and clears when you leave. Saving a practice keeps only its text, feedback and measurements in your private history. Audio and video are not uploaded. Nothing affects Elo.</p></details>
+    <details className="review-details"><summary>Recording &amp; privacy</summary><p>Recordings clear when you leave; they aren’t uploaded. Saved practices keep text, feedback and measurements privately. No Elo changes.</p></details>
     {coaching&&<div className="practice-review">
       <section className="review-step">
-        <ReviewHeading step={1} title="Your words" description="Check what we heard. You can edit it after recording." aside={<span className="review-badge">{busy || speech.listening ? 'Listening' : 'Editable transcript'}</span>} />
+        <ReviewHeading step={1} title="Your words" description="Edit after recording." aside={<span className="review-badge">{busy || speech.listening ? 'Listening' : 'Editable transcript'}</span>} />
         <label className="review-transcript" htmlFor={transcriptId}>Your response
           <textarea id={transcriptId} value={transcript} readOnly={busy||speech.listening} maxLength={6000} rows={4} onChange={e=>updateTranscript(e.target.value)} placeholder="Speak with the microphone on, or type your response here." />
         </label>
         {speech.interim&&<p className="transcript-interim" aria-live="polite">{speech.interim}</p>}
         {speech.message&&!speech.listening&&!speech.message.startsWith('Live transcription')&&<p className="review-caption" role="status">{speech.message}</p>}
       </section>
-      <DeliverySummary transcript={transcript} delivery={delivery} />
-      <LocalCoach transcript={transcript} prompt={prompt} goal={goal} delivery={delivery} disabled={busy||speech.listening} onFeedbackChange={setFeedback}/>
-      {onSave && <footer className="practice-save">
-        <div><strong>Keep this practice</strong><p>Save your response and feedback to Profile → Real activity. Video stays on this page.</p></div>
+      {processed && <DeliverySummary transcript={transcript} delivery={delivery} />}
+      <LocalCoach available={canReview} transcript={transcript} prompt={prompt} goal={goal} delivery={delivery} disabled={busy||speech.listening} onFeedbackChange={setFeedback}/>
+      {onSave && !busy && !speech.listening && !!transcript.trim() && <footer className="practice-save">
+        <div><strong>Keep this practice</strong><p>Save text and feedback to Profile → Real activity. Video stays here.</p></div>
         <Button variant="secondary" disabled={saving||busy||speech.listening||!transcript.trim()||saved===signature} onClick={()=>void save()}>{saving?'Saving…':saved===signature?'Saved to profile':saved?'Update saved practice':'Save practice'}</Button>
         {saveError && <p role="alert">{saveError}</p>}
       </footer>}

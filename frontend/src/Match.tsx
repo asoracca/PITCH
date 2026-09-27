@@ -1,3 +1,4 @@
+import { PlayerLink } from "./PlayerProfiles"
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Button, Icon, SectionTitle, AvatarBadge } from "./design"
 import { countdown, canRespond, initials, signed, skills } from "./model"
@@ -106,7 +107,7 @@ export function Match({ p }: { p: Pitch }) {
           {p.queue.status === "expired" && (
             <p role="status">{p.queue.message}</p>
           )}
-          <fieldset className="topic-options"><legend>Choose your topic</legend><div className="category-chips">{TOPICS.map(topic=><button type="button" key={topic.id} className="category-chip" aria-pressed={category===topic.id} onClick={()=>setCategory(topic.id)}>{topic.label}</button>)}</div><small>Any topic can match all categories. Friends should choose the same topic to maximize their chance of meeting.</small></fieldset>
+          <fieldset className="topic-options"><legend>Choose your topic</legend><div className="category-chips">{TOPICS.map(topic=><button type="button" key={topic.id} className="category-chip" aria-pressed={category===topic.id} onClick={()=>setCategory(topic.id)}>{topic.label}</button>)}</div><small>Any topic matches all categories. Friends: choose the same topic.</small></fieldset>
           <fieldset className="queue-options">
             <legend>Choose how to play</legend>
             {([
@@ -146,8 +147,8 @@ export function Match({ p }: { p: Pitch }) {
               </label>
             ))}
           </fieldset>
-          {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>If judges aren’t available after 15 seconds, start an unrated two-player duel and exchange opponent feedback.</span></label>}
-          <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators to see my display name, shared text and round result. The round is public only if every participant agrees. Camera and microphone feeds stay within the room.</span></label>
+          {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>After 2 minutes without judges: one automated rubric judge, no Elo. Exchange feedback too.</span></label>}
+          <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators to see names, text and results if everyone agrees. Audio and video stay private.</span></label>
           {p.me!.bannedUntil > Date.now() && (
             <p>
               Queue break until{" "}
@@ -163,10 +164,7 @@ export function Match({ p }: { p: Pitch }) {
             Find a round
             <Icon name="bolt" />
           </Button>
-          <p>
-            Queues last up to two minutes. Invite teammates to open the website
-            and queue at the same time. Two contestants can practice without judges; rated rounds need three judges.
-          </p>
+          <details className="review-details"><summary>Matching rules</summary><p>Two contestants; one or three human judges. Optional automated fallback after 2 minutes. No opponent after 2½ minutes? The queue closes.</p></details>
         </div>
       )}
       <Spectate p={p} />
@@ -252,7 +250,7 @@ function AudioControls({
     <section className="panel audio-controls" aria-label="Voice, microphone and camera">
       <div>
         <h2 className="heading">Talk, type or turn your camera on.</h2>
-        <p>Connect voice &amp; video to hear and see the round. Your microphone and camera start off. Text replies are always available during your turn.</p>
+        <p>Connect to listen or watch. Mic and camera start off; text stays available.</p>
         <div className="voice-state" role="status" aria-live="polite">
           <strong>{starting ? "Connecting voice & video…" : state.enabled ? "Voice & video connected" : "Voice & video disabled"}</strong>
           {state.enabled && <span>{state.connected} of {state.participants} participants connected</span>}
@@ -299,7 +297,7 @@ function AudioControls({
         {state.needsPlayback && <Button variant="secondary" onClick={() => { void audio.current?.play() }}>Play audio & video</Button>}
         {state.enabled && <Button variant="ghost" disabled={starting} onClick={() => { void start() }}>Reconnect voice & video</Button>}
       </div>
-      {state.enabled && <p>Everyone who wants to watch or listen needs to connect. If a connection fails, reconnect or continue with text.</p>}
+      {state.enabled && <p>Everyone must connect to listen or watch. Reconnect if needed, or use text.</p>}
       <figure className="local-camera" hidden={!cameraOn}><video ref={preview} muted autoPlay playsInline aria-label="Your camera preview" /><figcaption>You · camera on</figcaption></figure>
       <div ref={container} className="media-streams" />
     </section>
@@ -610,7 +608,8 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
   const now = useServerNow(room.serverTime)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const active = room.status === "active" && !room.left
-  const peer = room.judgingMode === "peer"
+  const automated = room.judgingMode === "automated"
+  const peer = room.judgingMode === "peer" || automated
   const players = room.participants
     .filter((v) => v.role === "contestant")
     .sort((a, b) => a.slot - b.slot)
@@ -643,12 +642,11 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
       <div className="matchup-intro">
         {players.map((v, i) => (
           <div className="matchup-player" key={v.id}>
-            <AvatarBadge name={v.name} look={v.avatar} size="xl" />
+            <PlayerLink player={v} className="player-link-stack"><AvatarBadge name={v.name} look={v.avatar} size="xl" /><strong>{v.name}</strong></PlayerLink>
             <span>
               CONTESTANT {i ? "B" : "A"}
               {v.id === p.me!.player.id ? " · YOU" : ""}
             </span>
-            <strong>{v.name}</strong>
             <small>{v.ageBand ? `Ages ${v.ageBand}` : ""}</small>
             <small>
               {v.left
@@ -662,7 +660,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
         <div className="matchup-vs match-center">
           <span>{room.band}</span>
           <strong>VS</strong>
-          <small>{peer ? "Two-player practice · unrated" : "Peer judged"}</small>
+          <small>{automated ? "One automated judge · unrated" : peer ? "Two-player practice · unrated" : `${room.participants.filter(v => v.role === 'judge').length} human judge${room.participants.filter(v => v.role === 'judge').length === 1 ? '' : 's'}`}</small>
         </div>
       </div>
       <div className="scenario-reveal">
@@ -677,15 +675,15 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
         </div>
       </div>
       {active && <p>{room.isPublic ? "Public round: viewers can follow shared text and results." : "Private round: only its participants can view it."}</p>}
-      {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>Two-player practice · no judges needed</strong><p>Take your turns, then give each other feedback. This round does not change Elo or award judging credits.</p></div></div>}
+      {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>{automated ? "Automated rubric judge · text only" : "Two-player practice · no judges needed"}</strong><p>{automated ? "Free text checks: structure, examples, next steps. Not AI; no audio or video assessment. " : "Take your turns, then give each other feedback. "}No Elo or judging credits.</p></div></div>}
       <OpponentChat p={p} room={room} />
       <div className="live-judge-cards">
+        {automated && <div className="panel"><Icon name="gavel" /><strong>Automated rubric judge</strong><span>{room.result ? 'Text checks complete' : '1 stand-in · submit text during your turn'}</span></div>}
         {room.participants
           .filter((v) => v.role === "judge")
           .map((v) => (
             <div className="panel" key={v.id}>
-              <AvatarBadge name={v.name} look={v.avatar} /><Icon name="gavel" />
-              <strong>{v.name}</strong>
+              <PlayerLink player={v}><AvatarBadge name={v.name} look={v.avatar}/><strong>{v.name}</strong></PlayerLink><Icon name="gavel"/>
               <span>
                 {v.left
                   ? "Left round"
@@ -750,7 +748,7 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
                   : "DRAW"}
             </span>
             <p>
-              {room.result.voteCount} {peer ? "opponent feedback submissions · Elo unchanged" : `scorecards · ${room.result.reason.replaceAll("_", " ")}`}
+              {room.result.voteCount} {automated ? "automated judge · Elo unchanged" : peer ? "opponent feedback submissions · Elo unchanged" : `scorecards · ${room.result.reason.replaceAll("_", " ")}`}
             </p>
           </div>
           {peer && !room.feedback.length && <p>No opponent feedback was submitted before this round ended.</p>}
@@ -772,11 +770,12 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
                   ) : (
                     <p>No Elo change</p>
                   )}
-                  {skills.map((k) => (
+                  {!automated && skills.map((k) => (
                     <p className="capitalize" key={k}>
                       {k}: {score.averages?.[k] ?? "—"}/5
                     </p>
                   ))}
+                  {automated && room.result?.automatedFeedback?.filter(f => f.playerId === score.playerId).map(f => <div key={f.playerId}><p>{f.tip}</p><ul className="automated-checks">{Object.entries(f.checks).map(([key,value]) => <li key={key}>{value ? '✓' : '—'} {key === 'nextStep' ? 'Clear next step' : key === 'specificity' ? 'Specific example' : 'Sentence structure'}</li>)}</ul><small>Simple text checks, not a skill score.</small></div>)}
                 </div>
               )
             })}

@@ -49,6 +49,9 @@ export class PitchApi {
     try { await this.request('/logout', 'POST', {}); }
     finally { if (this.token === token) this.token = null; }
   }
+  playerProfile(id: string, options?: RequestOptions) { return this.request<import('../shared/pitch').PublicProfile>(`/players/${encodeURIComponent(id)}`,'GET',undefined,options); }
+  friends(options?: RequestOptions) { return this.request<{friends:import('../shared/pitch').FriendEntry[]}>('/friends','GET',undefined,options); }
+  friend(id: string, action: import('../shared/pitch').FriendAction, options?: RequestOptions) { return this.request<import('../shared/pitch').PublicProfile>(`/friends/${encodeURIComponent(id)}`,'POST',{action},options); }
   saveAvatar(avatar: AvatarLook) { return this.request<{avatar:AvatarLook}>('/avatar','POST',{avatar}); }
   chat(code: string, options?: RequestOptions) { return this.request<RoomChat>(this.roomPath(code,'/chat'),'GET',undefined,options); }
   sendChat(code: string, kind: 'message'|'reaction', content: string, requestId: string, options?: RequestOptions) { return this.request<RoomChat>(this.roomPath(code,'/chat'),'POST',{kind,content,requestId},options); }

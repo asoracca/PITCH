@@ -12,7 +12,7 @@ export function PracticeLogs({ entries, demo = false, onDelete }: { entries: Pra
     try{await onDelete(id);setPending('')}catch(e){setError(e instanceof Error?e.message:'Could not delete this practice.')}finally{setBusy(false)}
   }
   return <section className="practice-logs form-stack">
-    <header className="activity-heading"><div><h2 className="heading">Saved practices{demo?' · demo':''}</h2><p>{demo?'Sample solo sessions for your presentation.':'Your latest 50 saved responses. Only you can see them.'}</p></div><span className="review-badge">{entries.length} sessions</span></header>
+    <header className="activity-heading"><div><h2 className="heading">Saved practices{demo?' · demo':''}</h2><p>{demo?'Fictional sessions.':'Last 50 sessions · private to you.'}</p></div><span className="review-badge">{entries.length} sessions</span></header>
     {error&&<p role="alert">{error}</p>}
     {entries.length ? entries.map(entry=><details className="panel practice-log" key={entry.id}>
       <summary><span className="activity-kind">SOLO{demo?' · DEMO':''}</span><span className="activity-title">{entry.scenario.title}</span><span className="activity-date">{new Date(entry.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></summary>
@@ -23,6 +23,6 @@ export function PracticeLogs({ entries, demo = false, onDelete }: { entries: Pra
         {entry.feedback&&<CoachFeedback answer={entry.feedback}/>}
         {!demo&&onDelete&&<div className="hero-actions">{pending===entry.id?<><span>Delete this saved practice?</span><Button variant="secondary" disabled={busy} onClick={()=>void remove(entry.id)}>{busy?'Deleting…':'Delete'}</Button><Button variant="ghost" disabled={busy} onClick={()=>setPending('')}>Keep it</Button></>:<Button variant="ghost" onClick={()=>setPending(entry.id)}>Delete log</Button>}</div>}
       </div>
-    </details>) : <div className="panel"><p>Use “Save practice” after a solo session. Your response and feedback will appear here.</p></div>}
+    </details>) : <div className="panel"><p>No saved practices. Choose “Save practice” after a session.</p></div>}
   </section>
 }

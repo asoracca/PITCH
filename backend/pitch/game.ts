@@ -42,15 +42,16 @@ export function ratingChange(stats: Profile, opponent: Profile, actual: number, 
 }
 
 async function finish(store: Store, room: PitchRoom, forfeitPlayer: string | null = null, forceCancel = false) {
-  if (room.judging_mode === 'peer') { await finishPeer(store,room,!!forfeitPlayer || forceCancel); return; }
+  if (room.judging_mode !== 'judged') { await finishPeer(store,room,!!forfeitPlayer || forceCancel); return; }
   if (room.status !== 'active') return;
   const [members, votes] = await Promise.all([seats(store, room), ballots(store, room)]);
   const phase = phaseAt(room.started_at);
   const judgesRemaining = members.filter(s => s.role === 'judge' && !s.left_at).length;
+  const requiredVotes = members.filter(s => s.role === 'judge').length === 1 ? 1 : 2;
   if (!forfeitPlayer && !forceCancel && (phase.index !== 5 || (!phase.expired && votes.length < judgesRemaining))) return;
   if (forfeitPlayer && !members.some(s => s.player_id === forfeitPlayer && s.role === 'contestant' && s.left_at)) return;
-  const cancelled = forceCancel || (!forfeitPlayer && votes.length < 2);
-  if (!forfeitPlayer && !forceCancel && !phase.expired && votes.length < 2) return;
+  const cancelled = forceCancel || (!forfeitPlayer && votes.length < requiredVotes);
+  if (!forfeitPlayer && !forceCancel && !phase.expired && votes.length < requiredVotes) return;
   let winnerId: string | null = null;
   let reason = cancelled ? 'insufficient_judges' : forfeitPlayer ? 'forfeit' : 'majority';
   if (forfeitPlayer) winnerId = forfeitPlayer === room.a_id ? room.b_id : room.a_id;
@@ -102,7 +103,7 @@ async function finish(store: Store, room: PitchRoom, forfeitPlayer: string | nul
 export async function leave(store: Store, room: PitchRoom, playerId: string) {
   const seat = await store.sql('SELECT * FROM pitch_seats WHERE room_id=? AND player_id=?', room.id, playerId).first<Seat>();
   if (!seat || seat.left_at || room.status !== 'active') return;
-  if (room.judging_mode === 'peer') {
+  if (room.judging_mode !== 'judged') {
     await store.sql('UPDATE pitch_seats SET left_at=? WHERE room_id=? AND player_id=? AND left_at IS NULL',Date.now(),room.id,playerId).run();
     await finishPeer(store,room,true); return;
   }
@@ -143,12 +144,12 @@ export async function view(store: Store, room: PitchRoom, player: Player): Promi
     store.sql(`SELECT f.ballot_id,f.value FROM pitch_feedback_ratings f JOIN pitch_ballots b ON b.id=f.ballot_id WHERE b.room_id=? AND f.player_id=?`, room.id, player.id).all<{ballot_id:string;value:string}>(),
   ]);
   const timedPhase = phaseAt(room.started_at); const self = members.find(s => s.player_id === player.id)!;
-  const peer = room.judging_mode === 'peer';
+  const peer = room.judging_mode !== 'judged';
   const phase = peer && timedPhase.index === 5 ? {...timedPhase,label:'Exchange opponent feedback'} : timedPhase;
   const peerFeedback = peer ? await peerRows(store,room) : [];
   const result = room.result ? JSON.parse(room.result) : null;
   const scenario = scenarioFor(room);
-  return { id: room.id, code: room.code, status: room.status, band: room.band, scenario, isPublic: room.is_public === 1, judgingMode: peer ? 'peer' : 'judged',
+  return { id: room.id, code: room.code, status: room.status, band: room.band, scenario, isPublic: room.is_public === 1, judgingMode: room.judging_mode,
     yourPosition: self.role === 'contestant' ? scenario.positions?.[self.slot] ?? scenario.goal : null,
     serverTime: Date.now(), startedAt: room.started_at, phase, role: self.role, yourSlot: self.slot, left: !!self.left_at,
     participants: members.map(s => ({ id: s.player_id, name: s.name, avatar: storedAvatar(s.avatar_json), ageBand: ageBand(s.birth_date), role: s.role, slot: s.slot, left: !!s.left_at, position: s.role === 'contestant' ? scenario.positions?.[s.slot] ?? scenario.goal : null,

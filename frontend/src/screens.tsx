@@ -1,3 +1,4 @@
+import { PlayerLink, FriendsPanel } from './PlayerProfiles'
 import { PracticeLogs } from './PracticeLogs'
 import { useEffect, useState, type FormEvent } from "react"
 import {
@@ -45,7 +46,6 @@ export function Auth({ p }: { p: Pitch }) {
     <section className="panel auth-panel">
       <div className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</div>
       <h1 className="display">{signup ? "Join PITCH." : "Welcome back."}</h1>
-      <p>Practice with peers, get useful feedback and track your growth.</p>
       <form onSubmit={submit} className="form-stack">
         {signup && (
           <label>
@@ -125,24 +125,24 @@ export function Rules({ compact = false }: { compact?: boolean }) {
       <summary>How PITCH works · Conduct & privacy</summary>
       <div className="form-stack">
         <p>
-          Quick play matches two contestants and three peer judges in the shared
+          Quick play matches two contestants and one or three peer judges in the shared
           player pool. Topic choice and skill guide matching; age is profile information. Topics and positions are assigned by the server. Read for 20
           seconds; each contestant gets a 60-second opening and a 20-second
           response. Judges then have 60 seconds to vote and give feedback.
-          If both contestants allow it and wait 15 seconds, they can instead play
-          an unrated two-player duel and exchange feedback without judges.
+          If both contestants allow it and wait two minutes without a judge, they can play
+          an unrated duel with one automated text-rubric judge and exchange opponent feedback.
         </p>
         <p>
           Judges score clarity, persuasiveness and composure from 1–5 and give
           each contestant a constructive tip. A majority wins; two tied ballots
-          use total rubric scores, then a draw. Fewer than two ballots cancels
-          the rating update.
+          use total rubric scores, then a draw. A single-judge round needs that judge’s
+          ballot; a three-judge round needs at least two. Otherwise no rating changes.
         </p>
         <p>
           Elo starts at 1000. Your first 10 rated rounds use K=32, then K=16.
           Every two completed judged rounds earns one contestant priority
           credit. Priority cannot create missing players. Queues expire after
-          two minutes.
+          2½ minutes if no opponent is available.
         </p>
         <p>
           Leaving a rated round or disconnecting for 60 seconds triggers a
@@ -283,8 +283,7 @@ export function Dashboard({
           <div className="eyebrow">YOUR PITCH CHARACTER</div>
           <h2 className="heading">Make it yours.</h2>
           <p>
-            Try your team’s character designs. Your look never changes your
-            score.
+            Your look won’t affect your score.
           </p>
         </div>
         <Button variant="secondary" onClick={() => navigate("Character")}>
@@ -316,7 +315,6 @@ export function Dashboard({
                 <Icon name="target" />
               </div>
               <div className="category-title capitalize">{category}</div>
-              <p>Practice a real-world conversation.</p>
               <div className="category-meta">
                 <span>
                   {scenarios.filter((s) => s.category === category).length}{" "}
@@ -335,8 +333,7 @@ export function Dashboard({
             title="Ready for a live round?"
           />
           <p>
-            Two contestants. Three judges. One scenario. Your opening and
-            response are scored by peers.
+            Two contestants. One scenario. One or three judges.
           </p>
           <Button onClick={() => navigate("Head-to-Head")}>
             Quick play
@@ -418,7 +415,7 @@ export function Practice({ p }: { p: Pitch }) {
           if (matching && next !== "all" && scenario.category !== next) choose(matching)
           else setNotice("")
         }} onSelect={choose} />
-      <p className="practice-random-hint">Random picks follow your selected category. Your drafts stay here during this visit.</p>
+      <details className="review-details"><summary>Practice details</summary><p>Random picks use your category. Drafts last for this visit.</p></details>
       {notice && <p role="status">{notice}</p>}
       {!alternatives.length && <p>Choose another category for more random scenarios.</p>}
       <div className="arena">
@@ -516,11 +513,10 @@ export function Leaderboard({ p }: { p: Pitch }) {
         <Button variant={demo ? "ghost" : "secondary"} aria-pressed={!demo} onClick={() => setMode("live")}>Real players</Button>
         <Button variant={demo ? "secondary" : "ghost"} aria-pressed={demo} onClick={() => setMode("demo")}>Demo players</Button>
       </div>
-      {demo && <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Demo leaderboard · fictional profiles</strong><p>These sample players and scores show how PITCH will look with a community. They cannot sign in, and do not affect real rankings.</p>{!leaders.players.length && <p>No rated rounds yet. Switch to Real players to see live rankings.</p>}</div></div>}
+      {demo && <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Demo leaderboard</strong><p>Fictional players and scores. Real rankings are unchanged.</p></div></div>}
       <p>
-        Ranked by Elo gained since{" "}
-        {new Date(leaders.weekStartsAt).toLocaleDateString()}. Resets each
-        Monday at 00:00 UTC.
+        Elo gained since{" "}
+        {new Date(leaders.weekStartsAt).toLocaleDateString()}. Resets Mondays, 00:00 UTC.
       </p>
       {players.length > 0 ? (
         <>
@@ -530,8 +526,7 @@ export function Leaderboard({ p }: { p: Pitch }) {
                 className={`podium-player ${["first", "second", "third"][i]}`}
                 key={v.playerId}
               >
-                <AvatarBadge name={v.name} look={v.avatar} size="xl" />
-                <strong>{v.name}</strong>
+                <PlayerLink player={{id:v.playerId,name:v.name,avatar:v.avatar}} className="player-link-stack"><AvatarBadge name={v.name} look={v.avatar} size="xl" /><strong>{v.name}</strong></PlayerLink>
                 {demo && <small className="demo-badge">DEMO</small>}
                 <span>{signed(v.weeklyGain)} Elo this week</span>
                 <div>{i + 1}</div>
@@ -547,12 +542,10 @@ export function Leaderboard({ p }: { p: Pitch }) {
                 key={v.playerId}
               >
                 <strong>#{i + 1}</strong>
-                <AvatarBadge name={v.name} look={v.avatar} />
-                <span className="grow">
-                  {v.name}
+                <PlayerLink player={{id:v.playerId,name:v.name,avatar:v.avatar}} className="grow"><AvatarBadge name={v.name} look={v.avatar} /><span>{v.name}</span>
                   {demo && <small className="demo-badge">DEMO</small>}
                   {v.playerId === p.me!.player.id && <small>YOU</small>}
-                </span>
+                </PlayerLink>
                 <span>{v.rating} Elo</span>
                 <b>{signed(v.weeklyGain)}</b>
               </div>
@@ -609,17 +602,20 @@ export function FeedbackButtons({
 export function Profile({
   p,
   navigate,
-  equipped,
+  equipped, demoProfile: controlledDemo, setDemoProfile: changeDemo,
 }: {
   p: Pitch
   navigate: (page: Page) => void
   equipped: EquippedItems
+  demoProfile?: boolean
+  setDemoProfile?: (value:boolean) => void
 }) {
   const me = p.me!
   const history = p.history
-  const [demoProfile, setDemoProfile] = useState(true)
+  const [localDemo, setLocalDemo] = useState(true)
+  const demoProfile=controlledDemo ?? localDemo, setDemoProfile=changeDemo ?? setLocalDemo
   const profileToggle = <div className="hero-actions" role="group" aria-label="Profile activity view"><Button variant={demoProfile ? "secondary" : "ghost"} aria-pressed={demoProfile} onClick={() => setDemoProfile(true)}>Demo profile</Button><Button variant={demoProfile ? "ghost" : "secondary"} aria-pressed={!demoProfile} onClick={() => setDemoProfile(false)}>Real activity</Button></div>
-  if (demoProfile) return <div className="page-stack">{profileToggle}<DemoProfile p={p} equipped={equipped} navigate={navigate} /></div>
+  if (demoProfile) return <div className="page-stack">{profileToggle}<DemoProfile p={p} equipped={equipped} navigate={navigate} /><FriendsPanel /></div>
   return (
     <div className="page-stack">
       {profileToggle}
@@ -676,7 +672,7 @@ export function Profile({
         </div>
       </div>
       <PracticeLogs entries={history?.practices || []} onDelete={async id=>{await p.api.deletePractice(id);await p.refresh()}} />
-      <SectionTitle eyebrow="SAVED AUTOMATICALLY · LAST 50 RATED ROUNDS" title="Opponent matches" />
+      <details className="history-group"><summary>Opponent matches <span>{history?.history.length || 0} rated rounds</span></summary><div className="history-entries">
       {history?.history.length ? (
         history.history.map((r) => (
           <details className="panel" key={r.code}>
@@ -687,7 +683,7 @@ export function Profile({
               </strong>
             </summary>
             <p>
-              {r.opponent ? `vs ${r.opponent.name} · ` : ""}{r.finishedAt ? new Date(r.finishedAt).toLocaleString() : ""} ·{" "}
+              {r.opponent && <><PlayerLink player={r.opponent}>vs {r.opponent.name}</PlayerLink> · </>}{r.finishedAt ? new Date(r.finishedAt).toLocaleString() : ""} ·{" "}
               {r.before} → {r.after}
             </p>
             {r.feedback.map((f) => (
@@ -710,7 +706,9 @@ export function Profile({
           <p>Your first rated round and peer feedback will appear here.</p>
         </div>
       )}
-      {!!history?.peerHistory?.length && <section className="form-stack"><SectionTitle eyebrow="UNRATED · OPPONENT FEEDBACK" title="Practice duels" />{history.peerHistory.map((round) => <details className="panel" key={round.code}><summary>{round.scenario.title}<strong>Unrated practice</strong></summary><p>{round.opponent ? `vs ${round.opponent.name} · ` : ""}{round.finishedAt ? new Date(round.finishedAt).toLocaleString() : ""} · Elo unchanged</p>{round.feedback.length ? round.feedback.map((feedback) => <div className="feedback-card" key={feedback.ballotId}><p>{feedback.tip}</p><div className="score-row">{skills.map((skill) => <span key={skill} className="capitalize">{skill}: {feedback[skill]}/5</span>)}</div><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></div>) : <p>No opponent feedback was submitted.</p>}</details>)}</section>}
+      </div></details>
+      {!!history?.peerHistory?.length && <details className="history-group"><summary>Practice duels <span>{history.peerHistory.length} unrated rounds</span></summary><div className="history-entries">{history.peerHistory.map((round) => <details className="panel" key={round.code}><summary>{round.scenario.title}<strong>Unrated practice</strong></summary><p>{round.opponent && <><PlayerLink player={round.opponent}>vs {round.opponent.name}</PlayerLink> · </>}{round.finishedAt ? new Date(round.finishedAt).toLocaleString() : ""} · Elo unchanged</p>{round.feedback.length ? round.feedback.map((feedback) => <div className="feedback-card" key={feedback.ballotId}><p>{feedback.tip}</p><div className="score-row">{skills.map((skill) => <span key={skill} className="capitalize">{skill}: {feedback[skill]}/5</span>)}</div><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></div>) : <p>No opponent feedback was submitted.</p>}</details>)}</div></details>}
+      <FriendsPanel />
       <Rules />
       {me.moderator && <Moderator p={p} />}
     </div>
@@ -737,9 +735,7 @@ export function Character({
         title={shop ? "Explore the collection." : "Make it yours."}
       />
       <p>
-        Try the team’s outfits, accessories and backgrounds for free. Your
-        selection previews here; save it to show other players. Coins, purchases, earned unlocks and XP
-        are not enabled.
+        Free customization. Save to share your look. Coins, purchases, unlocks and XP aren’t active.
       </p>
       <div className="character-layout">
         <div
@@ -748,7 +744,6 @@ export function Character({
           <AvatarCharacter {...equipped} />
           <div className="character-identity">
             <strong>Your PITCH character</strong>
-            <p>Cosmetic preview only.</p>
           </div>
         </div>
         <div className="inventory-panel">
@@ -810,34 +805,7 @@ export function Character({
   )
 }
 
-export function Coach({ navigate }: { navigate: (page: Page) => void }) {
-  return (
-    <div className="page-stack">
-      <SectionTitle
-        eyebrow="AI COACH · FREE ON-DEVICE PREVIEW"
-        title="Practice. Reflect. Try again."
-      />
-      <section className="panel form-stack"><h2 className="heading">Rehearse with your voice</h2><p>Try answering: “Tell me about a challenge, what you did, and what you learned.” Record your response and listen for one thing to improve.</p><PracticeMicrophone coaching deadline={0} finished={false} onStarted={() => {}} /></section>
-      <div className="panel">
-        <div className="category-icon cyan">
-          <Icon name="spark" />
-        </div>
-        <h2 className="heading">Get feedback from people.</h2>
-        <p>
-          The optional on-device coach gives feedback on a transcript. It does not
-          listen to audio, interpret facial expressions or award scores. You can also get feedback from people in Head-to-Head.
-        </p>
-        <div className="hero-actions">
-          <Button onClick={() => navigate("Practice")}>Solo practice</Button>
-          <Button variant="secondary" onClick={() => navigate("Head-to-Head")}>
-            Get peer feedback
-            <Icon name="arrow" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+export { Coach } from "./RoleplayCoach"
 
 function Moderator({ p }: { p: Pitch }) {
   const [reports, setReports] = useState<Reports | null>(null)

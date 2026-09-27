@@ -19,7 +19,7 @@ export function ScenarioPicker({ scenarios, selected, category, onCategory, onSe
   const [limit, setLimit] = useState(6)
   const filtered = scenarios.filter((s) => (category === "all" || category === s.category) && `${s.title} ${s.prompt}`.toLowerCase().includes(search.trim().toLowerCase()))
   return <section className="scenario-library" aria-label="Choose a practice scenario">
-    <div><h2 className="heading">What do you want to practice?</h2><p>Pick an interest, then choose a situation. {scenarios.length} scenarios for your age group.</p></div>
+    <div><h2 className="heading">What do you want to practice?</h2><p>{scenarios.length} scenarios</p></div>
     <div className="category-chips" role="group" aria-label="Scenario categories">
       {categories.map((item) => <button key={item.id} className={`category-chip ${category === item.id ? "selected" : ""}`} aria-pressed={category === item.id} onClick={() => { onCategory(item.id); setLimit(6); setSearch("") }}><Icon name={item.icon} size={17} />{item.name}<span>{scenarios.filter((s) => item.id === "all" || s.category === item.id).length}</span></button>)}
     </div>

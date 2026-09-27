@@ -5,6 +5,7 @@ import type { Player } from '../types';
 import { cleanTip, seats } from './game';
 import { phaseAt } from './scenarios';
 import type { PeerFeedback, PitchRoom } from './types';
+import { automatedResult } from './automated-judge';
 
 export async function peerRows(store: Store, room: PitchRoom) {
   return (await store.sql('SELECT * FROM pitch_peer_feedback WHERE room_id=? ORDER BY created_at,id',room.id).all<PeerFeedback>()).results;
@@ -19,10 +20,12 @@ export async function finishPeer(store: Store, room: PitchRoom, cancelled = fals
   const left=members.some(s=>s.left_at); cancelled ||= left;
   if(!cancelled && (phase.index!==5 || (!phase.expired && rows.length<2))) return;
   const now=Date.now(), claim=crypto.randomUUID();
-  const result={winnerId:null,reason:cancelled?'peer_left':'peer_practice',voteCount:rows.length,scores:[],ratingChanges:[],finishedAt:now,ratingVersion:'unrated'};
+  const automated = room.judging_mode === 'automated' && !cancelled;
+  const responses = automated ? (await store.sql('SELECT player_id,content FROM pitch_responses WHERE room_id=? ORDER BY phase',room.id).all<{player_id:string;content:string}>()).results : [];
+  const result={winnerId:null,reason:cancelled?'peer_left':'peer_practice',voteCount:rows.length,scores:[],ratingChanges:[],finishedAt:now,ratingVersion:'unrated',...(automated ? automatedResult(room.a_id,room.b_id,responses) : {})};
   const guard='EXISTS(SELECT 1 FROM pitch_rooms WHERE id=? AND resolution_token=?)';
   await store.env.DB.batch([
-    store.sql(`UPDATE pitch_rooms SET status=?,result=?,resolution_token=?,finished_at=? WHERE id=? AND status='active' AND judging_mode='peer'
+    store.sql(`UPDATE pitch_rooms SET status=?,result=?,resolution_token=?,finished_at=? WHERE id=? AND status='active' AND judging_mode IN ('peer','automated')
       AND (SELECT COUNT(*) FROM pitch_peer_feedback WHERE room_id=?)=?
       AND (SELECT COUNT(*) FROM pitch_seats WHERE room_id=? AND left_at IS NOT NULL)=?`,cancelled?'cancelled':'finished',JSON.stringify(result),claim,now,room.id,room.id,rows.length,room.id,members.filter(s=>s.left_at).length),
     store.sql(`DELETE FROM pitch_queue WHERE room_id=? AND ${guard}`,room.id,room.id,claim),
@@ -30,7 +33,7 @@ export async function finishPeer(store: Store, room: PitchRoom, cancelled = fals
   ]);
 }
 export async function submitPeerFeedback(store: Store, room: PitchRoom, player: Player, body: Record<string,unknown>) {
-  if(room.judging_mode!=='peer') fail(409,'PEER_ROUND_REQUIRED','Opponent feedback is available in two-player practice duels.');
+  if(room.judging_mode!=='peer' && room.judging_mode!=='automated') fail(409,'PEER_ROUND_REQUIRED','Opponent feedback is available in two-player practice duels.');
   if(await store.sql('SELECT 1 FROM pitch_peer_feedback WHERE room_id=? AND author_id=?',room.id,player.id).first()) { await finishPeer(store,room); return; }
   const self=(await seats(store,room)).find(s=>s.player_id===player.id), phase=phaseAt(room.started_at);
   if(!self || self.role!=='contestant' || self.left_at || room.status!=='active' || phase.index!==5 || phase.expired) fail(409,'FEEDBACK_CLOSED','Opponent feedback opens after both speaking turns and lasts 60 seconds.');
@@ -38,7 +41,7 @@ export async function submitPeerFeedback(store: Store, room: PitchRoom, player: 
   const target=room.a_id===player.id?room.b_id:room.a_id;
   const tip=cleanTip(body.tip), now=Date.now();
   const saved=await store.sql(`INSERT INTO pitch_peer_feedback(id,room_id,author_id,target_id,clarity,persuasiveness,composure,tip,created_at)
-    SELECT ?,id,?,?,?,?,?,?,? FROM pitch_rooms WHERE id=? AND status='active' AND judging_mode='peer'
+    SELECT ?,id,?,?,?,?,?,?,? FROM pitch_rooms WHERE id=? AND status='active' AND judging_mode IN ('peer','automated')
     AND started_at+180000<=? AND started_at+240000>?
     AND EXISTS(SELECT 1 FROM pitch_seats WHERE room_id=? AND player_id=? AND role='contestant' AND left_at IS NULL)
     ON CONFLICT(room_id,author_id) DO NOTHING`,crypto.randomUUID(),player.id,target,...scores,tip,now,room.id,now,now,room.id,player.id).run();

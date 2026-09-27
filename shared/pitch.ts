@@ -45,13 +45,14 @@ export interface RatingChange {
 }
 export type RubricAverages = Record<string, number | null>;
 export interface RoundResult {
+  automatedFeedback?: { playerId: string; checks: { clarity: boolean; specificity: boolean; nextStep: boolean }; tip: string }[];
   winnerId: string | null; reason: string; voteCount: number; ratingVersion: string; finishedAt: number;
   scores: { playerId: string; votes: number; averages: RubricAverages | null }[]; ratingChanges: RatingChange[];
 }
 export interface Feedback extends Rubric { ballotId: string; playerId: string; rating: string | null }
 export interface PitchRoomView {
   isPublic: boolean;
-  judgingMode: 'judged' | 'peer';
+  judgingMode: 'judged' | 'peer' | 'automated';
   id: string; code: string; status: 'active' | 'finished' | 'cancelled'; band: string; scenario: Scenario;
   yourPosition: string | null; serverTime: number; startedAt: number; phase: RoomPhase; role: Role; yourSlot: number; left: boolean;
   participants: (Player & { role: Role; slot: number; left: boolean; position: string | null; submitted: boolean })[];
@@ -103,3 +104,10 @@ export interface RoomChat { messages: ChatMessage[]; canSend: boolean }
 export interface PracticeDelivery { seconds: number; samples: number; audiblePercent: number; pauses: number; levelRangeDb: number | null }
 export interface PracticeDraft { id: string; scenarioId: string; transcript: string; feedback: string; delivery: PracticeDelivery | null }
 export interface PracticeLog extends PracticeDraft { scenario: Scenario; createdAt: number; updatedAt: number }
+
+export type Friendship = 'none' | 'self' | 'incoming' | 'outgoing' | 'friends';
+export type FriendAction = 'request' | 'accept' | 'decline' | 'cancel' | 'remove';
+export interface PublicProfile {
+  player: Player; ageBand: AgeBand | null; rating: number; roundsPlayed: number; roundsJudged: number; friendship: Friendship;
+}
+export interface FriendEntry extends PublicProfile { updatedAt: number }
