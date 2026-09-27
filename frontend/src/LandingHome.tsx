@@ -7,10 +7,10 @@ const walkers = [
   { x: 48, y: 18, scale: .75, depth: 1 },
   { x: 51, y: 29, scale: .82, depth: 1 },
   { x: 55, y: 34, scale: .82, depth: 1 },
-  { x: 78, y: 55, scale: .9, depth: 3 },
-  { x: 85, y: 63, scale: 1, depth: 3 },
-  { x: 93, y: 71, scale: 1.08, depth: 3 },
-  { x: 102, y: 80, scale: 1.15, depth: 3 },
+  { x: 80.1, y: 54.9, scale: .9, depth: 3 },
+  { x: 86.6, y: 64.5, scale: 1, depth: 3 },
+  { x: 89.8, y: 74.2, scale: 1.08, depth: 3 },
+  { x: 89.2, y: 82, scale: 1.12, depth: 3 },
 ]
 const ways: { number: string; title: string; copy: string; page: Page; icon: IconName }[] = [
   { number: '01', title: 'A little practice.', copy: 'Pick a real-life scenario. Try your answer out loud, on camera or in writing.', page: 'Practice', icon: 'mic' },
@@ -42,7 +42,7 @@ export function Home({ onNavigate }: { onNavigate: (page: Page) => void }) {
       </div>
 
       <div className="career-artwork" tabIndex={0} role="img" aria-label="A line of illustrated students walks through the PITCH practice studio and emerges in blazers, suits and formal shoes. Focus or hover over the illustration to pause its animation."><div className={`career-scene${!reducedMotion ? ' is-walking' : ''}`}>
-        <img className="career-studio" src="/home/career-studio-transparent.webp" alt="" width="1536" height="1024" fetchPriority="high" />
+        <img className="career-studio" src="/home/career-studio-runway.webp" alt="" width="1536" height="1024" fetchPriority="high" />
         {walkers.map((walker, index) => <div className="career-walker" key={index} aria-hidden="true" style={{
           '--travel-delay': `${-1-index*4}s`, '--step-delay': `${-index*.11}s`, '--person-row': `${index%3*50}%`,
           '--rest-position': `translate(${walker.x}%, ${walker.y}%) scale(${walker.scale})`,
@@ -50,7 +50,7 @@ export function Home({ onNavigate }: { onNavigate: (page: Page) => void }) {
           '--professional-baseline': ['3.6%', '3.1%', '6.9%'][index%3],
           '--casual-opacity': walker.depth === 1 ? 1 : 0, '--professional-opacity': walker.depth === 3 ? 1 : 0,
         } as CSSProperties}><div className="career-walker-body"><span className="career-walker-outfit career-walker-casual"><span className="career-walk-sprite" /></span><span className="career-walker-outfit career-walker-professional"><span className="career-walk-sprite" /></span></div></div>)}
-        <img className="career-studio-foreground" src="/home/career-studio-transparent.webp" alt="" width="1536" height="1024" />
+        <img className="career-studio-foreground" src="/home/career-studio-runway.webp" alt="" width="1536" height="1024" />
       </div></div>
     </section>
 

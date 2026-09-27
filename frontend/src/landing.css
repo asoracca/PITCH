@@ -22,7 +22,7 @@
 .career-how-link { padding: .6rem 0; background: none; border: 0; font-size: .95rem; text-decoration: underline; text-underline-offset: .25rem; }
 .career-cta-note { color: var(--career-muted); font-size: .875rem; margin: 1rem 0 0; }
 /* Keep the pod an accent beside the copy. All moving pieces share the original artwork coordinates. */
-.career-artwork { position: relative; width: 100%; max-width: 430px; aspect-ratio: 1/1.15; align-self: end; margin-bottom: 1.5rem; overflow: visible; isolation: isolate; }
+.career-artwork { position: relative; width: 100%; max-width: 430px; aspect-ratio: 1/1.25; align-self: end; margin-bottom: 1.5rem; overflow: visible; isolation: isolate; }
 .career-scene { position: absolute; top: 0; left: -78%; width: 180%; aspect-ratio: 3/2; }
 .career-studio { display: block; width: 100%; height: auto; }
 .career-walker { position: absolute; inset: 0; transform-origin: 0 0; transform: var(--rest-position); z-index: var(--rest-depth); animation: career-walkway 32s linear infinite; animation-delay: var(--travel-delay); animation-play-state: paused; will-change: transform; }
@@ -43,20 +43,23 @@
 }
 @keyframes career-casual-outfit { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
 @keyframes career-professional-outfit { 0%,49% { opacity: 0; } 50%,100% { opacity: 1; } }
+/* Foot positions follow the runway surface; fade on the end platform before looping. */
 @keyframes career-walkway {
-  0% { transform: translate(36%,-3%) scale(.68); opacity: 0; z-index: 1; }
-  5% { transform: translate(39%,3%) scale(.7); opacity: 1; }
+  0% { transform: translate(39%,2%) scale(.7); opacity: 0; z-index: 1; }
+  5% { transform: translate(42%,7%) scale(.7); opacity: 1; }
   15% { transform: translate(47%,13%) scale(.72); }
   25% { transform: translate(49%,24%) scale(.78); }
   34% { transform: translate(53%,32%) scale(.82); opacity: 1; }
   38% { transform: translate(57%,37%) scale(.82); opacity: 0; z-index: 1; }
   50% { transform: translate(73%,48%) scale(.85); opacity: 0; z-index: 3; }
-  55% { transform: translate(77%,53%) scale(.9); opacity: 0; }
-  58% { transform: translate(78%,55%) scale(.9); opacity: 1; }
-  70% { transform: translate(85%,63%) scale(1); }
-  85% { transform: translate(97%,75%) scale(1.08); }
-  97% { transform: translate(109%,88%) scale(1.18); opacity: 1; }
-  100% { transform: translate(112%,91%) scale(1.2); opacity: 0; z-index: 3; }
+  55% { transform: translate(76.5%,50.3%) scale(.9); opacity: 0; }
+  58% { transform: translate(80.1%,54.9%) scale(.9); opacity: 1; }
+  65% { transform: translate(83.7%,59.8%) scale(.95); }
+  72% { transform: translate(86.6%,64.5%) scale(1); }
+  79% { transform: translate(88.7%,69.3%) scale(1.04); }
+  86% { transform: translate(89.8%,74.2%) scale(1.08); }
+  92% { transform: translate(89.9%,78.4%) scale(1.12); opacity: 1; }
+  98%,100% { transform: translate(89.1%,83.8%) scale(1.12); opacity: 0; z-index: 3; }
 }
 .career-artwork:is(:hover,:focus-visible) .career-walker,.career-artwork:is(:hover,:focus-visible) .career-walker-outfit,.career-artwork:is(:hover,:focus-visible) .career-walk-sprite { animation-play-state: paused; }
 .career-artwork:focus-visible { outline: 2px solid #88f4f5; outline-offset: -4px; }
@@ -97,7 +100,7 @@
   .career-description { font-size: 1rem; margin-top: 1.4rem; }
   .career-description br { display: none; }
   .career-start { min-width: 245px; }
-  .career-artwork { width: 80%; max-width: 310px; aspect-ratio: 1/1.05; margin: 1.5rem 0 0; align-self: flex-end; }
+  .career-artwork { width: 80%; max-width: 310px; aspect-ratio: 1/1.25; margin: 1.5rem 0 0; align-self: flex-end; }
   .career-how { padding: 3.5rem 7%; }
   .career-section-heading { display: block; }
   .career-section-heading > p:last-child { margin-top: 1.3rem; }
