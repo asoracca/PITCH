@@ -639,6 +639,8 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           {active ? countdown(room.phase.deadline, now) : "ROUND CLOSED"}
         </span>
       </div>
+      <div className={room.role === "contestant" ? "round-layout has-chat" : "round-layout"}>
+      <div className="page-stack round-main">
       <div className="scenario-reveal">
         <div>
           <span className="capitalize">{room.scenario.category}</span>
@@ -676,7 +678,6 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
       </div>
       {active && <p>{room.isPublic ? "Public round: viewers can follow shared text and results." : "Private round: only its participants can view it."}</p>}
       {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>{automated ? "Automated rubric judge · text only" : "Two-player practice · no judges needed"}</strong><p>{automated ? "Free text checks: structure, examples, next steps. Not AI; no audio or video assessment. " : "Take your turns, then give each other feedback. "}No Elo or judging credits.</p></div></div>}
-      <OpponentChat p={p} room={room} />
       <div className="live-judge-cards">
         {automated && <div className="panel"><Icon name="gavel" /><strong>Automated rubric judge</strong><span>{room.result ? 'Text checks complete' : '1 stand-in · submit text during your turn'}</span></div>}
         {room.participants
@@ -826,6 +827,9 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           <Icon name="arrow" />
         </Button>
       )}
+      </div>
+      {room.role === "contestant" && <aside className="round-chat-sidebar" aria-label="Opponent chat"><OpponentChat p={p} room={room} /></aside>}
+      </div>
     </div>
   )
 }
