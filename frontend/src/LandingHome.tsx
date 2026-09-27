@@ -35,7 +35,7 @@ export function Home({ onNavigate }: { onNavigate: (page: Page) => void }) {
     <section className="career-hero" aria-labelledby="career-heading">
       <div className="career-intro">
         <p className="career-kicker">A LITTLE PRACTICE GOES A LONG WAY</p>
-        <h1 id="career-heading">Practice real conversations.<br /><em>Build real confidence.</em></h1>
+        <h1 id="career-heading">Pitch. Practice. Perform. <br /><em>Build real confidence.</em></h1>
         <p className="career-description">Interviews, pitches, tough conversations.<br />Try them here. Get feedback. Show up ready.</p>
         <div className="career-hero-actions"><button className="career-start" onClick={() => go('Practice')}>Start practicing <span><Icon name="arrow" size={23} /></span></button><button className="career-how-link" onClick={howItWorks}>How it works</button></div>
       </div>
