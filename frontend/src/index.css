@@ -394,8 +394,10 @@ p { color: var(--muted); line-height: 1.6; }
 .currency-actions { display: flex; align-items: center; gap: .7rem; }
 .coin-wallet { display: flex; align-items: center; gap: .55rem; color: var(--lime); background: rgba(136,244,245,.08); border: 1px solid rgba(136,244,245,.18); padding: .55rem .75rem; border-radius: .7rem; }
 .coin-wallet>span { display: flex; flex-direction: column; }.coin-wallet strong { font: 700 .9rem "Space Grotesk"; line-height: 1; }.coin-wallet span { color: var(--muted); font-size: .45rem; letter-spacing: .09em; }
-.character-layout { display: grid; grid-template-columns: minmax(18rem,.72fr) minmax(30rem,1.28fr); gap: .9rem; min-height: 39rem; }
-.character-preview { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; border: 1px solid var(--line); border-radius: var(--radius-lg); background: radial-gradient(circle at 50% 40%, rgba(167,139,250,.2), transparent 42%), #0e1526; }
+.character-layout { display: grid; grid-template-columns: minmax(18rem,.72fr) minmax(30rem,1.28fr); align-items: start; gap: .9rem; }
+.character-preview { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; padding-top: 1rem; border: 1px solid var(--line); border-radius: var(--radius-lg); background: radial-gradient(circle at 50% 40%, rgba(167,139,250,.2), transparent 42%), #0e1526; }
+.character-preview > .pitch-character { height: auto; max-height: 28rem; flex-shrink: 0; }
+.character-preview > .avatar-placeholder { width: min(72%, 18rem); margin: 1rem auto; }
 .character-preview:before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 2rem 2rem; }
 .pitch-character { display: block; width: min(80%,22rem); height: 30rem; position: relative; z-index: 1; filter: drop-shadow(0 1.2rem 1.2rem rgba(0,0,0,.3)); }
 .pitch-character.character-compact { filter: none; }
@@ -515,7 +517,7 @@ p { color: var(--muted); line-height: 1.6; }
   .avatar-reward-card { align-items: flex-start; flex-wrap: wrap; }.avatar-reward-copy { min-width: calc(100% - 6rem); }.coin-balance { flex: 1; border-right: 0; }
   .topbar-coins span { display: none; }
   .character-titlebar { align-items: flex-start; flex-direction: column; }.currency-actions { width: 100%; justify-content: space-between; }
-  .character-layout { grid-template-columns: 1fr; }.character-preview { min-height: 35rem; }.inventory-panel { min-height: 35rem; }
+  .character-layout { grid-template-columns: 1fr; }.inventory-panel { min-height: 35rem; }
   .milestone-strip { align-items: flex-start; overflow-x: auto; }.milestone-strip>div { min-width: 7rem; }.milestone-strip>i { min-width: 2rem; margin-top: .7rem; }
   .shop-hero { align-items: stretch; flex-direction: column; }.shop-wallet { min-width: 0; }
   .earn-coins { align-items: flex-start; flex-direction: column; gap: .65rem; }.earn-coins .btn { margin-left: 0; }

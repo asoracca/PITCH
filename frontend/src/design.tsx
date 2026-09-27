@@ -700,7 +700,7 @@ export function AvatarCharacter({
 }) {
   const skin = skinTones.find((tone) => tone.id === skinTone) || skinTones[3]
   const hair = hairColors.find((color) => color.id === hairColor) || hairColors[0]
-  if (!avatarEnabled) return <div className={`avatar-empty ${compact ? "avatar-empty-compact" : ""}`}><span>No avatar selected</span><small>Choose an appearance to create one.</small></div>
+  if (!avatarEnabled) return <span className={`avatar-placeholder ${compact || portrait ? "avatar-placeholder-compact" : ""}`} role="img" aria-label="No avatar selected"><Icon name="user" size={96} /></span>
   const jacket =
     outfit === "Game Show Glow"
       ? "#88f4f5"
@@ -854,5 +854,5 @@ export function ItemTile({
 }
 
 export function AvatarBadge({name,look,size='small'}:{name:string;look?:Partial<AvatarLook>|null;size?:'small'|'xl'}) {
-  return <span className={`avatar avatar-${size} avatar-character-badge ${!look?.avatarEnabled?'avatar-blank':''}`} role="img" aria-label={look?.avatarEnabled?`${name}’s avatar`:`${name} has no avatar`}>{look?.avatarEnabled&&<AvatarCharacter {...look} portrait />}</span>
+  return <span className={`avatar avatar-${size} avatar-character-badge ${!look?.avatarEnabled?'avatar-blank':''}`} role="img" aria-label={look?.avatarEnabled?`${name}’s avatar`:`${name} has no avatar`}><AvatarCharacter {...look} portrait /></span>
 }

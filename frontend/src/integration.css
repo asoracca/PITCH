@@ -57,8 +57,10 @@ h1,h2,h3 { margin: 0; } button,input,select,textarea { font: inherit; } button:d
 
 /* Appearance and local, optional camera controls. */
 a.logo { color: inherit; text-decoration: none; }
-.avatar-empty { display: grid; place-content: center; text-align: center; gap: .75rem; min-height: 22rem; padding: 2rem; color: var(--muted); border: 1px dashed var(--line); border-radius: 1.5rem; }
-.avatar-empty.avatar-empty-compact { min-height: 12rem; }
+.avatar-placeholder { display: inline-flex; align-items: center; justify-content: center; width: min(100%, 20rem); aspect-ratio: 1; flex-shrink: 0; overflow: hidden; border-radius: 50%; background: #252b37; color: #a5acb8; }
+.avatar-placeholder > svg { width: 64%; height: 64%; fill: currentColor; stroke: none; }
+.avatar-placeholder.avatar-placeholder-compact { width: 100%; height: 100%; }
+.profile-character:has(> .avatar-placeholder) { border-color: #4b5361; flex-shrink: 0; }
 .appearance-controls { padding: 1.25rem; }
 .appearance-swatches { display: flex; flex-wrap: wrap; gap: .8rem; }
 .appearance-swatch { width: 2.8rem; height: 2.8rem; border: 2px solid var(--line); border-radius: 50%; cursor: pointer; color: white; text-shadow: 0 1px 3px black; }
@@ -90,7 +92,7 @@ a.logo { color: inherit; text-decoration: none; }
 .coach-answer { padding: 1.2rem; border: 1px solid var(--cyan); border-radius: .8rem; line-height: 1.7; }
 .avatar-character-badge { display: inline-flex; overflow: hidden; flex-shrink: 0; }
 .avatar-character-badge .pitch-character { width: 100%; height: 100%; max-width: none; }
-.avatar-blank { background: var(--surface-2); border: 1px dashed var(--line); box-shadow: none; }
+.avatar.avatar-blank { background: #252b37; color: #a5acb8; border: 1px solid #4b5361; box-shadow: none; }
 .chat-log { display: flex; flex-direction: column; gap: .7rem; max-height: 19rem; overflow-y: auto; padding: .8rem; border: 1px solid var(--line); border-radius: .8rem; }
 .chat-message { align-self: flex-start; max-width: 85%; padding: .7rem 1rem; border-radius: .8rem; background: var(--surface-2); overflow-wrap: anywhere; }
 .chat-message.mine { align-self: flex-end; border: 1px solid var(--cyan); }
