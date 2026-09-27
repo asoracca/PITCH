@@ -7,18 +7,18 @@ import type { PracticeDraft } from '../../shared/pitch'
 import { LocalCoach } from './LocalCoach'
 import { DeliverySummary, ReviewHeading } from './PracticeReview'
 
-export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'Describe a challenge, what you did and what you learned.', goal = 'Give a specific example and a clear next step.', coaching = false, draft, onDraftChange, onSave }: {
-  deadline: number; finished: boolean; onStarted: () => void; prompt?: string; goal?: string; coaching?: boolean
+export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'Describe a challenge, what you did and what you learned.', goal = 'Give a specific example and a clear next step.', coaching = false, transcribing = coaching, draft, onDraftChange, onSave, onFinished, maxLength = 6000 }: {
+  deadline: number; finished: boolean; onStarted: () => void; prompt?: string; goal?: string; coaching?: boolean; transcribing?: boolean; maxLength?: number; onFinished?: (text: string) => void
   draft?: string; onDraftChange?: (text: string) => void; onSave?: (snapshot: Omit<PracticeDraft, 'scenarioId'>) => Promise<void>
 }) {
   const controller = useRef<PracticeRecording | null>(null), recognizer = useRef<PracticeTranscript | null>(null), meter = useRef<DeliveryMeter | null>(null), preview = useRef<HTMLVideoElement>(null)
-  const mounted = useRef(false)
-  const latest = useRef({ deadline, finished, onStarted, onDraftChange }); latest.current = { deadline, finished, onStarted, onDraftChange }
+  const mounted = useRef(false), finishedSent = useRef(false), currentTranscript = useRef(draft || '')
+  const latest = useRef({ deadline, finished, onStarted, onDraftChange, onFinished }); latest.current = { deadline, finished, onStarted, onDraftChange, onFinished }
   const [state,setState] = useState(recordingOff), [speech,setSpeech] = useState(transcriptOff), [transcript,setTranscript] = useState(draft || ''), [delivery,setDelivery] = useState<Delivery | null>(null)
   const [feedback,setFeedback] = useState(''), [saving,setSaving] = useState(false), [saved,setSaved] = useState(''), [saveError,setSaveError] = useState('')
   const practiceId = useRef<string|null>(null)
-  function updateTranscript(text:string){setTranscript(text);latest.current.onDraftChange?.(text)}
-  const [camera,setCamera] = useState(false), [captions,setCaptions] = useState(coaching)
+  function updateTranscript(text:string){const value=text.slice(0,maxLength);currentTranscript.current=value;setTranscript(value);latest.current.onDraftChange?.(value)}
+  const [camera,setCamera] = useState(false), [captions,setCaptions] = useState(transcribing)
   useEffect(()=>{
     mounted.current=true
     const recording=new PracticeRecording(value=>{if(mounted.current)setState(value)}), recognition=new PracticeTranscript(value=>{if(mounted.current)setSpeech(value)}), measurements=new DeliveryMeter()
@@ -29,6 +29,10 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
   useEffect(()=>{if(finished)controller.current?.stop()},[finished])
   useEffect(()=>{if(speech.text)updateTranscript(speech.text)},[speech.text])
   const recording=state.phase==='recording', requesting=state.phase==='requesting', busy=recording||requesting||state.phase==='stopping'
+  useEffect(()=>{
+    if(!finished){finishedSent.current=false;return}
+    if(!busy&&!speech.listening&&!finishedSent.current){finishedSent.current=true;latest.current.onFinished?.(currentTranscript.current)}
+  },[finished,busy,speech.listening,speech.text])
   const processed = !busy && !speech.listening && !!state.url && !!delivery
   const canReview = !busy && !speech.listening && transcript.trim().length >= 30
   const transcriptId = useId()
@@ -40,29 +44,28 @@ export function PracticeMicrophone({ deadline, finished, onStarted, prompt = 'De
   }
   function clear(){practiceId.current=null;setSaved('');setSaveError('');setFeedback('');controller.current?.clear();recognizer.current?.abort();setSpeech({...transcriptOff});updateTranscript('');setDelivery(null);if(preview.current)preview.current.srcObject=null}
   return <section className="practice-microphone" aria-label="Practice microphone">
-    <div className="practice-mic-header"><div><strong>Practice with your voice</strong><p>60 seconds · optional video</p></div><Button variant={recording?'secondary':'primary'} aria-pressed={recording} disabled={state.phase==='stopping'} onClick={()=>{
+    <div className="practice-mic-header"><div><strong>Practice with your voice</strong><p>Voice · optional video</p></div><Button variant={recording?'secondary':'primary'} aria-pressed={recording} disabled={state.phase==='stopping'||(finished&&!!onFinished)} onClick={()=>{
       if(recording||requesting)controller.current?.stop()
-      else {practiceId.current=null;setSaved('');setSaveError('');recognizer.current?.abort();updateTranscript('');setSpeech({...transcriptOff});setDelivery(null);void controller.current?.start(
+      else {practiceId.current=null;setSaved('');setSaveError('');recognizer.current?.abort();setSpeech({...transcriptOff});setDelivery(null);void controller.current?.start(
         ()=>latest.current.deadline&&!latest.current.finished?latest.current.deadline-Date.now():60000,
-        ()=>latest.current.onStarted(),{video:camera,onStream:stream=>{meter.current?.start(stream);if(captions)recognizer.current?.start();if(preview.current&&camera){preview.current.srcObject=stream;void preview.current.play().catch(()=>{})}},onStop:()=>{recognizer.current?.stop();const result=meter.current?.stop()||null;if(mounted.current)setDelivery(result);if(preview.current)preview.current.srcObject=null}})}
+        ()=>latest.current.onStarted(),{video:camera,onStream:stream=>{updateTranscript('');meter.current?.start(stream);if(captions)recognizer.current?.start();if(preview.current&&camera){preview.current.srcObject=stream;void preview.current.play().catch(()=>{})}},onStop:()=>{recognizer.current?.stop();const result=meter.current?.stop()||null;if(mounted.current)setDelivery(result);if(preview.current)preview.current.srcObject=null}})}
     }}><Icon name="mic"/>{requesting?'Cancel microphone':recording?'Turn microphone off':state.phase==='stopping'?'Finishing…':'Turn microphone on'}</Button></div>
-    <div className="practice-options"><label className="check-label"><input type="checkbox" checked={camera} disabled={busy} onChange={e=>setCamera(e.target.checked)}/>Include video</label>{coaching&&<label className="check-label"><input type="checkbox" checked={captions} disabled={busy} onChange={e=>setCaptions(e.target.checked)}/>Write down my words · English</label>}</div>
-    {coaching&&<p className="muted">Transcription may use your browser’s speech service. PITCH does not upload your recording.</p>}
+    <div className="practice-options"><label className="check-label"><input type="checkbox" checked={camera} disabled={busy} onChange={e=>setCamera(e.target.checked)}/>Include video</label>{transcribing&&<label className="check-label"><input type="checkbox" checked={captions} disabled={busy} onChange={e=>setCaptions(e.target.checked)}/>Write down my words · English</label>}</div>
+    {transcribing&&<p className="muted">Transcription may use your browser’s speech service. PITCH does not upload your recording.</p>}
     <p role="status" className={recording?'positive':''}>{state.message||'Microphone off.'}</p>
     <video ref={preview} className="practice-camera" hidden={!camera||!recording} muted autoPlay playsInline aria-label="Your practice camera preview"/>
     {state.url&&<div className="practice-playback">{state.video?<video controls playsInline src={state.url} aria-label="Your recorded practice response"/>:<audio controls src={state.url} aria-label="Your recorded practice response"/>}<Button variant="ghost" onClick={clear}>Delete recording</Button></div>}
     <details className="review-details"><summary>Recording &amp; privacy</summary><p>Recordings clear when you leave; they aren’t uploaded. Saved practices keep text, feedback and measurements privately. No Elo changes.</p></details>
-    {coaching&&<div className="practice-review">
+    {transcribing&&<div className="practice-review">
       <section className="review-step">
         <ReviewHeading step={1} title="Your words" description="Edit after recording." aside={<span className="review-badge">{busy || speech.listening ? 'Listening' : 'Editable transcript'}</span>} />
         <label className="review-transcript" htmlFor={transcriptId}>Your response
-          <textarea id={transcriptId} value={transcript} readOnly={busy||speech.listening} maxLength={6000} rows={4} onChange={e=>updateTranscript(e.target.value)} placeholder="Speak with the microphone on, or type your response here." />
+          <textarea id={transcriptId} value={[transcript,speech.interim].filter(Boolean).join(' ').slice(0,maxLength)} readOnly={busy||speech.listening} maxLength={maxLength} rows={4} onChange={e=>updateTranscript(e.target.value)} placeholder="Speak with the microphone on, or type your response here." />
         </label>
-        {speech.interim&&<p className="transcript-interim" aria-live="polite">{speech.interim}</p>}
-        {speech.message&&!speech.listening&&!speech.message.startsWith('Live transcription')&&<p className="review-caption" role="status">{speech.message}</p>}
+        {speech.message&&!speech.listening&&<p className="review-caption" role="status">{speech.message}</p>}
       </section>
-      {processed && <DeliverySummary transcript={transcript} delivery={delivery} />}
-      <LocalCoach available={canReview} transcript={transcript} prompt={prompt} goal={goal} delivery={delivery} disabled={busy||speech.listening} onFeedbackChange={setFeedback}/>
+      {coaching && processed && <DeliverySummary transcript={transcript} delivery={delivery} />}
+      {coaching && <LocalCoach available={canReview} transcript={transcript} prompt={prompt} goal={goal} delivery={delivery} disabled={busy||speech.listening} onFeedbackChange={setFeedback}/>}
       {onSave && !busy && !speech.listening && !!transcript.trim() && <footer className="practice-save">
         <div><strong>Keep this practice</strong><p>Save text and feedback to Profile → Real activity. Video stays here.</p></div>
         <Button variant="secondary" disabled={saving||busy||speech.listening||!transcript.trim()||saved===signature} onClick={()=>void save()}>{saving?'Saving…':saved===signature?'Saved to profile':saved?'Update saved practice':'Save practice'}</Button>

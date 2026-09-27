@@ -302,7 +302,7 @@ export function SectionTitle({
     <div className="section-title">
       <div>
         {eyebrow && <div className="eyebrow">{eyebrow}</div>}
-        <div className="heading">{title}</div>
+        <h2 className="heading">{title}</h2>
       </div>
       {action}
     </div>

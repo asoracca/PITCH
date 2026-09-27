@@ -14,7 +14,7 @@
 .category-chips { display: flex; flex-wrap: wrap; gap: .65rem; }
 .category-chip { display: flex; gap: .55rem; align-items: center; padding: .7rem 1rem; min-height: 44px; background: var(--surface); border: 1px solid var(--line); border-radius: 2rem; color: var(--text); cursor: pointer; font-size: .9rem; }
 .category-chip span { opacity: .65; }
-.category-chip.selected { background: var(--cyan); color: var(--bg); border-color: var(--cyan); font-weight: 700; }
+.category-chip.selected,.category-chip[aria-pressed="true"] { background: var(--cyan); color: var(--bg); border-color: var(--cyan); font-weight: 700; }
 .category-chip:hover,.scenario-card:hover { border-color: var(--cyan); }
 .category-chip:focus-visible,.scenario-card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 .scenario-search { max-width: 30rem; }

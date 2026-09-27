@@ -1,3 +1,4 @@
+import { Wardrobe } from "./Wardrobe"
 import { PlayerLink, FriendsPanel } from './PlayerProfiles'
 import { PracticeLogs } from './PracticeLogs'
 import { useEffect, useState, type FormEvent } from "react"
@@ -8,16 +9,13 @@ import {
   Icon,
   AvatarCharacter,
   AvatarBadge,
-  cosmeticItems,
-  skinTones,
-  hairColors,
   type Page,
   type EquippedItems,
 } from "./design"
 import { countdown, initials, signed, skills } from "./model"
 import { PracticeMicrophone } from "./PracticeMicrophone"
 import { demoPlayers } from "./demo"
-import { ScenarioPicker } from "./ScenarioPicker"
+import { ScenarioPicker, practiceCategory, rememberPracticeCategory } from "./ScenarioPicker"
 import { DemoProfile } from "./DemoProfile"
 import type { Pitch } from "./usePitch"
 import type { FeedbackRating, Scenario, Reports } from "../../shared/pitch"
@@ -296,7 +294,7 @@ export function Dashboard({
           eyebrow="CHOOSE YOUR ARENA"
           title="Practice by category"
           action={
-            <Button variant="ghost" onClick={() => navigate("Practice")}>
+            <Button variant="ghost" onClick={() => { rememberPracticeCategory("all"); navigate("Practice") }}>
               View all
               <Icon name="arrow" />
             </Button>
@@ -307,7 +305,7 @@ export function Dashboard({
             <button
               className="category-card"
               key={category}
-              onClick={() => navigate("Practice")}
+              onClick={() => { rememberPracticeCategory(category); navigate("Practice") }}
             >
               <div
                 className={`category-icon ${["purple", "cyan", "green", "orange", "pink"][i % 5]}`}
@@ -368,10 +366,12 @@ export function Dashboard({
 
 export function Practice({ p }: { p: Pitch }) {
   const scenarios = p.config!.scenarios.filter((s) => s.band === p.me!.ageBand)
-  const [category, setCategory] = useState("all")
+  const [category, setCategory] = useState(practiceCategory)
   const [selected, setSelected] = useState(
-    () =>
-      scenarios[Math.floor(Date.now() / 86400000) % scenarios.length]?.id || "",
+    () => {
+      const matching = scenarios.filter(s => category === "all" || s.category === category)
+      return matching[Math.floor(Date.now() / 86400000) % matching.length]?.id || scenarios[0]?.id || ""
+    },
   )
   const [deadline, setDeadline] = useState(0)
   const [now, setNow] = useState(Date.now())
@@ -410,7 +410,7 @@ export function Practice({ p }: { p: Pitch }) {
       />
       <ScenarioPicker scenarios={scenarios} selected={scenario.id} category={category}
         onCategory={(next) => {
-          setCategory(next)
+          setCategory(next); rememberPracticeCategory(next)
           const matching = scenarios.find((s) => next === "all" || s.category === next)
           if (matching && next !== "all" && scenario.category !== next) choose(matching)
           else setNotice("")
@@ -727,82 +727,7 @@ export function Character({
   onSave?: () => void
   saving?: boolean
 }) {
-  const [tab, setTab] = useState("Outfit")
-  return (
-    <div className="page-stack">
-      <SectionTitle
-        eyebrow="PITCH LOCKER · DESIGN PREVIEW"
-        title={shop ? "Explore the collection." : "Make it yours."}
-      />
-      <p>
-        Free customization. Save to share your look. Coins, purchases, unlocks and XP aren’t active.
-      </p>
-      <div className="character-layout">
-        <div
-          className={`character-preview preview-${equipped.background.toLowerCase().replaceAll(" ", "-")}`}
-        >
-          <AvatarCharacter {...equipped} />
-          <div className="character-identity">
-            <strong>Your PITCH character</strong>
-          </div>
-        </div>
-        <div className="inventory-panel">
-          <section className="appearance-controls form-stack">
-            <h2 className="heading">Appearance</h2>{onSave && <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save avatar to profile"}</Button>}
-            <div className="hero-actions"><Button variant="secondary" onClick={() => setEquipped({ ...equipped, avatarEnabled: !equipped.avatarEnabled })}>{equipped.avatarEnabled ? "Remove avatar" : "Create my avatar"}</Button></div>
-            <fieldset><legend>Skin tone</legend><div className="appearance-swatches">{skinTones.map((tone) => <button key={tone.id} type="button" className="appearance-swatch" aria-label={tone.name} title={tone.name} aria-pressed={equipped.avatarEnabled && (equipped.skinTone || "brown") === tone.id} style={{backgroundColor:tone.color}} onClick={() => setEquipped({ ...equipped, skinTone:tone.id, avatarEnabled:true })}>{equipped.avatarEnabled && (equipped.skinTone || "brown") === tone.id ? "✓" : ""}</button>)}</div></fieldset>
-            <fieldset><legend>Hair color</legend><div className="appearance-swatches">{hairColors.map((color) => <button key={color.id} type="button" className="appearance-swatch" aria-label={color.name} title={color.name} aria-pressed={equipped.avatarEnabled && (equipped.hairColor || "black") === color.id} style={{backgroundColor:color.color}} onClick={() => setEquipped({ ...equipped, hairColor:color.id, avatarEnabled:true })}>{equipped.avatarEnabled && (equipped.hairColor || "black") === color.id ? "✓" : ""}</button>)}</div></fieldset>
-          </section>
-          <div className="inventory-tabs">
-            {["Outfit", "Accessories", "Background"].map((t) => (
-              <button
-                className={tab === t ? "inventory-tab-active" : ""}
-                key={t}
-                onClick={() => setTab(t)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <div className="cosmetic-grid">
-            {cosmeticItems
-              .filter((i) => i.category === tab)
-              .map((item) => {
-                const key =
-                  tab === "Outfit"
-                    ? "outfit"
-                    : tab === "Accessories"
-                      ? "accessory"
-                      : "background"
-                return (
-                  <button
-                    className={`cosmetic-tile ${
-                      equipped[key] === item.name ? "cosmetic-equipped" : ""
-                    }`}
-                    key={item.id}
-                    onClick={() =>
-                      setEquipped({ ...equipped, [key]: item.name, avatarEnabled: true })
-                    }
-                  >
-                    <div className="item-state">
-                      {equipped[key] === item.name ? "SELECTED" : "TRY ON"}
-                    </div>
-                    <div className={`item-art item-${item.id}`}>
-                      <Icon
-                        name={tab === "Outfit" ? "user" : "spark"}
-                        size={34}
-                      />
-                    </div>
-                    <strong>{item.name}</strong>
-                    <span>Free preview</span>
-                  </button>
-                )
-              })}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  return <Wardrobe equipped={equipped} setEquipped={setEquipped} shop={shop} onSave={onSave} saving={saving} />
 }
 
 export { Coach } from "./RoleplayCoach"
