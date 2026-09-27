@@ -379,3 +379,47 @@ test('automated fallback waits two minutes, gives one text assessment, and canno
   for(const user of [a,b]){const me=await f.ok('me',user);assert.equal(me.rating.value,1000);assert.equal(me.rating.games,0);assert.equal(me.judge.roundsCompleted,0);}
   assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_rating_events')).rows[0].n,0);
 });
+
+
+test('public profiles and friend requests protect private data and require recipient consent', async t => {
+  const f=await setup(t), a=await f.signup(), b=await f.signup(), outsider=await f.signup();
+  const target=b.player.id, path=`friends/${target}`;
+  assert.equal((await f.api(`players/${target}`)).status,401);
+  const publicProfile=await f.ok(`players/${target}`,a);
+  assert.equal(publicProfile.player.name,b.player.name);assert.equal(publicProfile.friendship,'none');
+  assert.deepEqual(Object.keys(publicProfile).sort(),['ageBand','friendship','player','rating','roundsJudged','roundsPlayed']);
+  assert.doesNotMatch(JSON.stringify(publicProfile),/email|password|birth_date|token|practices|credits/);
+  assert.equal((await f.api(`players/missing`,a)).status,404);
+  assert.equal((await f.api(`friends/${a.player.id}`,a,{action:'request'})).status,400);
+  await Promise.all([f.ok(path,a,{action:'request'}),f.ok(path,a,{action:'request'})]);
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_friendships')).rows[0].n,1);
+  assert.equal((await f.ok(`players/${target}`,a)).friendship,'outgoing');
+  assert.equal((await f.ok('friends',b)).friends[0].friendship,'incoming');
+  assert.equal((await f.api(path,a,{action:'accept'})).status,409);
+  assert.equal((await f.api(path,outsider,{action:'accept'})).status,409);
+  assert.equal((await f.ok(`friends/${a.player.id}`,b,{action:'request'})).friendship,'incoming');
+  await f.ok(`friends/${a.player.id}`,b,{action:'accept'});
+  assert.equal((await f.ok('friends',a)).friends[0].friendship,'friends');
+  assert.equal((await f.ok('friends',b)).friends[0].player.id,a.player.id);
+  assert.equal((await f.ok('friends',outsider)).friends.length,0);
+  await f.ok(path,a,{action:'remove'});assert.equal((await f.ok('friends',b)).friends.length,0);
+  await f.ok(path,a,{action:'request'});
+  assert.equal((await f.api(path,a,{action:'decline'})).status,409);
+  await f.ok(`friends/${a.player.id}`,b,{action:'decline'});
+  await f.ok(path,a,{action:'request'});await f.ok(path,a,{action:'cancel'});
+  assert.equal((await f.ok('friends',a)).friends.length,0);
+});
+
+test('blocking a participant removes friendship and prevents requests or profiles in either direction',async t=>{
+  const f=await setup(t),users=await f.group(),a=users[0],b=users[1];
+  await f.ok(`friends/${b.player.id}`,a,{action:'request'});
+  await f.ok(`friends/${a.player.id}`,b,{action:'accept'});
+  const room=await f.match(users);
+  await f.ok(`rooms/${room.code}/block`,a,{targetId:b.player.id});
+  assert.equal((await f.sql('SELECT COUNT(*) AS n FROM pitch_friendships')).rows[0].n,0);
+  for(const [from,to] of [[a,b],[b,a]]){
+    assert.equal((await f.api(`players/${to.player.id}`,from)).status,404);
+    assert.equal((await f.api(`friends/${to.player.id}`,from,{action:'request'})).status,404);
+    assert.equal((await f.ok('friends',from)).friends.length,0);
+  }
+});

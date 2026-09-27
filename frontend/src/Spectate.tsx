@@ -1,3 +1,4 @@
+import { PlayerLink } from "./PlayerProfiles"
 import { useEffect, useState } from "react"
 import type { Scenario, SpectatorRound } from "../../shared/pitch"
 import type { Pitch } from "./usePitch"
@@ -76,26 +77,26 @@ export function Spectate({ p }: { p: Pitch }) {
   }, [p.api, open, selected, retry])
   return <section className="panel form-stack">
     <SectionTitle eyebrow={p.queue.status === "waiting" ? "WHILE YOU WAIT" : "WATCH AND LEARN"} title="Spectate Head-to-Head" />
-    <p>Watch public rounds across age groups. Your queue keeps running, and your own match opens automatically when it’s ready.</p>
+    <p>Watch while you wait. Your match opens when ready.</p>
     <Button variant="secondary" onClick={() => { setOpen(!open); setSelected(null) }}>{open ? "Close spectating" : "Watch public rounds"} <Icon name="play" /></Button>
     {open && <>
-      <p>Live spectating shows the scenario, round progress, shared text and final result. Spectator audio and video are not available yet.</p>
+      <p>Live text and results · no spectator audio or video.</p>
       {selected && <Button variant="ghost" onClick={() => setSelected(null)}>Back to public rounds</Button>}
       {selected === "demo" && scenario ? <DemoSpectator scenario={scenario} /> : <>
         {loading && <p role="status">Loading public rounds…</p>}
         {error && <div role="status"><p>{error}</p><Button variant="ghost" onClick={() => setRetry((v) => v + 1)}>Retry</Button></div>}
         {selected && round && <section className="form-stack">
           <div className="eyebrow">PUBLIC ROUND · READ ONLY</div>
-          <h3 className="heading">{round.participants.filter((v) => v.role === "contestant").map((v) => v.name).join(" vs ")}</h3>
+          <h3 className="heading">{round.participants.filter(v=>v.role==='contestant').map((v,i)=><span key={v.id}>{i>0&&' vs '}<PlayerLink player={v}>{v.name}</PlayerLink></span>)}</h3>
           <p>{round.scenario.prompt}</p>
           <strong role="status">{round.status !== "active" || round.phase.expired ? "Round ended" : `${round.phase.label} · ${countdown(round.phase.deadline, round.serverTime)}`}</strong>
-          <p>Text appears after each speaking turn. You cannot vote or send messages to players.</p>
+          <p>Text appears after each turn. Spectators can’t vote or chat.</p>
           {round.responses.map((response) => <article key={`${response.playerId}-${response.phase}`}><strong>{round.participants.find((v) => v.id === response.playerId)?.name}</strong><p className="preserve-lines">{response.content}</p></article>)}
           {!round.responses.length && <p>No shared text yet. Players may be using voice.</p>}
           {round.result && <p><strong>{round.status === "cancelled" ? "Round cancelled" : round.result.winnerId ? `${round.participants.find((v) => v.id === round.result!.winnerId)?.name} wins` : round.result.reason === "peer_practice" ? "Practice duel complete · unrated" : "A draw"}</strong></p>}
         </section>}
         {!selected && <>
-          {!loading && !rooms.length && <p>No live public rounds right now. Watch the labelled demo below while you wait.</p>}
+          {!loading && !rooms.length && <p>No public rounds live. Try the demo below.</p>}
           <div className="spectate-grid">{rooms.map((value) => <button className="scenario-card" key={value.code} onClick={() => setSelected(value.code)}><span className="eyebrow">LIVE · {value.band}</span><strong>{value.participants.filter((v) => v.role === "contestant").map((v) => v.name).join(" vs ")}</strong><span>{value.scenario.title}</span><small>{value.phase.label}</small></button>)}</div>
         </>}
       </>}

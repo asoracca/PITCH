@@ -104,3 +104,10 @@ export interface RoomChat { messages: ChatMessage[]; canSend: boolean }
 export interface PracticeDelivery { seconds: number; samples: number; audiblePercent: number; pauses: number; levelRangeDb: number | null }
 export interface PracticeDraft { id: string; scenarioId: string; transcript: string; feedback: string; delivery: PracticeDelivery | null }
 export interface PracticeLog extends PracticeDraft { scenario: Scenario; createdAt: number; updatedAt: number }
+
+export type Friendship = 'none' | 'self' | 'incoming' | 'outgoing' | 'friends';
+export type FriendAction = 'request' | 'accept' | 'decline' | 'cancel' | 'remove';
+export interface PublicProfile {
+  player: Player; ageBand: AgeBand | null; rating: number; roundsPlayed: number; roundsJudged: number; friendship: Friendship;
+}
+export interface FriendEntry extends PublicProfile { updatedAt: number }

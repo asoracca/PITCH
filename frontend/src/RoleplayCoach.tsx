@@ -74,7 +74,6 @@ export function Coach({ navigate }: { navigate: (page: Page) => void }) {
   }
   return <div className="page-stack roleplay-page">
     <SectionTitle eyebrow="AI COACH · FREE ON-DEVICE PREVIEW" title="AI Career Coach" action={<span className={`roleplay-status ${status === 'ready' ? 'is-ready' : ''}`}><span />{status === 'thinking' ? 'Thinking…' : status === 'loading' ? 'Setting up AI' : status === 'ready' ? 'AI ready' : 'Guided demo'}</span>} />
-    <p className="roleplay-subtitle">Practice the conversation before it counts.</p>
     <div className="roleplay-settings">
       <label>Difficulty<select value={difficulty} disabled={working || turn > 0} onChange={event => reset(role, event.target.value as Difficulty, personality)}>{['Easy','Medium','Hard'].map(value => <option key={value}>{value}</option>)}</select></label>
       <label>Personality<select value={personality} disabled={working || turn > 0} onChange={event => reset(role, difficulty, event.target.value as Personality)}>{['Supportive','Neutral','Direct'].map(value => <option key={value}>{value}</option>)}</select></label>

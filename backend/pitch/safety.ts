@@ -21,7 +21,11 @@ export async function report(store: Store, room: PitchRoom, player: Player, body
 export async function block(store: Store, room: PitchRoom, player: Player, body: Record<string, unknown>) {
   const target = textField(body.targetId, 'Blocked participant', 100);
   if (target === player.id || !(await seats(store, room)).some(s => s.player_id === target)) fail(400, 'INVALID_TARGET', 'Choose another participant in this round.');
-  await store.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?) ON CONFLICT DO NOTHING', player.id, target, Date.now()).run();
+  const [a,b] = [player.id,target].sort();
+  await store.env.DB.batch([
+    store.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?) ON CONFLICT DO NOTHING', player.id, target, Date.now()),
+    store.sql('DELETE FROM pitch_friendships WHERE player_a=? AND player_b=?',a,b),
+  ]);
   return { blocked: true, targetId: target };
 }
 export async function rateFeedback(store: Store, player: Player, body: Record<string, unknown>) {

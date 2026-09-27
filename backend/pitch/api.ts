@@ -12,6 +12,7 @@ import { incomingPeerFeedback, peerRows, submitPeerFeedback } from './peer';
 import { readAvatar, storedAvatar } from '../../shared/avatar';
 import { roomChat } from './chat';
 import { practiceLogs, savePractice, deletePractice } from './practice';
+import { playerProfile, friends, changeFriend } from './friends';
 import { PHASES, SCENARIOS } from './scenarios';
 import type { Account, PitchRoom, QueueRow } from './types';
 
@@ -79,6 +80,11 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
   }
   const player = await store.authenticate(request); const account = await requireAccount(store, player);
   await store.limit(`pitch-request:${player.id}`, 300);
+  if (path === '/api/pitch/friends') { method(request,'GET'); return Response.json(await friends(store,player.id)); }
+  const publicPlayer = /^\/api\/pitch\/players\/([a-zA-Z0-9-]{1,100})$/.exec(path);
+  if (publicPlayer) { method(request,'GET'); return Response.json(await playerProfile(store,player.id,publicPlayer[1])); }
+  const friendship = /^\/api\/pitch\/friends\/([a-zA-Z0-9-]{1,100})$/.exec(path);
+  if (friendship) { method(request,'POST'); return Response.json(await changeFriend(store,player.id,friendship[1],(await jsonBody(request)).action)); }
   if (path === '/api/pitch/logout') { method(request, 'POST'); await store.sql('DELETE FROM sessions WHERE token_hash=?', await sha256(request.headers.get('authorization')!.slice(7))).run(); return Response.json({ signedOut: true }); }
   if (path === '/api/pitch/practice') { if(request.method==='GET')return Response.json({practices:await practiceLogs(store,player.id)}); method(request,'POST');return Response.json(await savePractice(store,player.id,await jsonBody(request,32768))); }
   const practiceEntry=/^\/api\/pitch\/practice\/([^/]+)$/.exec(path);
