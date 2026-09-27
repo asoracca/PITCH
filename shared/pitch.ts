@@ -1,3 +1,5 @@
+import type { AvatarLook } from './avatar';
+export type { AvatarLook } from './avatar';
 /** Public wire contract. Safe to import from browser code; contains no server/database imports. */
 export const PITCH_API_VERSION = 'pitch.v1';
 export type AgeBand = '14–17' | '18–22' | '23+';
@@ -5,7 +7,7 @@ export type QueueMode = 'quick' | 'contestant' | 'judge' | 'priority' | 'mixed';
 export type Role = 'contestant' | 'judge';
 export type FeedbackRating = 'helpful' | 'unhelpful' | 'abusive';
 export type ReportReason = 'harassment' | 'unsafe-contact' | 'abusive-feedback' | 'cheating' | 'other';
-export interface Player { id: string; name: string }
+export interface Player { id: string; name: string; avatar?: AvatarLook | null; ageBand?: string | null }
 export interface Session { player: Player; token: string; expiresAt: number }
 export interface Signup { name: string; email: string; password: string; birthDate: string; acceptedConduct: true }
 export interface Rubric { clarity: number; persuasiveness: number; composure: number; tip: string }
@@ -18,7 +20,7 @@ export interface PitchConfig {
   capabilities: {
     emailPassword: boolean; googleSignIn: boolean; emailVerification: boolean; passwordRecovery: boolean;
     humanJudging: boolean; aiPractice: boolean; voice: boolean; voiceChanging: boolean;
-    video: boolean; transcripts: boolean; customLobbies: boolean; tournaments: boolean;
+    video: boolean; transcripts: boolean; browserTranscription: boolean; onDeviceCoaching: boolean; customLobbies: boolean; tournaments: boolean;
     reporting: boolean; blocking: boolean; moderatorReviewConfigured: boolean;
   };
   rules: {
@@ -31,6 +33,7 @@ export interface PitchConfig {
   scenarios: Scenario[];
 }
 export interface PitchMe {
+  avatar: AvatarLook | null;
   player: Player; ageBand: AgeBand | null;
   rating: { value: number; games: number; provisional: boolean; placementGamesRemaining: number };
   judge: { reliability: number; roundsCompleted: number; progressToCredit: number };
@@ -69,14 +72,15 @@ export type PitchQueue =
   | { status: 'matched'; serverTime: number; room: PitchRoomView };
 export interface HistoryFeedback extends Rubric { ballotId: string; roomId: string; rating: string | null }
 export interface PitchHistory {
-  peerHistory: { code: string; scenario: Scenario; finishedAt: number | null; feedback: Feedback[] }[];
-  history: { code: string; scenario: Scenario; result: string; before: number; after: number; delta: number; finishedAt: number | null; feedback: HistoryFeedback[] }[];
+  practices: PracticeLog[];
+  peerHistory: { opponent?: Player; code: string; scenario: Scenario; finishedAt: number | null; feedback: Feedback[] }[];
+  history: { opponent?: Player; code: string; scenario: Scenario; result: string; before: number; after: number; delta: number; finishedAt: number | null; feedback: HistoryFeedback[] }[];
   averages: RubricAverages; scope: string;
   byCategory: { category: string; games: number; wins: number; winRate: number | null }[];
 }
 export interface PitchLeaderboard {
   band: AgeBand | null; weekStartsAt: number;
-  players: { playerId: string; name: string; rating: number; games: number; weeklyGain: number; weeklyGames: number }[];
+  players: { playerId: string; name: string; avatar?: AvatarLook | null; rating: number; games: number; weeklyGain: number; weeklyGames: number }[];
 }
 export interface VoiceConfig {
   iceServers: { urls: string | string[]; username?: string; credential?: string }[];
@@ -90,3 +94,12 @@ export interface SignalPage { signals: VoiceSignal[]; cursor: number }
 export interface Reports {
   reports: { id: string; roomId: string; roomCode: string; reason: string; details: string; createdAt: number; targetId: string; targetName: string }[];
 }
+
+export const TOPICS = [{id:'all',label:'Any topic'},{id:'career',label:'Interviews & careers'},{id:'conflict',label:'Conflict & boundaries'},{id:'money',label:'Money & negotiation'},{id:'leadership',label:'Leadership & teamwork'},{id:'social',label:'Social situations'}] as const;
+export const REACTIONS = ['👏','👍','💡','🤝','🔥','😊'] as const;
+export interface ChatMessage { id: number; playerId: string; kind: 'message'|'reaction'; content: string; createdAt: number }
+export interface RoomChat { messages: ChatMessage[]; canSend: boolean }
+
+export interface PracticeDelivery { seconds: number; samples: number; audiblePercent: number; pauses: number; levelRangeDb: number | null }
+export interface PracticeDraft { id: string; scenarioId: string; transcript: string; feedback: string; delivery: PracticeDelivery | null }
+export interface PracticeLog extends PracticeDraft { scenario: Scenario; createdAt: number; updatedAt: number }

@@ -4,15 +4,15 @@ Design reference: [Gamified Career Readiness Platform](https://www.figma.com/mak
 
 **Review status:** the exported React source has been inspected and integrated from [Cassie's repository](https://github.com/CassieYu229/GamifiedCareer-ReadinessPlatform), commit `55a7221bf88194988519a3895ef3f769b1078d3a`. The running frontend is in `frontend/`. This review uses the actual exported source; the live Figma canvas itself was not accessible through the connector.
 
-The supplied layout, colors, typography, navigation, landing page and character artwork are reused. Simulated opponents, fabricated scores, sample profile data, fake activity counts and fake coach replies were removed. Auth, dashboard, queue, live rounds, scoring, results, profile history, leaderboard, report/block and moderator controls call the shared API. Speaking phases, winners and Elo remain server-authoritative. Navigation and refresh preserve the session; polling remains active while visiting another screen.
+The supplied layout, colors, typography, navigation, landing page and character artwork are reused. Real account activity remains separate from explicitly labelled demo opponents, sample leaderboard entries and the optional 500-day profile preview. Auth, dashboard, queue, live rounds, scoring, results, profile history, leaderboard, report/block and moderator controls call the shared API. Speaking phases, winners and Elo remain server-authoritative. Navigation and refresh preserve the session; polling remains active while visiting another screen.
 
-The design's five example scoring dimensions are replaced by the agreed three peer rubric dimensions (clarity, persuasiveness and composure, 1–5). No AI calls are made. Solo practice is explicitly unscored and local. Character styles save on this device only. AI Coach, video, coins/XP/unlocks, profile editing and earned badges remain follow-up work; the UI does not award fake balances or scores.
+The design's five example scoring dimensions are replaced by the agreed three peer rubric dimensions (clarity, persuasiveness and composure, 1–5). Solo practice is unscored, with optional local voice/video recording, browser transcription and approximate delivery measurements. Free WebGPU transcript coaching loads only when requested; it does not hear audio or see faces. Character styles can be saved to the account. Video is available in live rounds; coins/XP/unlocks, general profile editing and earned badges remain follow-up work. Demo results never change real ratings.
 
 ## What is ready
 
 - Shared, browser-safe response types in `shared/pitch.ts`.
 - A typed client for every current PITCH endpoint in `client/pitch-api.ts`; `beef/src/pitch-api.ts` re-exports it for the Next.js team.
-- Live contract discovery: `GET /api/pitch/config` reports `apiVersion: "pitch.v1"`, rules, scenarios and supported capabilities. Use its flags to hide unsupported features. AI, Google sign-in, password recovery, video, tournaments and voice effects are not currently enabled.
+- Live contract discovery: `GET /api/pitch/config` reports `apiVersion: "pitch.v1"`, rules, scenarios and supported capabilities. Use its flags to hide unsupported features. Browser transcription and on-device coaching are optional client capabilities; server AI remains disabled. Google sign-in, password recovery, tournaments and voice effects are not enabled.
 - Cancelable queue/room subscriptions, session-error handling, server-controlled results and a full real-database client integration test.
 - Automatic deployment from `asoracca/Pitch` branch `backend/quick-match` to the existing Vercel website. GitHub CI checks backend and Next.js builds.
 
@@ -27,7 +27,7 @@ These connections are implemented in the imported frontend.
 | Create account / sign in / sign out | `signup`, `login`, `logout`; never store passwords or invent a login success |
 | Dashboard rating, judge progress, priority credit | `me`; show real empty states for a new account |
 | Scenario list | `config().scenarios`, filtered by the signed-in player's age band |
-| Play / contestant / judge / priority | `queue(mode)`; do not select an opponent or generate a match in the browser |
+| Play / contestant / judge / priority | `queue(mode, allowSpectators, allowPeerMatch, category)`; the server selects real opponents with compatible topics across ages |
 | Waiting screen | `watchQueue`; handle waiting, expired and matched explicitly |
 | Round screen and countdown | `watchRoom`; use `room.phase.deadline` and `room.serverTime`, not a separate client phase schedule |
 | Assigned side | `room.yourPosition`; do not randomize again on refresh |
@@ -36,12 +36,13 @@ These connections are implemented in the imported frontend.
 | Result and Elo animation | `room.result.ratingChanges`; animate the saved numbers without calculating a new rating locally |
 | Feedback usefulness | `rateFeedback` |
 | History / skill averages / category wins | `history`; the statistics cover the most recent 50 rated rounds |
-| Weekly leaderboard | `leaderboard`; respects age bands |
+| Save / delete solo practice | `savePractice`, `deletePractice`; private text/feedback/measurements only, never media |
+| Weekly leaderboard | `leaderboard`; shared across age groups |
 | Report / block / leave | `report`, `block`, `leave`; blocking also needs to mute that user's current audio in the UI |
-| Microphone / playback | `voice`, `signals`, `sendSignal`, plus `prototype/voice.js` as the existing browser implementation |
+| Microphone / playback | `voice`, `signals`, `sendSignal`, plus `frontend/src/voice.ts` for live media and `PracticeMicrophone.tsx` for solo recordings |
 | Moderator reports | `reports`, `reviewReport`; only display when `me().moderator` is true |
 
-Use the API's three-judge, five-participant model and two judged rounds per priority credit. Do not keep hardcoded demo scores, fake queue opponents, AI claims or simulated winners in the integrated UI. Real-time audio and HTTP state polling are separate: microphone audio does not wait for four-second state polls.
+Use the API's three-judge, five-participant model and two judged rounds per priority credit. Keep scripted demo opponents, chat and sample activity clearly labelled and separate from the real queue and ratings. Real-time audio and HTTP state polling are separate: microphone audio does not wait for four-second state polls.
 
 ## React wiring example
 
@@ -76,7 +77,7 @@ Figma's standard Make integration creates its own repository and pushes to that 
 
 1. Push the changed Make design to its generated repository.
 2. Compare against the recorded upstream commit in `frontend/IMPORT.md`; import the relevant visual changes into `frontend/`. Keep `src/usePitch.ts`, `src/Match.tsx`, shared API types and root server configuration intact unless the reviewed change requires an update.
-3. Wire new interactions to real capabilities. Do not restore Make's in-browser simulated opponents, scores, local-only account identity or canned AI replies.
+3. Wire new interactions to real capabilities. Keep any labelled demo mode separate from real opponents and account data. Do not present canned replies as AI.
 4. Run `pnpm check` and `pnpm build:vercel` with a local test database; review the scope and the new UI states.
 5. Push the integrated result to `asoracca/Pitch` branch `backend/quick-match`. Native Vercel deployment updates the existing project. Publish the matching private Sites version as well.
 

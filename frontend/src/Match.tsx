@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
-import { Button, Icon, SectionTitle } from "./design"
+import { Button, Icon, SectionTitle, AvatarBadge } from "./design"
 import { countdown, canRespond, initials, signed, skills } from "./model"
 import { FeedbackButtons, Rules } from "./screens"
 import { LiveAudio, audioOff } from "./voice"
+import { TOPICS } from "../../shared/pitch"
+import { OpponentChat } from "./OpponentChat"
 import { DemoMatch } from "./DemoMatch"
 import { Spectate } from "./Spectate"
 import type { Pitch } from "./usePitch"
@@ -35,13 +37,14 @@ function useServerNow(serverTime: number) {
   return clock.now + clock.offset
 }
 export function Match({ p }: { p: Pitch }) {
+  const [category, setCategory] = useState("all")
   const [mode, setMode] = useState<QueueMode>("quick")
   const [demo, setDemo] = useState<Scenario | null>(null)
   const [allowSpectators, setAllowSpectators] = useState(false)
   const [allowPeerMatch, setAllowPeerMatch] = useState(true)
   const now = useServerNow(p.queue.serverTime)
   if (p.room) return <Round key={p.room.code} p={p} room={p.room} />
-  if (demo) return <DemoMatch scenario={demo} name={p.me!.player.name} onClose={() => setDemo(null)} />
+  if (demo) return <DemoMatch scenario={demo} name={p.me!.player.name} avatar={p.me!.avatar} onClose={() => setDemo(null)} />
   const waiting = p.queue.status === "waiting"
   return (
     <div className="page-stack">
@@ -52,13 +55,13 @@ export function Match({ p }: { p: Pitch }) {
       {!waiting && <section className="panel demo-invite">
         <div><div className="eyebrow">TRY IT NOW · NO WAIT</div><h2 className="heading">Play a demo match</h2><p>Face a scripted opponent and three simulated judges. Practice with voice or text. No Elo changes.</p></div>
         <Button onClick={() => {
-          const scenarios = p.config!.scenarios.filter((s) => s.band === p.me!.ageBand)
+          const scenarios = p.config!.scenarios.filter((s) => s.band === p.me!.ageBand && (category === "all" || s.category === category))
           setDemo(scenarios[Math.floor(Math.random() * scenarios.length)] || null)
         }}>Play with demo players <Icon name="play" /></Button>
       </section>}
       <div className="matchup-intro">
         <div className="matchup-player">
-          <div className="avatar avatar-xl">{initials(p.me!.player.name)}</div>
+          <AvatarBadge name={p.me!.player.name} look={p.me!.avatar} size="xl" />
           <span>YOU</span>
           <strong>{p.me!.player.name}</strong>
           <small>{p.me!.rating.value} PITCH Elo</small>
@@ -74,7 +77,7 @@ export function Match({ p }: { p: Pitch }) {
           </div>
           <span>YOUR NEXT OPPONENT</span>
           <strong>{waiting ? "Searching…" : "Ready when you are"}</strong>
-          <small>Ages {p.me!.ageBand} · matched by skill</small>
+          <small>Matched by topic and skill · all age groups</small>
         </div>
       </div>
       {waiting ? (
@@ -103,6 +106,7 @@ export function Match({ p }: { p: Pitch }) {
           {p.queue.status === "expired" && (
             <p role="status">{p.queue.message}</p>
           )}
+          <fieldset className="topic-options"><legend>Choose your topic</legend><div className="category-chips">{TOPICS.map(topic=><button type="button" key={topic.id} className="category-chip" aria-pressed={category===topic.id} onClick={()=>setCategory(topic.id)}>{topic.label}</button>)}</div><small>Any topic can match all categories. Friends should choose the same topic to maximize their chance of meeting.</small></fieldset>
           <fieldset className="queue-options">
             <legend>Choose how to play</legend>
             {([
@@ -143,7 +147,7 @@ export function Match({ p }: { p: Pitch }) {
             ))}
           </fieldset>
           {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>If judges aren’t available after 15 seconds, start an unrated two-player duel and exchange opponent feedback.</span></label>}
-          <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators from my age group to see my display name, shared text and round result. The round is public only if every participant agrees. Camera and microphone feeds stay within the room.</span></label>
+          <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators to see my display name, shared text and round result. The round is public only if every participant agrees. Camera and microphone feeds stay within the room.</span></label>
           {p.me!.bannedUntil > Date.now() && (
             <p>
               Queue break until{" "}
@@ -153,7 +157,7 @@ export function Match({ p }: { p: Pitch }) {
           <Button
             disabled={p.busy || p.me!.bannedUntil > Date.now()}
             onClick={() => {
-              void p.join(mode, allowSpectators, allowPeerMatch && mode !== "judge" && mode !== "priority")
+              void p.join(mode, allowSpectators, allowPeerMatch && mode !== "judge" && mode !== "priority", category)
             }}
           >
             Find a round
@@ -639,14 +643,13 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
       <div className="matchup-intro">
         {players.map((v, i) => (
           <div className="matchup-player" key={v.id}>
-            <div className={`avatar avatar-xl ${i ? "avatar-alt" : ""}`}>
-              {initials(v.name)}
-            </div>
+            <AvatarBadge name={v.name} look={v.avatar} size="xl" />
             <span>
               CONTESTANT {i ? "B" : "A"}
               {v.id === p.me!.player.id ? " · YOU" : ""}
             </span>
             <strong>{v.name}</strong>
+            <small>{v.ageBand ? `Ages ${v.ageBand}` : ""}</small>
             <small>
               {v.left
                 ? "Left round"
@@ -673,14 +676,15 @@ function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
           )}
         </div>
       </div>
-      {active && <p>{room.isPublic ? "Public round: viewers in your age group can follow shared text and results." : "Private round: only its participants can view it."}</p>}
+      {active && <p>{room.isPublic ? "Public round: viewers can follow shared text and results." : "Private round: only its participants can view it."}</p>}
       {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>Two-player practice · no judges needed</strong><p>Take your turns, then give each other feedback. This round does not change Elo or award judging credits.</p></div></div>}
+      <OpponentChat p={p} room={room} />
       <div className="live-judge-cards">
         {room.participants
           .filter((v) => v.role === "judge")
           .map((v) => (
             <div className="panel" key={v.id}>
-              <Icon name="gavel" />
+              <AvatarBadge name={v.name} look={v.avatar} /><Icon name="gavel" />
               <strong>{v.name}</strong>
               <span>
                 {v.left

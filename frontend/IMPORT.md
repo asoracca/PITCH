@@ -7,7 +7,7 @@ Imported commit: `55a7221bf88194988519a3895ef3f769b1078d3a` (2026-09-26).
 
 The original export's Figma-only development plugins and `.figma` commands are not required on Vercel or Sites. The portable Vite config uses the same React/Tailwind stack. Root pnpm workspaces provide one locked install and both deployment builds. No database secrets belong here.
 
-AI Coach analysis, XP/coins/earned cosmetics, profile editing and badges are not enabled. Solo practice and character styling are explicitly local/unscored experiences. Multiplayer, ratings and peer feedback use the shared backend, with its approved age bands and three-dimension rubric.
+Optional on-device transcript coaching is available; XP/coins/earned cosmetics, general profile editing and earned badges are not enabled. Solo practice remains unscored, and avatars can be saved to the account. Multiplayer, ratings and peer feedback use the shared backend, with its approved age bands and three-dimension rubric.
 
 Later Make exports must be reviewed and merged into this folder. Keep the connected controller files; do not replace them with the upstream simulation. The upstream Figma repository remains untouched by this integration.
 
@@ -21,11 +21,16 @@ Practice now offers category chips, searchable scenario cards and 72 scenarios (
 
 `demo.ts` contains 12 explicitly fictional display profiles. The leaderboard defaults to the labelled demo view only when real rankings are empty; its Real players tab always shows actual API results. No fake login credentials or rating events are created. Head-to-Head's **Play with demo players** runs a local scripted demonstration with a simulated opponent, three sample judges and an illustrative result, never AI evaluation or real Elo. **Watch public rounds** includes a labelled scripted spectator demo when nobody is playing.
 
-Live spectating is read-only text/progress/results, without audio or video. Queue entrants can opt in to sharing their display names, finished-turn text and results with spectators in their age band. Every participant must opt in (five in a judged round, two in a practice duel); existing/private rounds remain private. Block relationships are checked in both directions, current-turn drafts and private judging feedback stay hidden, and watching never refreshes a seat or changes ratings. Queue polling stays active during spectating, and a match automatically replaces the spectator screen.
+Live spectating is read-only text/progress/results, without audio or video. Queue entrants can opt in to sharing their display names, finished-turn text and results with spectators across age groups. Every participant must opt in (five in a judged round, two in a practice duel); existing/private rounds remain private. Block relationships are checked in both directions, current-turn drafts and private judging feedback stay hidden, and watching never refreshes a seat or changes ratings. Queue polling stays active during spectating, and a match automatically replaces the spectator screen.
 
 
 Two-player fallback is opt-in through `allowPeerMatch`; both contestants must wait 15 seconds. Five-person judged matching takes precedence. Duels use the same speaking timeline followed by a 60-second opponent-feedback window. Feedback is submitted once and revealed on completion, stored in `pitch_peer_feedback`, and returned separately in `history.peerHistory`; it never creates Elo events or judging credits. Leaving ends a duel without penalties.
 
-Profile opens a clearly labelled demo activity view: 500-day streak, sample round history, judging and scores. **Real activity** shows unchanged API account records. The demo is presentation-only and its credits cannot enter matchmaking. Avatars start empty; **Create my avatar**, skin-tone/hair-color swatches, outfits and accessories are device-local. **Remove avatar** clears the visible character. Both PITCH logos return Home.
+Profile opens a clearly labelled demo activity view: 500-day streak, sample round history, judging and scores. **Real activity** shows unchanged API account records. The demo is presentation-only and its credits cannot enter matchmaking. Avatars start empty; **Create my avatar**, skin-tone/hair-color swatches, outfits and accessories preview locally and can be saved to the account. **Remove avatar** clears the visible character. Both PITCH logos return Home.
 
-The coaching page also has local voice recording/playback through `PracticeMicrophone`. It provides no AI conversation, transcription or automated scoring. No paid AI service is configured.
+The coaching page also has local voice recording/playback through `PracticeMicrophone`. It provides optional browser transcription and on-device text feedback, without automated scores. No paid AI service is configured.
+
+
+The practice review uses three short steps: Your words, Your delivery, Your feedback. Technical information is collapsed by default. One response field serves typing and transcription. Choosing Save practice stores response text, optional generated feedback and measurements; media stays in memory. Profile → Real activity shows private saved practices and automatic opponent matches. Profile → Demo profile includes fictional practice logs and named example opponents.
+
+The crossed cream-and-cyan microphone logo was recreated from the user-supplied screenshot on 2026-09-26 as `public/pitch-mark.svg`, replacing the letter P in the shared Home link and the browser icon. This is a screenshot-based recreation, not an import from a newly verified Figma export. The previous upstream repository URL returned 404 when checked; future upstream changes still require a reviewed import.

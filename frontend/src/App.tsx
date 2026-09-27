@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import {
   Button,
+  AvatarBadge,
   Home,
   Icon,
   Logo,
@@ -82,6 +83,7 @@ export default function App() {
   const [equipped, updateLook] = useState<EquippedItems>(storedLook)
   const profile = {
     name: p.me?.player.name || "Welcome to PITCH",
+    avatarLook: equipped,
     avatar: equipped.avatarEnabled ? initials(p.me?.player.name || "PITCH") : "",
     schoolMajor: "",
     locationBio: "",
@@ -93,6 +95,7 @@ export default function App() {
     if (next !== "Home" && next !== "Plans" && !p.session) setAuth(true)
     else setAuth(false)
   }
+  useEffect(()=>{if(p.me) updateLook(p.me.avatar || defaultLook)},[p.me?.player.id])
   function setEquipped(look: EquippedItems) {
     updateLook(look)
     try {
@@ -171,7 +174,7 @@ export default function App() {
         content = (
           <Character
             equipped={equipped}
-            setEquipped={setEquipped}
+            setEquipped={setEquipped} saving={p.busy} onSave={()=>{void p.act(async()=>{await p.api.saveAvatar({...equipped,skinTone:equipped.skinTone||"brown",hairColor:equipped.hairColor||"black",avatarEnabled:!!equipped.avatarEnabled});await p.refresh();p.setNotice("Avatar saved. Other players can now see it.")})}}
             shop={page === "Avatar Shop"}
           />
         )
@@ -223,7 +226,7 @@ export default function App() {
                   aria-label="Open profile"
                   onClick={() => navigate("Profile")}
                 >
-                  {profile.avatar}
+                  <AvatarBadge name={profile.name} look={equipped} />
                 </button>
               </>
             )}
