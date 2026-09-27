@@ -45,3 +45,57 @@ Constraints: absolutely no purple, lilac, lavender, pink, magenta or warm rosy e
 
 ---
 
+
+
+---
+
+WALK STUDENTS
+
+Use case: stylized-concept.
+Asset type: production 3D character WALK-CYCLE SPRITE SHEET for website animation.
+Input image: supporting identity/style reference only; use its woman and man for rows 1 and 2. Create a brand new sprite-sheet composition.
+Primary request: one SQUARE 1536 by 1536 transparent PNG containing an EXACT UNIFORM FOUR-COLUMN by THREE-ROW grid of TWELVE isolated full-body clay/toy 3D people. Every grid cell is 384px wide by 512px tall. Grid cells are invisible; do not draw gridlines. Only ONE character in each cell. Four successive walking frames across each row for the SAME person. Three different identities, one identity per row.
+GRID GEOMETRY: columns occupy x=0-384,384-768,768-1152,1152-1536; rows occupy y=0-512,512-1024,1024-1536. Place character centers at x=192,576,960,1344. Within each row, all four frames have identical character scale and ground baseline, heads around local y=45 and the lowest shoe around local y=470. Keep ALL body parts, hair, backpacks and shadows strictly inside their own cell, with at least 35px clear margin. Do not overlap cells or crop any limb. No shadows at all.
+IDENTITIES: row 1 is a medium-brown-skinned early-twenties woman with dark curly hair, recognizable as the reference woman; row 2 is a light-skinned early-twenties man with short dark hair, recognizable as the reference man; row 3 is a distinct East Asian early-twenties woman with a neat short dark bob. Keep the same face, hairstyle, skin tone, clothing, body proportions and camera angle across all four frames in each row.
+WARDROBE: slightly rumpled casual college hoodies in cream/cyan/blue, comfortable navy or blue trousers, small simple backpacks, sneakers. NO purple or pink clothing. Friendly neutral expressions. Rounded tactile premium toy/clay style, softly sculpted features and subtle cloth detail matching the reference.
+WALK ANIMATION: every character is visibly WALKING toward screen down-right in a gentle three-quarter view. Across columns show four distinct contact / down / passing / up walk-cycle phases with visibly alternating legs and counter-swinging arms, not four static standing people. Column 1 has one foot clearly forward and opposite arm forward; column 2 lowers into weight transfer, rear heel rises; column 3 has the other knee passing forward and arms reversing; column 4 has the opposite foot forward and the other arm forward. Preserve constant apparent character size and consistent feet baseline. Legs separated enough to read the gait at small scale; natural stride, no running, jumping or standing poses.
+LIGHTING: soft even studio light, consistent between all twelve frames.
+BACKGROUND: GENUINELY TRANSPARENT alpha background throughout all empty pixels, no floor, no white rectangle, no gradients, no checkerboard drawn into the image. Absolutely NO cast shadows or contact shadows, NO text, labels, numbers, borders, cell lines, logos or watermarks. Exactly FOUR columns and THREE rows, exactly twelve full-body walking sprites.
+
+---
+
+WALK PROFESSIONALS
+
+Use case: identity-preserve.
+Asset type: matching professional WALK-CYCLE SPRITE SHEET for website animation.
+Input image: Image 1 is the exact sprite-sheet edit target. Preserve its exact FOUR-COLUMN by THREE-ROW arrangement of twelve characters, canvas dimensions, framing, per-cell character scale and position.
+Primary request: change ONLY clothing and accessories on all twelve sprites to professional interview-ready business casual in navy/cyan/cream. Keep exactly the same three young adults, their exact faces, hair, skin tones, ages, body proportions and expressions: curly-haired brown-skinned woman in row 1, short dark-haired light-skinned man in row 2, short bob-haired East Asian woman in row 3. Each row remains four successive walking poses of one person.
+WARDROBE: row1 navy tailored blazer, cream blouse, navy fitted trousers and polished flat shoes. Row2 cream tailored blazer, muted cyan crewneck top, navy trousers and navy polished shoes. Row3 muted cyan tailored blazer, cream blouse, navy trousers, polished dark flat shoes. Remove all backpacks and replace the backpack-hand gesture with a naturally swinging empty arm in the corresponding gait phase. No bags, no folios, no extra objects.
+LOCKED INVARIANTS: preserve the precise walk-cycle leg poses in each column, all feet locations and row baselines, heads and overall character placement, camera angle, lighting, four equal columns and three equal rows, clean cell separation, complete full bodies. Keep the person centered in the exact same place within every cell. The edit must align with the casual sheet for seamless clothing transformation in playback. Arms should counter-swing naturally with each walking phase while keeping hands within the same cell.
+BACKGROUND: genuine transparent alpha in all empty pixels; absolutely no floor, contact or cast shadow, white background, gridlines, text, labels, numbers, borders, watermarks, logos or checkerboard. No purple, lilac or pink. Exactly twelve full-body figures in a regular 4-column by 3-row sheet.
+
+---
+
+HERO BRANDED
+
+Use case: precise-object-edit.
+Asset type: PITCH homepage hero background, integrated architectural nameplate.
+Input image: Image 1 is the exact edit target.
+Primary request: add ONE small professional architectural nameplate bearing exactly "PITCH", physically mounted above the luminous cyan doorway on the booth's front vertical face. Center it over the door opening, in the narrow white front-wall area immediately above the doorway arch and below the roof edge. It must be correctly perspective-aligned to that front face, with the same foreshortening and vanishing lines as the doorway wall. The nameplate must never be on the roof, side wall, vertical cyan trim, or floating in space.
+Nameplate design: modest compact thin icy-white / pale-cyan plaque with restrained rounded corners, realistic close mounting and a tiny contact shadow against the white architecture. Crisp dark-midnight-navy uppercase bold geometric sans-serif wordmark, similar in spirit to Space Grotesk, spelled P I T C H, with tasteful even letterspacing. No extra words, icons, symbols or decoration. Professional signage, legible but appropriately small.
+LOCKED INVARIANTS: preserve ALL existing scene geometry, every object, exact camera, crop, dimensions, booth shape, conveyor, doorway and window shape, dark navy surroundings, cool-white architecture, icy cyan accents, lighting, every object location, and empty left side. Change only by adding the modest integrated plaque above the door.
+Constraints: no people, no additional objects besides that one nameplate, no purple/lilac/pink, no floating labels, no other text, no watermark. Preserve original wide framing exactly.
+
+
+---
+
+WALK ILLUSTRATED — USER STYLE REVISION
+
+Use case: stylized-concept.
+Asset type: small web-animation walking sprite sheet, flat brand illustration.
+Primary request: create exactly ONE square 1536 × 1536 PNG with GENUINELY TRANSPARENT alpha background, containing precisely FOUR COLUMNS × THREE ROWS of TWELVE full-body minimal FLAT DRAWN young-adult silhouettes. Four consecutive visibly different walk-cycle poses across each row. Three different people, one identity per row. This is a clean 2D illustration sheet, NOT 3D characters, NOT realistic people.
+STYLE: ultra-simple flat vector-like geometric shapes with clean smooth navy outlines and a restrained tech-brand aesthetic. Navy, icy cyan, cool cream, medium blue, and small warm skin-tone accents. Solid uniform color fills only. No gradients, no highlights, no realistic texture, no clay, no sculpting, no modeling, no cast shadows, no ground shadows. Featureless faces: no eyes, nose, mouth, eyelashes, or facial detail. Hair, heads, clothes, hands and feet represented by simple legible shapes. The sprites must read cleanly when each person is only 40–55 pixels tall on a website. Avoid tiny details.
+IDENTITIES: row 1 a brown-skinned young woman with one simple rounded dark-curly hair shape, cream hoodie, navy trousers, cyan small backpack, simple navy sneakers; row 2 a light warm-skinned young man with short dark hair, cyan shirt, navy trousers and cream sneakers; row 3 a tan-skinned young woman with a neat short dark bob, simple navy smart-casual blazer over cream top, cyan trousers and navy flats. Maintain exact identity, hair, body shape and wardrobe across all four poses in each row.
+DIRECTION AND GAIT: gentle three-quarter view moving toward screen right and slightly downward, same direction in all cells. Four successive walking phases across columns: left-leg forward contact, weight transfer with bending legs, opposite leg forward contact, opposite weight transfer. Clearly alternate left and right legs and counter-swing arms. Full bodies including hands and feet; distinct readable stride silhouettes. Walking, not running. No duplicate standing poses.
+CRITICAL UNIFORM GRID REGISTRATION: canvas remains a full square, no automatic trimming. Four equal columns, three equal rows; exactly twelve invisible equal cells. With a 1536 canvas each cell is384px wide×512px high. Character hip/torso center at local x=192 in EVERY cell. Heads at local y=72 and identical feet baseline at local y=452 in EVERY cell. Identical apparent height, scale and center for all four poses in each row. Keep left-right limb swings inside local x=55..329, leaving safe margins. Each person must remain completely inside their own cell, with no overlap into neighbors and no changes to centering or camera across frames. Keep all12 feet baselines at the same local position452. No objects except each character's specified worn backpack.
+BACKGROUND: actual fully transparent alpha in all empty pixels, NOT white, NOT black, NOT a rendered checkerboard. No floor, environment, gridlines, borders, text, labels, frame numbers, logo or watermark. Exactly FOUR columns, THREE rows. Minimal professional FLAT 2D drawn silhouettes only.

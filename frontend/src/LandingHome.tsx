@@ -1,7 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Icon, Logo, type Page, type IconName } from './design'
 
-const stages = ['Student life', 'Find your voice', 'Career-ready']
+// Negative delays fill the conveyor immediately; reduced motion uses these fixed positions.
+const walkers = [
+  { x: 42, y: 8, scale: .7, depth: 1 },
+  { x: 48, y: 18, scale: .75, depth: 1 },
+  { x: 51, y: 29, scale: .82, depth: 1 },
+  { x: 55, y: 34, scale: .82, depth: 1 },
+  { x: 78, y: 55, scale: .9, depth: 3 },
+  { x: 85, y: 63, scale: 1, depth: 3 },
+  { x: 93, y: 71, scale: 1.08, depth: 3 },
+  { x: 102, y: 80, scale: 1.15, depth: 3 },
+]
 const ways: { number: string; title: string; copy: string; page: Page; icon: IconName }[] = [
   { number: '01', title: 'A little practice.', copy: 'Pick a real-life scenario. Try your answer out loud, on camera or in writing.', page: 'Practice', icon: 'mic' },
   { number: '02', title: 'A fresh perspective.', copy: 'Go head-to-head, exchange feedback and learn from the way someone else sees it.', page: 'Head-to-Head', icon: 'versus' },
@@ -9,65 +19,59 @@ const ways: { number: string; title: string; copy: string; page: Page; icon: Ico
 ]
 
 export function Home({ onNavigate, onSignIn, signedIn }: { onNavigate: (page: Page) => void; onSignIn: () => void; signedIn: boolean }) {
-  const [stage, setStage] = useState(0)
-  const [playing, setPlaying] = useState(false)
   const [menu, setMenu] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(true)
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
     const update = () => {
       setReducedMotion(preference.matches)
-      setPlaying(!preference.matches)
-      if (preference.matches) setStage(2)
     }
     update()
     preference.addEventListener('change', update)
     return () => preference.removeEventListener('change', update)
   }, [])
   useEffect(() => {
-    if (!playing || reducedMotion) return
-    const timer = window.setInterval(() => setStage(current => (current + 1) % stages.length), 4200)
-    return () => window.clearInterval(timer)
-  }, [playing, reducedMotion])
+    if (!menu) return
+    function closeOnEscape(event: KeyboardEvent) { if (event.key === 'Escape') setMenu(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [menu])
   function go(page: Page) { setMenu(false); onNavigate(page) }
   function howItWorks() { setMenu(false); document.getElementById('career-how')?.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth' }) }
   return <div className="career-home">
-    <section className="career-hero" aria-labelledby="career-heading">
-      <header className="career-nav">
+      <button className="career-menu" aria-label={menu ? 'Close navigation' : 'Open navigation'} aria-expanded={menu} aria-controls="career-navigation" onClick={() => setMenu(!menu)}><Icon name={menu ? 'close' : 'menu'} /></button>
+      {menu && <button className="career-nav-backdrop" aria-label="Close navigation" onClick={() => setMenu(false)} />}
+      <aside className={`career-nav ${menu ? 'is-open' : ''}`} id="career-navigation">
         <Logo onHome={() => go('Home')} />
-        <nav className={`career-nav-links ${menu ? 'is-open' : ''}`} aria-label="Home navigation">
-          <button onClick={howItWorks}>How it works</button>
-          <button onClick={() => go('Practice')}>Practice</button>
-          <button onClick={() => go('Head-to-Head')}>Head-to-Head</button>
-          <button onClick={() => go('Plans')}>Plans</button>
+        <nav className="career-nav-links" aria-label="Home navigation">
+          <button onClick={howItWorks}><Icon name="grid" />How it works</button>
+          <button onClick={() => go('Practice')}><Icon name="play" />Practice</button>
+          <button onClick={() => go('Head-to-Head')}><Icon name="versus" />Head-to-Head</button>
+          <button onClick={() => go('Plans')}><Icon name="star" />Plans</button>
         </nav>
         <div className="career-nav-actions">
           <button className="career-login" onClick={signedIn ? () => go('Dashboard') : onSignIn}>{signedIn ? 'Dashboard' : 'Sign in'} <Icon name="arrow" size={17} /></button>
-          <button className="career-menu" aria-label={menu ? 'Close navigation' : 'Open navigation'} aria-expanded={menu} onClick={() => setMenu(!menu)}><Icon name={menu ? 'close' : 'menu'} /></button>
         </div>
-      </header>
+      </aside>
 
-      <div className={`career-scene career-stage-${stage}`} role="img" aria-label="Two college students in casual clothes pass through a PITCH practice studio and emerge in interview-ready outfits.">
-        <img className="career-studio" src="/home/career-studio.webp" alt="" width="1536" height="1024" fetchPriority="high" />
-        <img className="career-students" src="/home/students.webp" alt="" width="1214" height="1295" />
-        <span className="career-studio-sign" aria-hidden="true">PITCH <Icon name="spark" size={16} /></span>
-        <img className="career-professionals" src="/home/professionals.webp" alt="" width="1215" height="1295" />
-        <span className="career-scene-caption" aria-hidden="true">{stage === 0 ? 'Big dreams. A little practice.' : stage === 1 ? 'Small steps. Stronger voice.' : 'Same you. Ready for what’s next.'}</span>
-      </div>
-
+    <section className="career-hero" aria-labelledby="career-heading">
       <div className="career-intro">
-        <p className="career-kicker"><span /> YOUR NEXT CHAPTER STARTS HERE</p>
-        <h1 id="career-heading">From campus.<br />To <em>career.</em></h1>
-        <p className="career-description">Find your voice before the big moment. Practice real conversations, learn with others and show up ready.</p>
-        <button className="career-start" onClick={() => go('Practice')}>Let’s get you ready <span><Icon name="arrow" size={23} /></span></button>
-        <p className="career-cta-note">One scenario. One minute. A step forward.</p>
+        <p className="career-kicker">A LITTLE PRACTICE GOES A LONG WAY</p>
+        <h1 id="career-heading">Practice real conversations.<br /><em>Build real confidence.</em></h1>
+        <p className="career-description">Interviews, pitches, tough conversations.<br />Try them here. Get feedback. Show up ready.</p>
+        <button className="career-start" onClick={() => go('Practice')}>Start practicing <span><Icon name="arrow" size={23} /></span></button>
+        <p className="career-cta-note">One scenario. One minute. Your next step.</p>
       </div>
 
-      <div className="career-story-controls" aria-label="Student to professional story">
-        <div className="career-story-stages">{stages.map((label, index) => <button key={label} aria-pressed={stage === index} onClick={() => { setStage(index); setPlaying(false) }}><span>{String(index + 1).padStart(2, '0')}</span>{label}</button>)}</div>
-        {!reducedMotion && <button className="career-motion" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause transformation animation' : 'Play transformation animation'}>{playing ? 'Pause' : 'Play'}{!playing && <Icon name="play" size={16} />}</button>}
-      </div>
-      <button className="career-scroll" onClick={howItWorks}>MEET YOUR NEXT CHAPTER <span>↓</span></button>
+      <div className="career-artwork" tabIndex={0} role="img" aria-label="A line of illustrated people walks through the PITCH practice studio. Focus or hover over the illustration to pause its animation."><div className={`career-scene${!reducedMotion ? ' is-walking' : ''}`}>
+        <img className="career-studio" src="/home/career-studio-branded.webp" alt="" width="1536" height="1024" fetchPriority="high" />
+        {walkers.map((walker, index) => <div className="career-walker" key={index} aria-hidden="true" style={{
+          '--travel-delay': `${-1-index*4}s`, '--step-delay': `${-index*.11}s`, '--person-row': `${index%3*50}%`,
+          '--rest-position': `translate(${walker.x}%, ${walker.y}%) scale(${walker.scale})`,
+          '--rest-depth': walker.depth, '--sprite-baseline': ['4.3%', '3.6%', '7.4%'][index%3],
+        } as CSSProperties}><div className="career-walker-body"><span className="career-walk-sprite" /></div></div>)}
+        <img className="career-studio-foreground" src="/home/career-studio-branded.webp" alt="" width="1536" height="1024" />
+      </div></div>
     </section>
 
     <section className="career-how" id="career-how" aria-labelledby="career-how-title">
