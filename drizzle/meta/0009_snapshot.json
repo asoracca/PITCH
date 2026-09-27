@@ -1,0 +1,3074 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "7e88d4b7-cbf8-44c3-bab2-5eb95ae10125",
+  "prevId": "250fe083-7cb0-4120-a1c6-fe2f1cf8707a",
+  "tables": {
+    "arguments": {
+      "name": "arguments",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "round": {
+          "name": "round",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "arguments_room_id_rooms_id_fk": {
+          "name": "arguments_room_id_rooms_id_fk",
+          "tableFrom": "arguments",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "arguments_player_id_players_id_fk": {
+          "name": "arguments_player_id_players_id_fk",
+          "tableFrom": "arguments",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "arguments_room_id_player_id_round_pk": {
+          "columns": [
+            "room_id",
+            "player_id",
+            "round"
+          ],
+          "name": "arguments_room_id_player_id_round_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "argument_valid_round": {
+          "name": "argument_valid_round",
+          "value": "\"arguments\".\"round\" BETWEEN 0 AND 2"
+        },
+        "argument_content_length": {
+          "name": "argument_content_length",
+          "value": "length(\"arguments\".\"content\") BETWEEN 1 AND 600"
+        }
+      }
+    },
+    "judge_rewards": {
+      "name": "judge_rewards",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "earned_at": {
+          "name": "earned_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "consumed_by": {
+          "name": "consumed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_judge_rewards_available": {
+          "name": "idx_judge_rewards_available",
+          "columns": [
+            "player_id",
+            "consumed_by",
+            "earned_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "judge_rewards_room_id_rooms_id_fk": {
+          "name": "judge_rewards_room_id_rooms_id_fk",
+          "tableFrom": "judge_rewards",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "judge_rewards_player_id_players_id_fk": {
+          "name": "judge_rewards_player_id_players_id_fk",
+          "tableFrom": "judge_rewards",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "judge_rewards_consumed_by_rooms_id_fk": {
+          "name": "judge_rewards_consumed_by_rooms_id_fk",
+          "tableFrom": "judge_rewards",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "consumed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pitch_accounts": {
+      "name": "pitch_accounts",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password_salt": {
+          "name": "password_salt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "birth_date": {
+          "name": "birth_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_accounts_email_unique": {
+          "name": "pitch_accounts_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_accounts_player_id_players_id_fk": {
+          "name": "pitch_accounts_player_id_players_id_fk",
+          "tableFrom": "pitch_accounts",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pitch_ballots": {
+      "name": "pitch_ballots",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "judge_id": {
+          "name": "judge_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "winner_id": {
+          "name": "winner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "a_clarity": {
+          "name": "a_clarity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "a_persuasiveness": {
+          "name": "a_persuasiveness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "a_composure": {
+          "name": "a_composure",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "a_tip": {
+          "name": "a_tip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "b_clarity": {
+          "name": "b_clarity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "b_persuasiveness": {
+          "name": "b_persuasiveness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "b_composure": {
+          "name": "b_composure",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "b_tip": {
+          "name": "b_tip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_ballot_once": {
+          "name": "pitch_ballot_once",
+          "columns": [
+            "room_id",
+            "judge_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_ballots_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_ballots_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_ballots",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_ballots_judge_id_players_id_fk": {
+          "name": "pitch_ballots_judge_id_players_id_fk",
+          "tableFrom": "pitch_ballots",
+          "tableTo": "players",
+          "columnsFrom": [
+            "judge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_ballots_winner_id_players_id_fk": {
+          "name": "pitch_ballots_winner_id_players_id_fk",
+          "tableFrom": "pitch_ballots",
+          "tableTo": "players",
+          "columnsFrom": [
+            "winner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_ballot_scores": {
+          "name": "pitch_ballot_scores",
+          "value": "\"pitch_ballots\".\"a_clarity\" BETWEEN 1 AND 5 AND \"pitch_ballots\".\"a_persuasiveness\" BETWEEN 1 AND 5 AND \"pitch_ballots\".\"a_composure\" BETWEEN 1 AND 5 AND \"pitch_ballots\".\"b_clarity\" BETWEEN 1 AND 5 AND \"pitch_ballots\".\"b_persuasiveness\" BETWEEN 1 AND 5 AND \"pitch_ballots\".\"b_composure\" BETWEEN 1 AND 5"
+        }
+      }
+    },
+    "pitch_blocks": {
+      "name": "pitch_blocks",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pitch_blocks_player_id_players_id_fk": {
+          "name": "pitch_blocks_player_id_players_id_fk",
+          "tableFrom": "pitch_blocks",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_blocks_target_id_players_id_fk": {
+          "name": "pitch_blocks_target_id_players_id_fk",
+          "tableFrom": "pitch_blocks",
+          "tableTo": "players",
+          "columnsFrom": [
+            "target_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_blocks_player_id_target_id_pk": {
+          "columns": [
+            "player_id",
+            "target_id"
+          ],
+          "name": "pitch_blocks_player_id_target_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_block_other": {
+          "name": "pitch_block_other",
+          "value": "\"pitch_blocks\".\"player_id\" != \"pitch_blocks\".\"target_id\""
+        }
+      }
+    },
+    "pitch_chat": {
+      "name": "pitch_chat",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_chat_room": {
+          "name": "pitch_chat_room",
+          "columns": [
+            "room_id",
+            "id"
+          ],
+          "isUnique": false
+        },
+        "pitch_chat_once": {
+          "name": "pitch_chat_once",
+          "columns": [
+            "room_id",
+            "player_id",
+            "request_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_chat_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_chat_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_chat",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_chat_player_id_players_id_fk": {
+          "name": "pitch_chat_player_id_players_id_fk",
+          "tableFrom": "pitch_chat",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_chat_kind": {
+          "name": "pitch_chat_kind",
+          "value": "\"pitch_chat\".\"kind\" IN ('message','reaction')"
+        }
+      }
+    },
+    "pitch_feedback_ratings": {
+      "name": "pitch_feedback_ratings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ballot_id": {
+          "name": "ballot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_feedback_once": {
+          "name": "pitch_feedback_once",
+          "columns": [
+            "ballot_id",
+            "player_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_feedback_ratings_ballot_id_pitch_ballots_id_fk": {
+          "name": "pitch_feedback_ratings_ballot_id_pitch_ballots_id_fk",
+          "tableFrom": "pitch_feedback_ratings",
+          "tableTo": "pitch_ballots",
+          "columnsFrom": [
+            "ballot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_feedback_ratings_player_id_players_id_fk": {
+          "name": "pitch_feedback_ratings_player_id_players_id_fk",
+          "tableFrom": "pitch_feedback_ratings",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_feedback_value": {
+          "name": "pitch_feedback_value",
+          "value": "\"pitch_feedback_ratings\".\"value\" IN ('helpful','unhelpful','abusive')"
+        }
+      }
+    },
+    "pitch_follows": {
+      "name": "pitch_follows",
+      "columns": {
+        "follower_id": {
+          "name": "follower_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "followed_id": {
+          "name": "followed_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_followed": {
+          "name": "pitch_followed",
+          "columns": [
+            "followed_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_follows_follower_id_players_id_fk": {
+          "name": "pitch_follows_follower_id_players_id_fk",
+          "tableFrom": "pitch_follows",
+          "tableTo": "players",
+          "columnsFrom": [
+            "follower_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_follows_followed_id_players_id_fk": {
+          "name": "pitch_follows_followed_id_players_id_fk",
+          "tableFrom": "pitch_follows",
+          "tableTo": "players",
+          "columnsFrom": [
+            "followed_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_follows_follower_id_followed_id_pk": {
+          "columns": [
+            "follower_id",
+            "followed_id"
+          ],
+          "name": "pitch_follows_follower_id_followed_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_no_self_follow": {
+          "name": "pitch_no_self_follow",
+          "value": "\"pitch_follows\".\"follower_id\" != \"pitch_follows\".\"followed_id\""
+        }
+      }
+    },
+    "pitch_friendships": {
+      "name": "pitch_friendships",
+      "columns": {
+        "player_a": {
+          "name": "player_a",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_b": {
+          "name": "player_b",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requester_id": {
+          "name": "requester_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_friends_recipient": {
+          "name": "pitch_friends_recipient",
+          "columns": [
+            "player_b"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_friendships_player_a_players_id_fk": {
+          "name": "pitch_friendships_player_a_players_id_fk",
+          "tableFrom": "pitch_friendships",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_a"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_friendships_player_b_players_id_fk": {
+          "name": "pitch_friendships_player_b_players_id_fk",
+          "tableFrom": "pitch_friendships",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_b"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_friendships_requester_id_players_id_fk": {
+          "name": "pitch_friendships_requester_id_players_id_fk",
+          "tableFrom": "pitch_friendships",
+          "tableTo": "players",
+          "columnsFrom": [
+            "requester_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_friendships_player_a_player_b_pk": {
+          "columns": [
+            "player_a",
+            "player_b"
+          ],
+          "name": "pitch_friendships_player_a_player_b_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_friend_pair": {
+          "name": "pitch_friend_pair",
+          "value": "\"pitch_friendships\".\"player_a\" < \"pitch_friendships\".\"player_b\""
+        },
+        "pitch_friend_requester": {
+          "name": "pitch_friend_requester",
+          "value": "\"pitch_friendships\".\"requester_id\" IN (\"pitch_friendships\".\"player_a\",\"pitch_friendships\".\"player_b\")"
+        },
+        "pitch_friend_status": {
+          "name": "pitch_friend_status",
+          "value": "\"pitch_friendships\".\"status\" IN ('pending','accepted')"
+        }
+      }
+    },
+    "pitch_leaves": {
+      "name": "pitch_leaves",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "claim": {
+          "name": "claim",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_leaves_recent": {
+          "name": "pitch_leaves_recent",
+          "columns": [
+            "player_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_leaves_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_leaves_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_leaves",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_leaves_player_id_players_id_fk": {
+          "name": "pitch_leaves_player_id_players_id_fk",
+          "tableFrom": "pitch_leaves",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_leaves_room_id_player_id_pk": {
+          "columns": [
+            "room_id",
+            "player_id"
+          ],
+          "name": "pitch_leaves_room_id_player_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pitch_peer_feedback": {
+      "name": "pitch_peer_feedback",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "clarity": {
+          "name": "clarity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "persuasiveness": {
+          "name": "persuasiveness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "composure": {
+          "name": "composure",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tip": {
+          "name": "tip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_peer_feedback_once": {
+          "name": "pitch_peer_feedback_once",
+          "columns": [
+            "room_id",
+            "author_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_peer_feedback_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_peer_feedback_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_peer_feedback",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_peer_feedback_author_id_players_id_fk": {
+          "name": "pitch_peer_feedback_author_id_players_id_fk",
+          "tableFrom": "pitch_peer_feedback",
+          "tableTo": "players",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_peer_feedback_target_id_players_id_fk": {
+          "name": "pitch_peer_feedback_target_id_players_id_fk",
+          "tableFrom": "pitch_peer_feedback",
+          "tableTo": "players",
+          "columnsFrom": [
+            "target_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_peer_feedback_target": {
+          "name": "pitch_peer_feedback_target",
+          "value": "\"pitch_peer_feedback\".\"author_id\" != \"pitch_peer_feedback\".\"target_id\""
+        },
+        "pitch_peer_feedback_scores": {
+          "name": "pitch_peer_feedback_scores",
+          "value": "\"pitch_peer_feedback\".\"clarity\" BETWEEN 1 AND 5 AND \"pitch_peer_feedback\".\"persuasiveness\" BETWEEN 1 AND 5 AND \"pitch_peer_feedback\".\"composure\" BETWEEN 1 AND 5"
+        }
+      }
+    },
+    "pitch_practice_logs": {
+      "name": "pitch_practice_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scenario_id": {
+          "name": "scenario_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scenario_json": {
+          "name": "scenario_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transcript": {
+          "name": "transcript",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "feedback": {
+          "name": "feedback",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "delivery_json": {
+          "name": "delivery_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_practice_player_date": {
+          "name": "pitch_practice_player_date",
+          "columns": [
+            "player_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_practice_logs_player_id_players_id_fk": {
+          "name": "pitch_practice_logs_player_id_players_id_fk",
+          "tableFrom": "pitch_practice_logs",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_practice_logs_player_id_id_pk": {
+          "columns": [
+            "player_id",
+            "id"
+          ],
+          "name": "pitch_practice_logs_player_id_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pitch_profiles": {
+      "name": "pitch_profiles",
+      "columns": {
+        "avatar_json": {
+          "name": "avatar_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1000
+        },
+        "games": {
+          "name": "games",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "reliability": {
+          "name": "reliability",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 75
+        },
+        "judged": {
+          "name": "judged",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "priority_credits": {
+          "name": "priority_credits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "banned_until": {
+          "name": "banned_until",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pitch_profiles_player_id_players_id_fk": {
+          "name": "pitch_profiles_player_id_players_id_fk",
+          "tableFrom": "pitch_profiles",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_profile_bounds": {
+          "name": "pitch_profile_bounds",
+          "value": "\"pitch_profiles\".\"rating\" >= 100 AND \"pitch_profiles\".\"games\" >= 0 AND \"pitch_profiles\".\"reliability\" BETWEEN 0 AND 100 AND \"pitch_profiles\".\"priority_credits\" >= 0"
+        }
+      }
+    },
+    "pitch_queue": {
+      "name": "pitch_queue",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ticket": {
+          "name": "ticket",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "band": {
+          "name": "band",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "spectate_opt_in": {
+          "name": "spectate_opt_in",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "allow_peer": {
+          "name": "allow_peer",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'all'"
+        }
+      },
+      "indexes": {
+        "pitch_queue_waiting": {
+          "name": "pitch_queue_waiting",
+          "columns": [
+            "band",
+            "room_id",
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_queue_player_id_players_id_fk": {
+          "name": "pitch_queue_player_id_players_id_fk",
+          "tableFrom": "pitch_queue",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_queue_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_queue_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_queue",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_queue_role": {
+          "name": "pitch_queue_role",
+          "value": "\"pitch_queue\".\"role\" IN ('contestant','judge','mixed')"
+        }
+      }
+    },
+    "pitch_rating_events": {
+      "name": "pitch_rating_events",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "before_rating": {
+          "name": "before_rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "after_rating": {
+          "name": "after_rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "delta": {
+          "name": "delta",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "games_before": {
+          "name": "games_before",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_player_game": {
+          "name": "pitch_player_game",
+          "columns": [
+            "player_id",
+            "games_before"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_rating_events_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_rating_events_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_rating_events",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_rating_events_player_id_players_id_fk": {
+          "name": "pitch_rating_events_player_id_players_id_fk",
+          "tableFrom": "pitch_rating_events",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_rating_events_room_id_player_id_pk": {
+          "columns": [
+            "room_id",
+            "player_id"
+          ],
+          "name": "pitch_rating_events_room_id_player_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_rating_integrity": {
+          "name": "pitch_rating_integrity",
+          "value": "\"pitch_rating_events\".\"after_rating\" >= 100 AND \"pitch_rating_events\".\"after_rating\"-\"pitch_rating_events\".\"before_rating\"=\"pitch_rating_events\".\"delta\""
+        }
+      }
+    },
+    "pitch_reports": {
+      "name": "pitch_reports",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reporter_id": {
+          "name": "reporter_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "details": {
+          "name": "details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewer_id": {
+          "name": "reviewer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_reports_review": {
+          "name": "pitch_reports_review",
+          "columns": [
+            "status",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "pitch_report_once": {
+          "name": "pitch_report_once",
+          "columns": [
+            "room_id",
+            "reporter_id",
+            "target_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_reports_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_reports_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_reports",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_reports_reporter_id_players_id_fk": {
+          "name": "pitch_reports_reporter_id_players_id_fk",
+          "tableFrom": "pitch_reports",
+          "tableTo": "players",
+          "columnsFrom": [
+            "reporter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_reports_target_id_players_id_fk": {
+          "name": "pitch_reports_target_id_players_id_fk",
+          "tableFrom": "pitch_reports",
+          "tableTo": "players",
+          "columnsFrom": [
+            "target_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pitch_responses": {
+      "name": "pitch_responses",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phase": {
+          "name": "phase",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pitch_responses_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_responses_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_responses",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_responses_player_id_players_id_fk": {
+          "name": "pitch_responses_player_id_players_id_fk",
+          "tableFrom": "pitch_responses",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_responses_room_id_player_id_phase_pk": {
+          "columns": [
+            "room_id",
+            "player_id",
+            "phase"
+          ],
+          "name": "pitch_responses_room_id_player_id_phase_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pitch_rooms": {
+      "name": "pitch_rooms",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "band": {
+          "name": "band",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scenario_id": {
+          "name": "scenario_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "a_id": {
+          "name": "a_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "b_id": {
+          "name": "b_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resolution_token": {
+          "name": "resolution_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scenario_json": {
+          "name": "scenario_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "is_public": {
+          "name": "is_public",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "judging_mode": {
+          "name": "judging_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'judged'"
+        }
+      },
+      "indexes": {
+        "pitch_rooms_code_unique": {
+          "name": "pitch_rooms_code_unique",
+          "columns": [
+            "code"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "pitch_rooms_a_id_players_id_fk": {
+          "name": "pitch_rooms_a_id_players_id_fk",
+          "tableFrom": "pitch_rooms",
+          "tableTo": "players",
+          "columnsFrom": [
+            "a_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_rooms_b_id_players_id_fk": {
+          "name": "pitch_rooms_b_id_players_id_fk",
+          "tableFrom": "pitch_rooms",
+          "tableTo": "players",
+          "columnsFrom": [
+            "b_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_room_players": {
+          "name": "pitch_room_players",
+          "value": "\"pitch_rooms\".\"a_id\" != \"pitch_rooms\".\"b_id\""
+        },
+        "pitch_room_status": {
+          "name": "pitch_room_status",
+          "value": "\"pitch_rooms\".\"status\" IN ('active','finished','cancelled')"
+        }
+      }
+    },
+    "pitch_seats": {
+      "name": "pitch_seats",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slot": {
+          "name": "slot",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_seen": {
+          "name": "last_seen",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "left_at": {
+          "name": "left_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_seat_slot": {
+          "name": "pitch_seat_slot",
+          "columns": [
+            "room_id",
+            "slot"
+          ],
+          "isUnique": true
+        },
+        "pitch_seat_player": {
+          "name": "pitch_seat_player",
+          "columns": [
+            "player_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_seats_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_seats_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_seats",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_seats_player_id_players_id_fk": {
+          "name": "pitch_seats_player_id_players_id_fk",
+          "tableFrom": "pitch_seats",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pitch_seats_room_id_player_id_pk": {
+          "columns": [
+            "room_id",
+            "player_id"
+          ],
+          "name": "pitch_seats_room_id_player_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pitch_seat_role": {
+          "name": "pitch_seat_role",
+          "value": "(\"pitch_seats\".\"role\"='contestant' AND \"pitch_seats\".\"slot\" IN (0,1)) OR (\"pitch_seats\".\"role\"='judge' AND \"pitch_seats\".\"slot\" BETWEEN 2 AND 4)"
+        }
+      }
+    },
+    "pitch_signals": {
+      "name": "pitch_signals",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sender_id": {
+          "name": "sender_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pitch_signal_receive": {
+          "name": "pitch_signal_receive",
+          "columns": [
+            "room_id",
+            "target_id",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "pitch_signals_room_id_pitch_rooms_id_fk": {
+          "name": "pitch_signals_room_id_pitch_rooms_id_fk",
+          "tableFrom": "pitch_signals",
+          "tableTo": "pitch_rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_signals_sender_id_players_id_fk": {
+          "name": "pitch_signals_sender_id_players_id_fk",
+          "tableFrom": "pitch_signals",
+          "tableTo": "players",
+          "columnsFrom": [
+            "sender_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pitch_signals_target_id_players_id_fk": {
+          "name": "pitch_signals_target_id_players_id_fk",
+          "tableFrom": "pitch_signals",
+          "tableTo": "players",
+          "columnsFrom": [
+            "target_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "player_ratings": {
+      "name": "player_ratings",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1000
+        },
+        "games": {
+          "name": "games",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_player_ratings_ranking": {
+          "name": "idx_player_ratings_ranking",
+          "columns": [
+            "rating",
+            "games"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "player_ratings_player_id_players_id_fk": {
+          "name": "player_ratings_player_id_players_id_fk",
+          "tableFrom": "player_ratings",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "rating_floor": {
+          "name": "rating_floor",
+          "value": "\"player_ratings\".\"rating\" >= 100"
+        },
+        "rated_games_nonnegative": {
+          "name": "rated_games_nonnegative",
+          "value": "\"player_ratings\".\"games\" >= 0"
+        }
+      }
+    },
+    "players": {
+      "name": "players",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "queue_entries": {
+      "name": "queue_entries",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_queue_match": {
+          "name": "idx_queue_match",
+          "columns": [
+            "format",
+            "room_id",
+            "expires_at",
+            "priority",
+            "joined_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "queue_entries_player_id_players_id_fk": {
+          "name": "queue_entries_player_id_players_id_fk",
+          "tableFrom": "queue_entries",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "queue_entries_room_id_rooms_id_fk": {
+          "name": "queue_entries_room_id_rooms_id_fk",
+          "tableFrom": "queue_entries",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "queue_role": {
+          "name": "queue_role",
+          "value": "\"queue_entries\".\"role\" IN ('judge','contestant','mixed')"
+        }
+      }
+    },
+    "rate_limits": {
+      "name": "rate_limits",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hits": {
+          "name": "hits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_rate_limits_expires": {
+          "name": "idx_rate_limits_expires",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "rating_events": {
+      "name": "rating_events",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opponent_id": {
+          "name": "opponent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opponent_rating": {
+          "name": "opponent_rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "before_rating": {
+          "name": "before_rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "after_rating": {
+          "name": "after_rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "delta": {
+          "name": "delta",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "games_before": {
+          "name": "games_before",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_score": {
+          "name": "expected_score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "k": {
+          "name": "k",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_rating_events_player_game": {
+          "name": "idx_rating_events_player_game",
+          "columns": [
+            "player_id",
+            "games_before"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "rating_events_room_id_rooms_id_fk": {
+          "name": "rating_events_room_id_rooms_id_fk",
+          "tableFrom": "rating_events",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rating_events_player_id_players_id_fk": {
+          "name": "rating_events_player_id_players_id_fk",
+          "tableFrom": "rating_events",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rating_events_opponent_id_players_id_fk": {
+          "name": "rating_events_opponent_id_players_id_fk",
+          "tableFrom": "rating_events",
+          "tableTo": "players",
+          "columnsFrom": [
+            "opponent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "rating_events_room_id_player_id_pk": {
+          "columns": [
+            "room_id",
+            "player_id"
+          ],
+          "name": "rating_events_room_id_player_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "rating_event_floor": {
+          "name": "rating_event_floor",
+          "value": "\"rating_events\".\"before_rating\" >= 100 AND \"rating_events\".\"after_rating\" >= 100 AND \"rating_events\".\"opponent_rating\" >= 100"
+        },
+        "rating_event_delta": {
+          "name": "rating_event_delta",
+          "value": "\"rating_events\".\"after_rating\" - \"rating_events\".\"before_rating\" = \"rating_events\".\"delta\""
+        },
+        "rating_event_result": {
+          "name": "rating_event_result",
+          "value": "\"rating_events\".\"result\" IN ('win','loss','draw')"
+        },
+        "rating_event_expected": {
+          "name": "rating_event_expected",
+          "value": "\"rating_events\".\"expected_score\" BETWEEN 0 AND 1"
+        },
+        "rating_event_opponent": {
+          "name": "rating_event_opponent",
+          "value": "\"rating_events\".\"player_id\" != \"rating_events\".\"opponent_id\""
+        },
+        "rating_event_games": {
+          "name": "rating_event_games",
+          "value": "\"rating_events\".\"games_before\" >= 0"
+        }
+      }
+    },
+    "rooms": {
+      "name": "rooms",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "host_id": {
+          "name": "host_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "guest_id": {
+          "name": "guest_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "judge_id": {
+          "name": "judge_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'private'"
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'classic'"
+        },
+        "host_for": {
+          "name": "host_for",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "topic": {
+          "name": "topic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'waiting'"
+        },
+        "round": {
+          "name": "round",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "deadline": {
+          "name": "deadline",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rematch_of": {
+          "name": "rematch_of",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "judge_lease": {
+          "name": "judge_lease",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "judge_until": {
+          "name": "judge_until",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_rooms_code": {
+          "name": "idx_rooms_code",
+          "columns": [
+            "code"
+          ],
+          "isUnique": true
+        },
+        "idx_rooms_host_created": {
+          "name": "idx_rooms_host_created",
+          "columns": [
+            "host_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_rooms_guest_created": {
+          "name": "idx_rooms_guest_created",
+          "columns": [
+            "guest_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "rooms_host_id_players_id_fk": {
+          "name": "rooms_host_id_players_id_fk",
+          "tableFrom": "rooms",
+          "tableTo": "players",
+          "columnsFrom": [
+            "host_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rooms_guest_id_players_id_fk": {
+          "name": "rooms_guest_id_players_id_fk",
+          "tableFrom": "rooms",
+          "tableTo": "players",
+          "columnsFrom": [
+            "guest_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rooms_judge_id_players_id_fk": {
+          "name": "rooms_judge_id_players_id_fk",
+          "tableFrom": "rooms",
+          "tableTo": "players",
+          "columnsFrom": [
+            "judge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "room_distinct_players": {
+          "name": "room_distinct_players",
+          "value": "\"rooms\".\"guest_id\" IS NULL OR \"rooms\".\"guest_id\" != \"rooms\".\"host_id\""
+        },
+        "room_distinct_judge": {
+          "name": "room_distinct_judge",
+          "value": "\"rooms\".\"judge_id\" IS NULL OR (\"rooms\".\"judge_id\" != \"rooms\".\"host_id\" AND \"rooms\".\"judge_id\" != \"rooms\".\"guest_id\")"
+        },
+        "room_valid_status": {
+          "name": "room_valid_status",
+          "value": "\"rooms\".\"status\" IN ('waiting','active','judging','finished','cancelled')"
+        },
+        "room_valid_round": {
+          "name": "room_valid_round",
+          "value": "\"rooms\".\"round\" BETWEEN 0 AND 2"
+        },
+        "room_valid_side": {
+          "name": "room_valid_side",
+          "value": "\"rooms\".\"host_for\" IN (0,1)"
+        }
+      }
+    },
+    "score_events": {
+      "name": "score_events",
+      "columns": {
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_score_events_player": {
+          "name": "idx_score_events_player",
+          "columns": [
+            "player_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "score_events_room_id_rooms_id_fk": {
+          "name": "score_events_room_id_rooms_id_fk",
+          "tableFrom": "score_events",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "score_events_player_id_players_id_fk": {
+          "name": "score_events_player_id_players_id_fk",
+          "tableFrom": "score_events",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "score_events_room_id_player_id_pk": {
+          "columns": [
+            "room_id",
+            "player_id"
+          ],
+          "name": "score_events_room_id_player_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "score_bounds": {
+          "name": "score_bounds",
+          "value": "\"score_events\".\"score\" BETWEEN 0 AND 100"
+        },
+        "score_result": {
+          "name": "score_result",
+          "value": "\"score_events\".\"result\" IN ('win','loss','draw')"
+        }
+      }
+    },
+    "sessions": {
+      "name": "sessions",
+      "columns": {
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_sessions_expires": {
+          "name": "idx_sessions_expires",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "sessions_player_id_players_id_fk": {
+          "name": "sessions_player_id_players_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "voice_signals": {
+      "name": "voice_signals",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "room_id": {
+          "name": "room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sender_id": {
+          "name": "sender_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_voice_signals_room_target_id": {
+          "name": "idx_voice_signals_room_target_id",
+          "columns": [
+            "room_id",
+            "target_id",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "voice_signals_room_id_rooms_id_fk": {
+          "name": "voice_signals_room_id_rooms_id_fk",
+          "tableFrom": "voice_signals",
+          "tableTo": "rooms",
+          "columnsFrom": [
+            "room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "voice_signals_sender_id_players_id_fk": {
+          "name": "voice_signals_sender_id_players_id_fk",
+          "tableFrom": "voice_signals",
+          "tableTo": "players",
+          "columnsFrom": [
+            "sender_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "voice_signals_target_id_players_id_fk": {
+          "name": "voice_signals_target_id_players_id_fk",
+          "tableFrom": "voice_signals",
+          "tableTo": "players",
+          "columnsFrom": [
+            "target_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

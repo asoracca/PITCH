@@ -64,6 +64,20 @@
       "when": 1790478136952,
       "tag": "0008_amazing_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1790525615466,
+      "tag": "0009_lean_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1790526684742,
+      "tag": "0010_huge_zarek",
+      "breakpoints": true
     }
   ]
 }

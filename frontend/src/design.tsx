@@ -1,9 +1,9 @@
-import type { AvatarLook } from "../../shared/avatar"
+import { appearanceColor, type AppearanceColors, type AvatarLook } from "../../shared/avatar"
 import { type ReactNode, type ButtonHTMLAttributes } from "react"
 
 export type Page = "Home" | "Dashboard" | "Practice" | "Head-to-Head" | "AI Coach" | "Leaderboard" | "Profile" | "Character" | "Avatar Shop" | "Plans"
 
-export type EquippedItems = {
+export type EquippedItems = AppearanceColors & {
   outfit: string
   accessory: string
   background: string
@@ -254,14 +254,14 @@ export function Sidebar({
         ))}
       </nav>
       <div className="sidebar-footer">
-        <div className="mini-level">
+        <button type="button" className="mini-level sidebar-profile-button" aria-label="Open my profile" onClick={() => { onNavigate("Profile"); onClose() }}>
           <AvatarBadge name={profile.name} look={profile.avatarLook} />
           <div className="grow">
             <div className="mini-name">{profile.name}</div>
             <div className="mini-label">Career skills in practice</div>
           </div>
           <Icon name="arrow" size={16} />
-        </div>
+        </button>
       </div>
     </aside>
   )
@@ -445,7 +445,8 @@ export function AvatarCharacter({
   avatarEnabled = false,
   style = "masculine",
   hairstyle = "Short",
-}: {
+  jacketColor, shirtColor, trousersColor, shoeColor, accessoryColor, eyeColor, backgroundColor,
+}: AppearanceColors & {
   outfit?: string
   accessory?: string
   background?: string
@@ -461,22 +462,9 @@ export function AvatarCharacter({
   const skin = skinTones.find((tone) => tone.id === skinTone) || skinTones[3]
   const hair = hairColors.find((color) => color.id === hairColor) || hairColors[0]
   if (!avatarEnabled) return <span className={`avatar-placeholder ${compact || portrait ? "avatar-placeholder-compact" : ""}`} role="img" aria-label="No avatar selected"><Icon name="user" size={96} /></span>
-  const jacket =
-    outfit === "Game Show Glow"
-      ? "#88f4f5"
-      : outfit === "The Closer"
-        ? "#6e5bd4"
-        : outfit === "Smart Casual"
-          ? "#279ba7"
-          : "#8b72ed"
-  const backdrop =
-    background === "Violet Voltage"
-      ? "#2f235c"
-      : background === "Flame Streak"
-        ? "#51251d"
-        : background === "Leaderboard Elite"
-          ? "#3c3516"
-          : "#111a2e"
+  const jacket = appearanceColor(jacketColor, outfit === 'Game Show Glow' ? '#ff9e45' : outfit === 'The Closer' ? '#1b2439' : outfit === 'Smart Casual' ? '#88f4f5' : '#a78bfa')
+  const backdrop = appearanceColor(backgroundColor,background === 'Violet Voltage' ? '#2f235c' : background === 'Flame Streak' ? '#51251d' : background === 'Leaderboard Elite' ? '#3c3516' : '#111a2e')
+  const accessoryFill=appearanceColor(accessoryColor,'#88f4f5')
   return (
     <svg
       className={`pitch-character ${compact ? "character-compact" : ""}`}
@@ -496,7 +484,7 @@ export function AvatarCharacter({
       <path
         d="M109 135q12 10 24 0M151 135q12 10 24 0"
         fill="none"
-        stroke="#21161a"
+        stroke={appearanceColor(eyeColor,"#21161a")}
         strokeWidth="4"
         strokeLinecap="round"
       />
@@ -512,7 +500,7 @@ export function AvatarCharacter({
         d={feminine ? "M70 263Q75 202 112 190h56q38 12 43 73l-23 34 11 49H81l11-49Z" : "M63 263Q68 198 112 190h56q45 10 50 73l-20 83H82Z"}
         fill={jacket}
       />
-      <path d="m112 190 28 42 28-42-8 88h-40Z" fill="#f5f3ee" />
+      <path d="m112 190 28 42 28-42-8 88h-40Z" fill={appearanceColor(shirtColor,"#f5f3ee")} />
       {!feminine && <path d="m132 207 8 25 8-25-8-8Z" fill="#88f4f5" />}
       <path
         d="M82 250 56 340M198 250l26 90"
@@ -520,7 +508,8 @@ export function AvatarCharacter({
         strokeWidth="30"
         strokeLinecap="round"
       />
-      <path d="M92 344h38v45H76ZM150 344h38l16 45h-54Z" fill="#171d2e" />
+      <path d="M92 344h38v45H76ZM150 344h38l16 45h-54Z" fill={appearanceColor(trousersColor,"#171d2e")} />
+      <path d="M76 386H130V399H69ZM150 386H204L211 399H150Z" fill={appearanceColor(shoeColor,"#0a0f20")} />
       {accessory === "Round Glasses" && (
         <>
           <circle
@@ -528,7 +517,7 @@ export function AvatarCharacter({
             cy="126"
             r="19"
             fill="none"
-            stroke="#88f4f5"
+            stroke={accessoryFill}
             strokeWidth="5"
           />
           <circle
@@ -536,10 +525,10 @@ export function AvatarCharacter({
             cy="126"
             r="19"
             fill="none"
-            stroke="#88f4f5"
+            stroke={accessoryFill}
             strokeWidth="5"
           />
-          <path d="M135 126h10" stroke="#88f4f5" strokeWidth="5" />
+          <path d="M135 126h10" stroke={accessoryFill} strokeWidth="5" />
         </>
       )}
       {accessory === "Focus Headphones" && (
@@ -547,18 +536,18 @@ export function AvatarCharacter({
           <path
             d="M88 118q0-58 52-58t52 58"
             fill="none"
-            stroke="#88f4f5"
+            stroke={accessoryFill}
             strokeWidth="9"
           />
-          <rect x="80" y="108" width="18" height="45" rx="9" fill="#88f4f5" />
-          <rect x="182" y="108" width="18" height="45" rx="9" fill="#88f4f5" />
+          <rect x="80" y="108" width="18" height="45" rx="9" fill={accessoryFill} />
+          <rect x="182" y="108" width="18" height="45" rx="9" fill={accessoryFill} />
         </>
       )}
       {accessory === "Great Communicator" && (
-        <circle cx="187" cy="235" r="11" fill="#88f4f5" />
+        <circle cx="187" cy="235" r="11" fill={accessoryFill} />
       )}
       {accessory === "Day One Backpack" && (
-        <path d="M75 218q-24 8-19 82h24l8-76Z" fill="#ea874d" />
+        <path d="M75 218q-24 8-19 82h24l8-76Z" fill={appearanceColor(accessoryColor,"#ea874d")} />
       )}
     </svg>
   )

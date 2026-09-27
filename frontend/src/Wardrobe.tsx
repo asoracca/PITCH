@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { avatarChoices } from '../../shared/avatar'
+import { avatarChoices, appearanceColors, appearanceColorKeys, appearanceColor } from '../../shared/avatar'
 import { Button, Icon, cosmeticItems, skinTones, hairColors, type EquippedItems } from './design'
 import { WardrobeFigure, type WardrobeGroup, type WardrobeSelection } from './WardrobeFigure'
 import './wardrobe.css'
@@ -47,11 +47,12 @@ export function Wardrobe({equipped,setEquipped,shop=false,onSave,saving=false}:{
   }
   function randomize(){
     const next=normalized(equipped)
-    for(const key of Object.keys(avatarChoices) as WardrobeGroup[])next[key]=randomChoice(avatarChoices[key],equipped[key])
+    for(const key of Object.keys(avatarChoices) as (keyof typeof avatarChoices)[])next[key]=randomChoice(avatarChoices[key],equipped[key])
     setSelected(selection(true));preview({...next,avatarEnabled:true})
   }
   function reset(){setSelected(selection(!!initial.avatarEnabled));preview({...initial})}
   const background=selected.background?equipped.background:'none'
+  const colorLabels = {jacketColor:'Jacket',shirtColor:'Shirt',trousersColor:'Trousers',shoeColor:'Shoes',accessoryColor:'Accessory',eyeColor:'Eyes',backgroundColor:'Background'}
   const swatches=[{key:'skinTone',title:'Skin tone',values:skinTones},{key:'hairColor',title:'Hair color',values:hairColors}] as const
   return <section className="wardrobe" aria-labelledby="wardrobe-title">
     <header className="wardrobe-heading"><h1 id="wardrobe-title">{shop?'Try it on':'Your wardrobe'}</h1><div className="wardrobe-tools"><Button variant="ghost" disabled={saving} onClick={reset}>Reset</Button><Button variant="secondary" disabled={saving} onClick={randomize}><Icon name="spark" size={17}/>Randomize</Button></div></header>
@@ -60,10 +61,15 @@ export function Wardrobe({equipped,setEquipped,shop=false,onSave,saving=false}:{
         <fieldset className="wardrobe-group"><legend>Avatar style</legend><div className="wardrobe-options">{avatarChoices.style.map(style=><button type="button" className="wardrobe-option" key={style} aria-pressed={selected.style&&(equipped.style||'masculine')===style} disabled={saving} onClick={()=>choose('style',style)}><strong>{style==='feminine'?'Feminine':'Masculine'}</strong><span className="wardrobe-check" aria-hidden="true">{selected.style&&(equipped.style||'masculine')===style?<Icon name="check" size={15}/>:'+'}</span></button>)}</div></fieldset>
         <fieldset className="wardrobe-group"><legend>Hairstyle</legend><div className="wardrobe-options">{avatarChoices.hairstyle.map(hairstyle=><button type="button" className="wardrobe-option" key={hairstyle} aria-pressed={selected.hairstyle&&(equipped.hairstyle||'Short')===hairstyle} disabled={saving} onClick={()=>choose('hairstyle',hairstyle)}><strong>{hairstyle}</strong><span className="wardrobe-check" aria-hidden="true">{selected.hairstyle&&(equipped.hairstyle||'Short')===hairstyle?<Icon name="check" size={15}/>:'+'}</span></button>)}</div></fieldset>
         {groups.map(group=><fieldset className="wardrobe-group" key={group.key}><legend>{group.title}</legend><div className="wardrobe-options">{cosmeticItems.filter(item=>item.category===group.category&&avatarChoices[group.key].includes(item.name)).map(item=><button type="button" className="wardrobe-option" key={item.id} aria-pressed={selected[group.key]&&equipped[group.key]===item.name} disabled={saving} onClick={()=>choose(group.key,item.name)}><span><strong>{item.name}</strong><small>{labels[item.name]}</small></span><span className="wardrobe-check" aria-hidden="true">{selected[group.key]&&equipped[group.key]===item.name?<Icon name="check" size={15}/>:'+'}</span></button>)}</div></fieldset>)}
+        <details className="wardrobe-color-details" open><summary>Colours</summary><div className="wardrobe-color-rows">{appearanceColorKeys.map(key=><fieldset className="wardrobe-group wardrobe-palette" key={key}><legend>{colorLabels[key]}</legend><div className="wardrobe-swatches">{appearanceColors.map(color=><button type="button" className="wardrobe-swatch" key={color.id} disabled={saving} aria-label={`${colorLabels[key]}: ${color.name}`} title={color.name} aria-pressed={(equipped[key]||'default')===color.id} onClick={()=>preview({...normalized(equipped),[key]:color.id})}><span style={{background:color.color||'conic-gradient(#88f4f5,#a78bfa,#ff9e45,#88f4f5)'}}/><Icon name="check" size={14}/></button>)}</div></fieldset>)}</div></details>
+        <section className="wardrobe-pro"><div className="wardrobe-pro-heading"><h2>Pro looks</h2><span>PREVIEW</span></div><p>PITCH Pro · $6/month or $48/year. Free to try and save now.</p><div className="wardrobe-options">
+          <button type="button" className="wardrobe-option pro-neon" disabled={saving} onClick={()=>{setSelected(selection(true));preview({...normalized(equipped),outfit:'The Closer',accessory:'Focus Headphones',background:'Violet Voltage',jacketColor:'navy',shirtColor:'cream',trousersColor:'black',shoeColor:'black',accessoryColor:'cyan',eyeColor:'default',backgroundColor:'default',hairColor:'violet',avatarEnabled:true})}}><span><strong>Neon Closer</strong><small>Try Pro look</small></span><Icon name="spark"/></button>
+          <button type="button" className="wardrobe-option pro-solar" disabled={saving} onClick={()=>{setSelected(selection(true));preview({...normalized(equipped),outfit:'Game Show Glow',accessory:'Round Glasses',background:'Flame Streak',jacketColor:'orange',shirtColor:'cream',trousersColor:'navy',shoeColor:'black',accessoryColor:'cream',eyeColor:'brown',backgroundColor:'default',hairColor:'silver',avatarEnabled:true})}}><span><strong>Solar Glow</strong><small>Try Pro look</small></span><Icon name="spark"/></button>
+        </div><a href="#Plans">View plans</a></section>
         {swatches.map(group=><fieldset className="wardrobe-group wardrobe-palette" key={group.key}><legend>{group.title}</legend><div className="wardrobe-swatches">{group.values.map(value=><button type="button" key={value.id} className="wardrobe-swatch" disabled={saving} aria-label={`${group.title}: ${value.name}`} title={value.name} aria-pressed={selected[group.key]&&equipped[group.key]===value.id} onClick={()=>choose(group.key,value.id)}><span style={{backgroundColor:value.color}}/><Icon name="check" size={14}/></button>)}</div></fieldset>)}
       </div>
       <div className="wardrobe-live">
-        <div className="wardrobe-preview" data-background={background}>
+        <div className="wardrobe-preview" data-background={background} style={{backgroundColor:appearanceColor(equipped.backgroundColor,'')||undefined}}>
           <div className="wardrobe-preview-heading"><span>LIVE PREVIEW</span><output aria-live="polite" aria-atomic="true">{count} of {total} set</output></div>
           <WardrobeFigure look={equipped} selected={selected} count={count}/>
           <span className="wardrobe-preview-label">{count?selected.outfit?equipped.outfit:'Build your look':'No avatar'}</span>

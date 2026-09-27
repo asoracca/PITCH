@@ -1,3 +1,4 @@
+import { RoundHistory } from "./RoundHistory"
 import { Wardrobe } from "./Wardrobe"
 import { PlayerLink, FriendsPanel } from './PlayerProfiles'
 import { PracticeLogs } from './PracticeLogs'
@@ -127,7 +128,7 @@ export function Rules({ compact = false }: { compact?: boolean }) {
           player pool. Topic choice and skill guide matching; age is profile information. Topics and positions are assigned by the server. Read for 20
           seconds; each contestant gets a 60-second opening and a 20-second
           response. Judges then have 60 seconds to vote and give feedback.
-          If both contestants allow it and wait two minutes without a judge, they can play
+          If both contestants allow it and wait 30 seconds without a judge, they can play
           an unrated duel with one automated text-rubric judge and exchange opponent feedback.
         </p>
         <p>
@@ -672,42 +673,7 @@ export function Profile({
         </div>
       </div>
       <PracticeLogs entries={history?.practices || []} onDelete={async id=>{await p.api.deletePractice(id);await p.refresh()}} />
-      <details className="history-group"><summary>Opponent matches <span>{history?.history.length || 0} rated rounds</span></summary><div className="history-entries">
-      {history?.history.length ? (
-        history.history.map((r) => (
-          <details className="panel" key={r.code}>
-            <summary>
-              <span>{r.scenario.title}</span>
-              <strong className={r.delta >= 0 ? "positive" : "negative"}>
-                {signed(r.delta)} Elo · {r.result}
-              </strong>
-            </summary>
-            <p>
-              {r.opponent && <><PlayerLink player={r.opponent}>vs {r.opponent.name}</PlayerLink> · </>}{r.finishedAt ? new Date(r.finishedAt).toLocaleString() : ""} ·{" "}
-              {r.before} → {r.after}
-            </p>
-            {r.feedback.map((f) => (
-              <div className="feedback-card" key={f.ballotId}>
-                <p>{f.tip}</p>
-                <div className="score-row">
-                  {skills.map((k) => (
-                    <span key={k} className="capitalize">
-                      {k} {f[k]}/5
-                    </span>
-                  ))}
-                </div>
-                <FeedbackButtons p={p} id={f.ballotId} rating={f.rating} />
-              </div>
-            ))}
-          </details>
-        ))
-      ) : (
-        <div className="panel">
-          <p>Your first rated round and peer feedback will appear here.</p>
-        </div>
-      )}
-      </div></details>
-      {!!history?.peerHistory?.length && <details className="history-group"><summary>Practice duels <span>{history.peerHistory.length} unrated rounds</span></summary><div className="history-entries">{history.peerHistory.map((round) => <details className="panel" key={round.code}><summary>{round.scenario.title}<strong>Unrated practice</strong></summary><p>{round.opponent && <><PlayerLink player={round.opponent}>vs {round.opponent.name}</PlayerLink> · </>}{round.finishedAt ? new Date(round.finishedAt).toLocaleString() : ""} · Elo unchanged</p>{round.feedback.length ? round.feedback.map((feedback) => <div className="feedback-card" key={feedback.ballotId}><p>{feedback.tip}</p><div className="score-row">{skills.map((skill) => <span key={skill} className="capitalize">{skill}: {feedback[skill]}/5</span>)}</div><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></div>) : <p>No opponent feedback was submitted.</p>}</details>)}</div></details>}
+      <RoundHistory p={p} navigate={navigate} />
       <FriendsPanel />
       <Rules />
       {me.moderator && <Moderator p={p} />}

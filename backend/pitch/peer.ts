@@ -33,20 +33,21 @@ export async function finishPeer(store: Store, room: PitchRoom, cancelled = fals
   ]);
 }
 export async function submitPeerFeedback(store: Store, room: PitchRoom, player: Player, body: Record<string,unknown>) {
-  if(room.judging_mode!=='peer' && room.judging_mode!=='automated') fail(409,'PEER_ROUND_REQUIRED','Opponent feedback is available in two-player practice duels.');
-  if(await store.sql('SELECT 1 FROM pitch_peer_feedback WHERE room_id=? AND author_id=?',room.id,player.id).first()) { await finishPeer(store,room); return; }
   const self=(await seats(store,room)).find(s=>s.player_id===player.id), phase=phaseAt(room.started_at);
-  if(!self || self.role!=='contestant' || self.left_at || room.status!=='active' || phase.index!==5 || phase.expired) fail(409,'FEEDBACK_CLOSED','Opponent feedback opens after both speaking turns and lasts 60 seconds.');
-  const scores=['clarity','persuasiveness','composure'].map(key=>{const value=body[key];if(!Number.isInteger(value)||Number(value)<1||Number(value)>5) fail(400,'INVALID_SCORE','Give each skill a score from 1 to 5.');return Number(value);});
+  if (!self || self.role!=='contestant') fail(403,'CONTESTANT_REQUIRED','Only contestants can give opponent feedback.');
+  if(await store.sql('SELECT 1 FROM pitch_peer_feedback WHERE room_id=? AND author_id=?',room.id,player.id).first()) return;
+  if(room.status==='active' && (self.left_at || phase.index!==5)) fail(409,'FEEDBACK_CLOSED','Feedback opens after both speaking turns.');
   const target=room.a_id===player.id?room.b_id:room.a_id;
+  if(await store.sql('SELECT 1 FROM pitch_blocks WHERE (player_id=? AND target_id=?) OR (player_id=? AND target_id=?)',player.id,target,target,player.id).first()) fail(403,'FEEDBACK_BLOCKED','Feedback unavailable for a blocked player.');
+  const scores=['clarity','persuasiveness','composure'].map(key=>{const value=body[key];if(!Number.isInteger(value)||Number(value)<1||Number(value)>5) fail(400,'INVALID_SCORE','Give each skill a score from 1 to 5.');return Number(value);});
   const tip=cleanTip(body.tip), now=Date.now();
   const saved=await store.sql(`INSERT INTO pitch_peer_feedback(id,room_id,author_id,target_id,clarity,persuasiveness,composure,tip,created_at)
-    SELECT ?,id,?,?,?,?,?,?,? FROM pitch_rooms WHERE id=? AND status='active' AND judging_mode IN ('peer','automated')
-    AND started_at+180000<=? AND started_at+240000>?
-    AND EXISTS(SELECT 1 FROM pitch_seats WHERE room_id=? AND player_id=? AND role='contestant' AND left_at IS NULL)
-    ON CONFLICT(room_id,author_id) DO NOTHING`,crypto.randomUUID(),player.id,target,...scores,tip,now,room.id,now,now,room.id,player.id).run();
+    SELECT ?,id,?,?,?,?,?,?,? FROM pitch_rooms WHERE id=? AND (status IN ('finished','cancelled') OR (status='active' AND started_at+180000<=?))
+    AND EXISTS(SELECT 1 FROM pitch_seats WHERE room_id=? AND player_id=? AND role='contestant')
+    AND NOT EXISTS(SELECT 1 FROM pitch_blocks WHERE (player_id=? AND target_id=?) OR (player_id=? AND target_id=?))
+    ON CONFLICT(room_id,author_id) DO NOTHING`,crypto.randomUUID(),player.id,target,...scores,tip,now,room.id,now,room.id,player.id,player.id,target,target,player.id).run();
   if(!saved.meta.changes && !await store.sql('SELECT 1 FROM pitch_peer_feedback WHERE room_id=? AND author_id=?',room.id,player.id).first()) fail(409,'FEEDBACK_CLOSED','The feedback window closed.');
-  await finishPeer(store,room);
+  if(room.judging_mode!=='judged') await finishPeer(store,room);
 }
 export async function ratePeerFeedback(store: Store, player: Player, id: string, value: string) {
   const row=await store.sql(`SELECT f.* FROM pitch_peer_feedback f JOIN pitch_rooms r ON r.id=f.room_id

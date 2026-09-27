@@ -25,6 +25,7 @@ export async function block(store: Store, room: PitchRoom, player: Player, body:
   await store.env.DB.batch([
     store.sql('INSERT INTO pitch_blocks(player_id,target_id,created_at) VALUES(?,?,?) ON CONFLICT DO NOTHING', player.id, target, Date.now()),
     store.sql('DELETE FROM pitch_friendships WHERE player_a=? AND player_b=?',a,b),
+    store.sql('DELETE FROM pitch_follows WHERE (follower_id=? AND followed_id=?) OR (follower_id=? AND followed_id=?)',a,b,b,a),
   ]);
   return { blocked: true, targetId: target };
 }

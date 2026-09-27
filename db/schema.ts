@@ -187,3 +187,15 @@ export const pitchFriendships = sqliteTable('pitch_friendships', {
   check('pitch_friend_pair',sql`${t.playerA} < ${t.playerB}`),
   check('pitch_friend_requester',sql`${t.requesterId} IN (${t.playerA},${t.playerB})`),
   check('pitch_friend_status',sql`${t.status} IN ('pending','accepted')`)]);
+
+export const pitchFollows = sqliteTable('pitch_follows', {
+  followerId: text('follower_id').notNull().references(() => players.id),
+  followedId: text('followed_id').notNull().references(() => players.id),
+  createdAt: integer('created_at').notNull(),
+}, t => [primaryKey({columns:[t.followerId,t.followedId]}),index('pitch_followed').on(t.followedId),check('pitch_no_self_follow',sql`${t.followerId} != ${t.followedId}`)]);
+
+export const pitchMessages = sqliteTable('pitch_messages', {
+  id: integer('id').primaryKey({autoIncrement:true}),
+  senderId:text('sender_id').notNull().references(()=>players.id), recipientId:text('recipient_id').notNull().references(()=>players.id),
+  requestId:text('request_id').notNull(),content:text('content').notNull(),createdAt:integer('created_at').notNull(),
+},t=>[uniqueIndex('pitch_message_once').on(t.senderId,t.requestId),index('pitch_message_pair').on(t.senderId,t.recipientId,t.id),check('pitch_message_other',sql`${t.senderId} != ${t.recipientId}`)]);

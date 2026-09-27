@@ -54,7 +54,8 @@ p { color: var(--muted); line-height: 1.6; }
 .main { margin-left: 15.5rem; min-height: 100vh; }
 .topbar { height: 4.8rem; display: flex; justify-content: flex-end; align-items: center; padding: 0 3.2rem; border-bottom: 1px solid rgba(38,49,73,.65); }
 .topbar-right { display: flex; align-items: center; gap: .8rem; }
-.icon-button { width: 2.35rem; height: 2.35rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface); display: grid; place-items: center; cursor: pointer; position: relative; }
+.icon-button { width: 2.35rem; height: 2.35rem; padding: 0; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface); display: grid; place-items: center; align-items: center; justify-content: center; cursor: pointer; position: relative; flex-shrink: 0; }
+.icon-button > svg { display: block; flex-shrink: 0; }
 .icon-button i { position: absolute; width: .45rem; height: .45rem; border-radius: 50%; background: var(--lime); top: .4rem; right: .42rem; border: 2px solid var(--surface); }
 .streak-chip { display: flex; align-items: center; gap: .4rem; background: rgba(255, 158, 69, .1); color: var(--orange); border: 1px solid rgba(255, 158, 69, .2); padding: .45rem .7rem; border-radius: 99rem; font-weight: 700; }
 .topbar-coins { display: flex; align-items: center; gap: .3rem; color: var(--lime); background: rgba(136,244,245,.08); border: 1px solid rgba(136,244,245,.16); border-radius: 99rem; padding: .4rem .65rem; cursor: pointer; }
@@ -533,3 +534,5 @@ p { color: var(--muted); line-height: 1.6; }
   .interactive-coach-layout { grid-template-columns: 1fr; }.persona-browser { max-height: 14rem; border-right: 0; border-bottom: 1px solid var(--line); }.persona-title { padding-bottom: .5rem; }.persona-browser>button:not(.persona-active) { display: none; }
   .roleplay-messages { min-height: 20rem; }.role-message { max-width: 90%; }.summary-feedback { grid-template-columns: 1fr; }
 }
+.sidebar-profile-button { width: 100%; border: 0; padding: .25rem; background: transparent; color: inherit; cursor: pointer; text-align: left; border-radius: .5rem; }
+.sidebar-profile-button:hover { background: var(--surface); }

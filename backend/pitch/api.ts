@@ -1,4 +1,4 @@
-import { PITCH_API_VERSION, type PitchConfig, type PitchMe, type PitchQueue, type PitchHistory, type PitchLeaderboard } from '../../shared/pitch';
+import { PITCH_API_VERSION, PITCH_LEAVE_ELO_PENALTY, PITCH_QUEUE_SECONDS, type PitchConfig, type PitchMe, type PitchQueue, type PitchHistory, type PitchLeaderboard } from '../../shared/pitch';
 import { fail, jsonBody, sha256 } from '../http';
 import { Store } from '../store';
 import type { Env, Player } from '../types';
@@ -11,24 +11,22 @@ import { spectate } from './spectate';
 import { incomingPeerFeedback, peerRows, submitPeerFeedback } from './peer';
 import { readAvatar, storedAvatar } from '../../shared/avatar';
 import { roomChat } from './chat';
+import { directMessages } from './messages';
+import { roundHistory } from './history';
 import { practiceLogs, savePractice, deletePractice } from './practice';
-import { playerProfile, friends, changeFriend } from './friends';
+import { playerProfile, fullPlayerProfile, followPlayer, friends, changeFriend } from './friends';
 import { PHASES, SCENARIOS } from './scenarios';
 import type { Account, PitchRoom, QueueRow } from './types';
 
 function method(request: Request, expected: string) { if (request.method !== expected) fail(405, 'METHOD_NOT_ALLOWED', `Use ${expected} for this endpoint.`); }
-export const RULES = { version: 'pitch-elo-v2', initialRating: 1000, provisionalGames: 10, provisionalK: 32, establishedK: 16,
-  floor: 100, forfeitWinMultiplier: 0.25, judgesPerRound: 3, contestantsPerRound: 2, judgedRoundsPerPriorityCredit: 2,
-  queueTimeoutSeconds: 150, disconnectGraceSeconds: 60, firstLeaveBanSeconds: 300, repeatLeaveBanSeconds: 600, phases: PHASES,
+export const RULES = { version: 'pitch-elo-v3', initialRating: 1000, provisionalGames: 10, provisionalK: 32, establishedK: 16,
+  floor: 100, forfeitWinMultiplier: 0.25, leaveEloPenalty: PITCH_LEAVE_ELO_PENALTY, judgesPerRound: 3, contestantsPerRound: 2, judgedRoundsPerPriorityCredit: 2,
+  queueTimeoutSeconds: PITCH_QUEUE_SECONDS, disconnectGraceSeconds: 60, firstLeaveBanSeconds: 300, repeatLeaveBanSeconds: 600, phases: PHASES,
   rubric: ['clarity', 'persuasiveness', 'composure'], scoreRange: [1, 5], aiEnabled: false };
 
 async function queueView(store: Store, player: Player, account: Account): Promise<PitchQueue> {
   let row = await store.sql('SELECT * FROM pitch_queue WHERE player_id=?', player.id).first<QueueRow>();
   if (!row) return { status: 'idle', serverTime: Date.now() };
-  if (!row.room_id && row.expires_at <= Date.now()) {
-    await store.sql('DELETE FROM pitch_queue WHERE player_id=? AND room_id IS NULL AND expires_at<=?', player.id, Date.now()).run();
-    return { status: 'expired', message: 'There were not enough compatible people. Try again or invite friends and queue for the same topic.', serverTime: Date.now() };
-  }
   if (!row.room_id) {
     const band = ageBand(account.birth_date);
     if (band !== row.band) { await store.sql('DELETE FROM pitch_queue WHERE player_id=? AND room_id IS NULL', player.id).run(); return { status: 'idle', serverTime: Date.now() }; }
@@ -39,8 +37,15 @@ async function queueView(store: Store, player: Player, account: Account): Promis
     const room = (await store.sql('SELECT * FROM pitch_rooms WHERE id=?', row.room_id).first<PitchRoom>())!;
     return { status: 'matched', room: await view(store, await syncRoom(store, room, player), player), serverTime: Date.now() };
   }
+  if (row.expires_at <= Date.now()) {
+    await store.sql('DELETE FROM pitch_queue WHERE player_id=? AND ticket=? AND room_id IS NULL AND expires_at<=?', player.id, row.ticket, Date.now()).run();
+    // A concurrent poll may have claimed the ticket while the expiry was checked.
+    const claimed = await store.sql('SELECT room_id FROM pitch_queue WHERE player_id=?', player.id).first<{room_id:string|null}>();
+    if (claimed?.room_id) return queueView(store, player, account);
+    return { status: 'expired', message: 'No compatible opponent yet. Try again or invite a friend.', serverTime: Date.now() };
+  }
   return { status: 'waiting', mode: row.role, priority: !!row.priority, band: row.band, joinedAt: row.joined_at, expiresAt: row.expires_at, serverTime: Date.now(),
-    message: row.allow_peer ? 'Finding an opponent for your topic. After two minutes, two willing contestants can start with one automated rubric judge. Fallback rounds are unrated.' : 'Matching two contestants with one or three judges for your topic. Priority improves queue order; it cannot guarantee an instant match.' };
+    message: row.allow_peer ? 'Finding an opponent for your topic. After 30 seconds, two willing contestants can start with one automated rubric judge. Fallback rounds are unrated.' : 'Matching two contestants with one or three judges for your topic. Priority improves queue order; it cannot guarantee an instant match.' };
 }
 
 async function history(store: Store, player: Player): Promise<PitchHistory> {
@@ -61,7 +66,7 @@ async function history(store: Store, player: Player): Promise<PitchHistory> {
   const peerRooms=(await store.sql(`SELECT r.*,opponent.id AS opponent_id,opponent.name AS opponent_name FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id JOIN players opponent ON opponent.id=CASE WHEN r.a_id=s.player_id THEN r.b_id ELSE r.a_id END
     WHERE s.player_id=? AND r.judging_mode IN ('peer','automated') AND r.status IN ('finished','cancelled') ORDER BY r.finished_at DESC LIMIT 20`,player.id).all<PitchRoom & {opponent_id:string;opponent_name:string}>()).results;
   const peerHistory=await Promise.all(peerRooms.map(async r=>({opponent:{id:r.opponent_id,name:r.opponent_name},code:r.code,scenario:scenarioFor(r),finishedAt:r.finished_at,feedback:incomingPeerFeedback(await peerRows(store,r),player.id)})));
-  return { practices: await practiceLogs(store,player.id), peerHistory, history: rounds.map(r => ({ opponent:{id:r.opponent_id,name:r.opponent_name}, code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
+  return { rounds: await roundHistory(store, player.id), practices: await practiceLogs(store,player.id), peerHistory, history: rounds.map(r => ({ opponent:{id:r.opponent_id,name:r.opponent_name}, code: r.code, scenario: scenarioFor(r), result: r.player_result, before: r.before_rating, after: r.after_rating,
     delta: r.delta, finishedAt: r.finished_at, feedback: tips.filter(t => t.roomId === r.id) })), averages,
     scope: 'most_recent_50_rated_rounds', byCategory: ['career', 'conflict', 'money', 'leadership', 'social'].map(category => { const games = rounds.filter(r => scenarioFor(r).category === category); return { category, games: games.length, wins: games.filter(r => r.player_result === 'win').length, winRate: games.length ? Math.round(games.filter(r => r.player_result === 'win').length / games.length * 100) : null }; }) };
 }
@@ -80,9 +85,13 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
   }
   const player = await store.authenticate(request); const account = await requireAccount(store, player);
   await store.limit(`pitch-request:${player.id}`, 300);
+  const direct = /^\/api\/pitch\/friends\/([a-zA-Z0-9-]{1,100})\/messages$/.exec(path);
+  if(direct){if(request.method!=='GET')method(request,'POST');return Response.json(await directMessages(store,player.id,direct[1],url.searchParams.get('before'),request.method==='POST'?await jsonBody(request):undefined));}
   if (path === '/api/pitch/friends') { method(request,'GET'); return Response.json(await friends(store,player.id)); }
   const publicPlayer = /^\/api\/pitch\/players\/([a-zA-Z0-9-]{1,100})$/.exec(path);
-  if (publicPlayer) { method(request,'GET'); return Response.json(await playerProfile(store,player.id,publicPlayer[1])); }
+  if (publicPlayer) { method(request,'GET'); return Response.json(await fullPlayerProfile(store,player.id,publicPlayer[1])); }
+  const following = /^\/api\/pitch\/players\/([a-zA-Z0-9-]{1,100})\/follow$/.exec(path);
+  if (following) { method(request,'POST'); return Response.json(await followPlayer(store,player.id,following[1],(await jsonBody(request)).follow)); }
   const friendship = /^\/api\/pitch\/friends\/([a-zA-Z0-9-]{1,100})$/.exec(path);
   if (friendship) { method(request,'POST'); return Response.json(await changeFriend(store,player.id,friendship[1],(await jsonBody(request)).action)); }
   if (path === '/api/pitch/logout') { method(request, 'POST'); await store.sql('DELETE FROM sessions WHERE token_hash=?', await sha256(request.headers.get('authorization')!.slice(7))).run(); return Response.json({ signedOut: true }); }
@@ -98,6 +107,7 @@ export async function pitchRoute(request: Request, env: Env): Promise<Response> 
       bannedUntil: p.banned_until, moderator: moderator(store, player.id), activeRoom: active?.code ?? null,
       blockedPlayers: (await store.sql('SELECT target_id AS id FROM pitch_blocks WHERE player_id=?', player.id).all<{id:string}>()).results } satisfies PitchMe);
   }
+  if (path === '/api/pitch/round-history') { method(request, 'GET'); return Response.json(await roundHistory(store, player.id, url.searchParams.get('cursor'))); }
   if (path === '/api/pitch/history') { method(request, 'GET'); return Response.json(await history(store, player)); }
   if (path === '/api/pitch/leaderboard') {
     method(request, 'GET'); const band = ageBand(account.birth_date); const today = new Date(); today.setUTCHours(0,0,0,0); today.setUTCDate(today.getUTCDate() - (today.getUTCDay() + 6) % 7);

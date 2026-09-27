@@ -1,4 +1,4 @@
-import type { PitchRoomView } from '../../shared/pitch';
+import { PITCH_LEAVE_ELO_PENALTY, type PitchRoomView } from '../../shared/pitch';
 import { fail, textField } from '../http';
 import { Store } from '../store';
 import type { Player } from '../types';
@@ -36,7 +36,7 @@ export function ratingChange(stats: Profile, opponent: Profile, actual: number, 
   const k = stats.games < 10 ? 32 : 16;
   const expected = 1 / (1 + 10 ** ((opponent.rating - stats.rating) / 400));
   const gainFactor = forfeit && actual === 1 ? 0.25 : 1;
-  const after = Math.max(100, Math.round(stats.rating + k * (actual - expected) * gainFactor));
+  const after = Math.max(100, forfeit && actual === 0 ? stats.rating - PITCH_LEAVE_ELO_PENALTY : Math.round(stats.rating + k * (actual - expected) * gainFactor));
   return { playerId: stats.player_id, before: stats.rating, after, delta: after - stats.rating, gamesBefore: stats.games,
     gamesAfter: stats.games + 1, k, expected, result: actual === 1 ? 'win' : actual === 0 ? 'loss' : 'draw' };
 }
@@ -75,7 +75,7 @@ async function finish(store: Store, room: PitchRoom, forfeitPlayer: string | nul
   const result = { winnerId: cancelled ? null : winnerId, reason, voteCount: votes.length,
     scores: [a, b].map((p, i) => ({ playerId: p.player_id, votes: votes.filter(v => v.winner_id === p.player_id).length,
       averages: votes.length ? Object.fromEntries(Object.entries(i ? bSum : aSum).map(([k, n]) => [k, Math.round(n / votes.length * 10) / 10])) : null })),
-    ratingChanges: changes, finishedAt: Date.now(), ratingVersion: 'pitch-elo-v2' };
+    ratingChanges: changes, finishedAt: Date.now(), ratingVersion: 'pitch-elo-v3' };
   const claim = crypto.randomUUID(), now = Date.now();
   const guard = 'EXISTS(SELECT 1 FROM pitch_rooms WHERE id=? AND resolution_token=?)';
   // The room resolution, both rating entries, profile updates and judge credits commit together.
@@ -126,9 +126,17 @@ export async function syncRoom(store: Store, room: PitchRoom, player: Player) {
   const now = Date.now();
   await store.sql(`UPDATE pitch_seats SET last_seen=? WHERE room_id=? AND player_id=? AND left_at IS NULL AND last_seen<?`, now, room.id, player.id, now - 10_000).run();
   const phase = phaseAt(room.started_at);
+  // A scoring deadline is not a voluntary leave. Resolve before stale-seat penalties.
+  if (phase.expired) {
+    await finish(store, room);
+    return (await store.sql('SELECT * FROM pitch_rooms WHERE id=?', room.id).first<PitchRoom>())!;
+  }
   const members = await seats(store, room);
   for (const member of members) {
-    if (!member.left_at && (member.last_seen < now - 60_000 || (phase.expired && member.role === 'judge'))) await leave(store, room, member.player_id);
+    if (!member.left_at && member.last_seen < now - 60_000) {
+      if (member.role === 'judge') await store.sql('UPDATE pitch_seats SET left_at=? WHERE room_id=? AND player_id=? AND left_at IS NULL',now,room.id,member.player_id).run();
+      else await leave(store, room, member.player_id);
+    }
   }
   const refreshed = (await store.sql('SELECT * FROM pitch_rooms WHERE id=?', room.id).first<PitchRoom>())!;
   // Retry a resolution after a prior request won the leave write but disconnected before finishing.
@@ -146,7 +154,7 @@ export async function view(store: Store, room: PitchRoom, player: Player): Promi
   const timedPhase = phaseAt(room.started_at); const self = members.find(s => s.player_id === player.id)!;
   const peer = room.judging_mode !== 'judged';
   const phase = peer && timedPhase.index === 5 ? {...timedPhase,label:'Exchange opponent feedback'} : timedPhase;
-  const peerFeedback = peer ? await peerRows(store,room) : [];
+  const peerFeedback = await peerRows(store,room);
   const result = room.result ? JSON.parse(room.result) : null;
   const scenario = scenarioFor(room);
   return { id: room.id, code: room.code, status: room.status, band: room.band, scenario, isPublic: room.is_public === 1, judgingMode: room.judging_mode,
@@ -155,6 +163,8 @@ export async function view(store: Store, room: PitchRoom, player: Player): Promi
     participants: members.map(s => ({ id: s.player_id, name: s.name, avatar: storedAvatar(s.avatar_json), ageBand: ageBand(s.birth_date), role: s.role, slot: s.slot, left: !!s.left_at, position: s.role === 'contestant' ? scenario.positions?.[s.slot] ?? scenario.goal : null,
       submitted: s.role === 'judge' ? votes.some(v => v.judge_id === s.player_id) : responses.results.some(r => r.playerId === s.player_id && r.phase === phase.index) })),
     responses: responses.results.filter(r => r.playerId === player.id || r.phase < phase.index || room.status !== 'active'),
+    peerFeedbackSubmitted: peerFeedback.some(v=>v.author_id===player.id),
+    peerFeedback: result ? incomingPeerFeedback(peerFeedback,player.id) : [],
     ballotSubmitted: peer ? peerFeedback.some(v=>v.author_id===player.id) : votes.some(v => v.judge_id === player.id), ballotsReceived: peer ? peerFeedback.length : votes.length, result,
     feedback: peer ? (result ? incomingPeerFeedback(peerFeedback,player.id) : []) : result ? votes.flatMap(v => (self.role === 'contestant' ? [self.slot] : [0, 1]).map(slot => ({
       ballotId: v.id, playerId: slot === 0 ? room.a_id : room.b_id,

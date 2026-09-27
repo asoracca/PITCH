@@ -2,6 +2,8 @@ import type { AvatarLook } from './avatar';
 export type { AvatarLook } from './avatar';
 /** Public wire contract. Safe to import from browser code; contains no server/database imports. */
 export const PITCH_API_VERSION = 'pitch.v1';
+export const PITCH_LEAVE_ELO_PENALTY = 10;
+export const PITCH_QUEUE_SECONDS = 30;
 export type AgeBand = '14–17' | '18–22' | '23+';
 export type QueueMode = 'quick' | 'contestant' | 'judge' | 'priority' | 'mixed';
 export type Role = 'contestant' | 'judge';
@@ -25,7 +27,7 @@ export interface PitchConfig {
   };
   rules: {
     version: string; initialRating: number; provisionalGames: number; provisionalK: number; establishedK: number;
-    floor: number; forfeitWinMultiplier: number; judgesPerRound: number; contestantsPerRound: number;
+    floor: number; forfeitWinMultiplier: number; leaveEloPenalty: number; judgesPerRound: number; contestantsPerRound: number;
     judgedRoundsPerPriorityCredit: number; queueTimeoutSeconds: number; disconnectGraceSeconds: number;
     firstLeaveBanSeconds: number; repeatLeaveBanSeconds: number; phases: Phase[];
     rubric: string[]; scoreRange: number[]; aiEnabled: boolean;
@@ -57,6 +59,7 @@ export interface PitchRoomView {
   yourPosition: string | null; serverTime: number; startedAt: number; phase: RoomPhase; role: Role; yourSlot: number; left: boolean;
   participants: (Player & { role: Role; slot: number; left: boolean; position: string | null; submitted: boolean })[];
   responses: { playerId: string; phase: number; content: string; createdAt: number }[];
+  peerFeedbackSubmitted: boolean; peerFeedback: Feedback[];
   ballotSubmitted: boolean; ballotsReceived: number; result: RoundResult | null; feedback: Feedback[];
 }
 export interface SpectatorRound {
@@ -72,7 +75,14 @@ export type PitchQueue =
   | { status: 'waiting'; serverTime: number; mode: string; priority: boolean; band: string; joinedAt: number; expiresAt: number; message: string }
   | { status: 'matched'; serverTime: number; room: PitchRoomView };
 export interface HistoryFeedback extends Rubric { ballotId: string; roomId: string; rating: string | null }
+export interface RoundLog {
+  code: string; scenario: Scenario; role: Role; status: 'finished' | 'cancelled';
+  judgingMode: PitchRoomView['judgingMode']; finishedAt: number;
+  contestants: Player[]; result: string; delta: number | null;
+}
+export interface RoundHistoryPage { rounds: RoundLog[]; nextCursor: string | null }
 export interface PitchHistory {
+  rounds: RoundHistoryPage;
   practices: PracticeLog[];
   peerHistory: { opponent?: Player; code: string; scenario: Scenario; finishedAt: number | null; feedback: Feedback[] }[];
   history: { opponent?: Player; code: string; scenario: Scenario; result: string; before: number; after: number; delta: number; finishedAt: number | null; feedback: HistoryFeedback[] }[];
@@ -111,3 +121,11 @@ export interface PublicProfile {
   player: Player; ageBand: AgeBand | null; rating: number; roundsPlayed: number; roundsJudged: number; friendship: Friendship;
 }
 export interface FriendEntry extends PublicProfile { updatedAt: number }
+
+export interface FullPlayerProfile extends PublicProfile {
+  joinedAt: number; followers: number; following: number; isFollowing: boolean; streak: number;
+  recentRounds: { code: string; title: string; category: string; finishedAt: number; result: string; delta: number | null }[];
+}
+
+export interface DirectMessage { id:number; senderId:string; content:string; createdAt:number }
+export interface DirectMessages { messages:DirectMessage[]; nextCursor:number|null }

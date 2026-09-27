@@ -49,3 +49,14 @@
 @media(max-width:760px) { .wardrobe-layout { grid-template-columns: minmax(0,1fr); } .wardrobe-options { grid-template-columns: repeat(2,minmax(0,1fr)); } .wardrobe-live { position: static; } .wardrobe-heading { gap: .8rem; } .wardrobe-heading h1 { width: 100%; } .wardrobe-preview { padding-inline: 1rem; } .wardrobe-figure { width: min(100%,260px); } }
 @media(max-width:350px) { .wardrobe-options { grid-template-columns: 1fr; } }
 @media(prefers-reduced-motion:reduce) { .wardrobe-idle { animation: none; } .wardrobe-layer,.wardrobe-pose,.wardrobe-head,.wardrobe-hair,.wardrobe-preview,.wardrobe-preview::before,.wardrobe-option { transition: none; } }
+.wardrobe-color-details { border-top: 1px solid var(--line); padding-top: 1rem; }
+.wardrobe-color-rows { display: grid; gap: 1rem; margin-top: 1rem; }
+.wardrobe-pro { border-top: 1px solid var(--line); padding-top: 1rem; }
+.wardrobe-pro-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.wardrobe-pro-heading h2 { font: 600 1.1rem 'Space Grotesk',sans-serif; }
+.wardrobe-pro-heading span { font-size: .7rem; color: var(--purple); }
+.wardrobe-pro p { font-size: .8rem; }
+.wardrobe-pro a { display: inline-block; margin-top: .75rem; color: var(--lime); font-size: .85rem; }
+.pro-neon { background: linear-gradient(120deg,#242042,var(--surface)); border-color: #65529b; }
+.pro-solar { background: linear-gradient(120deg,#412c22,var(--surface)); border-color: #856444; }
+.wardrobe-pro .wardrobe-option svg { color: var(--lime); }

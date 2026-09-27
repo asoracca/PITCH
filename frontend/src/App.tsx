@@ -1,3 +1,4 @@
+import { appearanceColorKeys, avatarChoices } from '../../shared/avatar'
 import { useEffect, useState } from "react"
 import {
   Button,
@@ -20,7 +21,7 @@ import {
   Practice,
   Profile,
 } from "./screens"
-import { PlayerProfiles } from "./PlayerProfiles"
+import { PlayerProfiles, PlayerProfileContent } from "./PlayerProfiles"
 import { Match } from "./Match"
 import { Pricing } from "./Pricing"
 import { Home } from "./LandingHome"
@@ -68,7 +69,7 @@ function storedLook(): EquippedItems {
         (k) => typeof look[k] === "string",
       )
     )
-      return { ...look, avatarEnabled: look.avatarEnabled ?? true,
+      return { ...look, ...Object.fromEntries(appearanceColorKeys.map(key=>[key,avatarChoices[key].includes(look[key])?look[key]:'default'])), avatarEnabled: look.avatarEnabled ?? true,
         skinTone: skinTones.some((tone) => tone.id === look.skinTone) ? look.skinTone : "brown",
         hairColor: hairColors.some((color) => color.id === look.hairColor) ? look.hairColor : "black" }
   } catch {
@@ -79,6 +80,7 @@ function storedLook(): EquippedItems {
 export default function App() {
   const p = usePitch()
   const [page, setPage] = useState<Page>(currentPage)
+  const [navigationKey, setNavigationKey] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [demoProfile, setDemoProfile] = useState(true)
   const [auth, setAuth] = useState(false)
@@ -91,6 +93,7 @@ export default function App() {
     locationBio: "",
   }
   function navigate(next: Page) {
+    setNavigationKey(value => value + 1)
     setPage(next)
     location.hash = encodeURIComponent(next)
     setMenuOpen(false)
@@ -184,7 +187,7 @@ export default function App() {
     }
   }
   return (
-    <PlayerProfiles p={p}><div className={`app-shell${page === 'Home' && !auth && !p.booting && (!p.session || (p.me && p.config)) ? ' landing-shell' : ''}${page === 'Practice' ? ' practice-shell' : ''}`}>
+    <PlayerProfiles p={p} navigationKey={navigationKey}><div className={`app-shell${page === 'Home' && !auth && !p.booting && (!p.session || (p.me && p.config)) ? ' landing-shell' : ''}${page === 'Practice' ? ' practice-shell' : ''}${page === 'Head-to-Head' && p.room ? ' round-shell' : ''}`}>
       <Sidebar
         page={page}
         onNavigate={navigate}
@@ -289,7 +292,7 @@ export default function App() {
               </button>
             </div>
           )}
-          {content}
+          <PlayerProfileContent>{content}</PlayerProfileContent>
         </div>
       </main>
     </div></PlayerProfiles>

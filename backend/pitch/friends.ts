@@ -2,7 +2,7 @@ import { fail } from '../http';
 import type { Store } from '../store';
 import { ageBand } from './auth';
 import { storedAvatar } from '../../shared/avatar';
-import type { FriendEntry, Friendship, PublicProfile } from '../../shared/pitch';
+import type { FriendEntry, Friendship, PublicProfile, FullPlayerProfile } from '../../shared/pitch';
 
 type ProfileRow = { id: string; name: string; avatar_json: string | null; birth_date: string; rating: number; games: number; judged: number };
 type RelationRow = { status: string; requester_id: string };
@@ -54,4 +54,41 @@ export async function changeFriend(store: Store, self: string, target: string, a
     if (!changed.meta.changes) fail(409,'REQUEST_CHANGED','Request changed. Refresh and try again.');
   }
   return playerProfile(store,self,target);
+}
+
+/** Counts and public round summaries only; private responses and feedback stay private. */
+export async function fullPlayerProfile(store: Store, self: string, target: string): Promise<FullPlayerProfile> {
+  const basic = await playerProfile(store,self,target);
+  const account = await store.sql('SELECT accepted_at FROM pitch_accounts WHERE player_id=?',target).first<{accepted_at:number}>();
+  const counts = await store.sql(`SELECT
+    (SELECT COUNT(*) FROM pitch_follows WHERE followed_id=?) AS followers,
+    (SELECT COUNT(*) FROM pitch_follows WHERE follower_id=?) AS following,
+    (SELECT COUNT(*) FROM pitch_follows WHERE follower_id=? AND followed_id=?) AS is_following`,target,target,self,target).first<{followers:number;following:number;is_following:number}>();
+  const days=(await store.sql(`SELECT DISTINCT CAST(at/86400000 AS INTEGER) AS day FROM (
+    SELECT created_at AS at FROM pitch_practice_logs WHERE player_id=?
+    UNION ALL SELECT r.finished_at AS at FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id
+    WHERE s.player_id=? AND s.left_at IS NULL AND r.status='finished') ORDER BY day DESC`,target,target).all<{day:number}>()).results;
+  const today=Math.floor(Date.now()/86400000);let expected=today,streak=0;
+  if(days[0]?.day===today-1)expected=today-1;
+  for(const {day} of days){if(day!==expected)break;streak++;expected--;}
+  const rounds=(await store.sql(`SELECT r.code,r.scenario_json,r.finished_at,e.result,e.delta
+    FROM pitch_rooms r JOIN pitch_seats s ON s.room_id=r.id
+    LEFT JOIN pitch_rating_events e ON e.room_id=r.id AND e.player_id=s.player_id
+    WHERE s.player_id=? AND r.status='finished' AND r.is_public=1
+    AND NOT EXISTS(SELECT 1 FROM pitch_seats hidden JOIN pitch_blocks blocked
+      ON (blocked.player_id=? AND blocked.target_id=hidden.player_id) OR (blocked.target_id=? AND blocked.player_id=hidden.player_id)
+      WHERE hidden.room_id=r.id)
+    ORDER BY r.finished_at DESC LIMIT 20`,target,self,self).all<{code:string;scenario_json:string;finished_at:number;result:string|null;delta:number|null}>()).results;
+  return {...basic,joinedAt:account!.accepted_at,followers:counts!.followers,following:counts!.following,isFollowing:!!counts!.is_following,streak,
+    recentRounds:rounds.map(r=>{const scenario=JSON.parse(r.scenario_json);return {code:r.code,title:scenario.title,category:scenario.category,finishedAt:r.finished_at,result:r.result||'Unrated',delta:r.delta};})};
+}
+
+export async function followPlayer(store: Store, self: string, target: string, follow: unknown) {
+  if(self===target||typeof follow!=='boolean')fail(400,'INVALID_FOLLOW','Choose another player to follow.');
+  await playerProfile(store,self,target);
+  if(follow){
+    await store.limit(`pitch-follow:${self}`,60,86400000);
+    await store.sql(`INSERT INTO pitch_follows(follower_id,followed_id,created_at) SELECT ?,?,? WHERE ${unblocked} ON CONFLICT DO NOTHING`,self,target,Date.now(),self,target,target,self).run();
+  }else await store.sql('DELETE FROM pitch_follows WHERE follower_id=? AND followed_id=?',self,target).run();
+  return fullPlayerProfile(store,self,target);
 }

@@ -1,11 +1,14 @@
+import { MatchSettings, readMatchPreferences, type MatchPreferences } from './MatchSettings'
+import { LiveResponse } from "./LiveResponse"
 import { PlayerLink } from "./PlayerProfiles"
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Button, Icon, SectionTitle, AvatarBadge } from "./design"
 import { countdown, canRespond, initials, signed, skills } from "./model"
 import { FeedbackButtons, Rules } from "./screens"
 import { LiveAudio, audioOff } from "./voice"
-import { TOPICS } from "../../shared/pitch"
+import { TOPICS, PITCH_LEAVE_ELO_PENALTY } from "../../shared/pitch"
 import { OpponentChat } from "./OpponentChat"
+import { LobbyMedia } from "./lobby-media"
 import { DemoMatch } from "./DemoMatch"
 import { Spectate } from "./Spectate"
 import type { Pitch } from "./usePitch"
@@ -41,10 +44,35 @@ export function Match({ p }: { p: Pitch }) {
   const [category, setCategory] = useState("all")
   const [mode, setMode] = useState<QueueMode>("quick")
   const [demo, setDemo] = useState<Scenario | null>(null)
-  const [allowSpectators, setAllowSpectators] = useState(false)
-  const [allowPeerMatch, setAllowPeerMatch] = useState(true)
+  const [preferences,setPreferences]=useState(()=>readMatchPreferences(p.me!.player.id))
+  const [settingsOpen,setSettingsOpen]=useState(false)
+  const allowSpectators=preferences.spectators,allowPeerMatch=preferences.fallback
+  const useMic=preferences.microphone,useCamera=preferences.camera
+  function savePreferences(value:MatchPreferences){setPreferences(value);try{localStorage.setItem(`pitch.match-settings.${p.me!.player.id}`,JSON.stringify(value))}catch{}}
+  const [lobbyMedia] = useState(() => new LobbyMedia())
+  const [lobbyStream, setLobbyStream] = useState<MediaStream | null>(null)
+  const [preparing, setPreparing] = useState(false)
+  const [mediaError, setMediaError] = useState('')
+  const joining = useRef(0)
+  useEffect(() => () => { joining.current++; lobbyMedia.stop() }, [lobbyMedia])
+  useEffect(() => {
+    if (!p.room && p.queue.status !== 'waiting') { lobbyMedia.stop(); setLobbyStream(null) }
+  }, [lobbyMedia, p.queue.status, p.room?.code])
+  async function findRound() {
+    const request = ++joining.current
+    setPreparing(true); setMediaError('')
+    try {
+      const stream = await lobbyMedia.prepare(mode !== 'judge' && useMic, mode !== 'judge' && useCamera)
+      if (joining.current !== request) return
+      setLobbyStream(stream)
+      const joined = await p.join(mode, allowSpectators, allowPeerMatch && mode !== 'judge' && mode !== 'priority', category)
+      if (!joined) { lobbyMedia.stop(); setLobbyStream(null) }
+    } catch (error) {
+      if (joining.current === request) setMediaError(error instanceof DOMException && error.name === 'NotAllowedError' ? 'Permission denied. Allow camera and mic, or switch them off to use text.' : 'Camera or mic unavailable. Switch off the unavailable device and retry.')
+    } finally { if (joining.current === request) setPreparing(false) }
+  }
   const now = useServerNow(p.queue.serverTime)
-  if (p.room) return <Round key={p.room.code} p={p} room={p.room} />
+  if (p.room) return <Round key={p.room.code} p={p} room={p.room} lobbyMedia={lobbyMedia} />
   if (demo) return <DemoMatch scenario={demo} name={p.me!.player.name} avatar={p.me!.avatar} onClose={() => setDemo(null)} />
   const waiting = p.queue.status === "waiting"
   return (
@@ -62,7 +90,7 @@ export function Match({ p }: { p: Pitch }) {
       </section>}
       <div className="matchup-intro">
         <div className="matchup-player">
-          <AvatarBadge name={p.me!.player.name} look={p.me!.avatar} size="xl" />
+          {waiting && lobbyStream?.getVideoTracks().length ? <div className="lobby-camera"><RemoteVideo stream={lobbyStream} name="Your preview" /></div> : <AvatarBadge name={p.me!.player.name} look={p.me!.avatar} size="xl" />}
           <span>YOU</span>
           <strong>{p.me!.player.name}</strong>
           <small>{p.me!.rating.value} PITCH Elo</small>
@@ -90,6 +118,7 @@ export function Match({ p }: { p: Pitch }) {
               ? countdown(p.queue.expiresAt, now)
               : ""}
           </strong>
+          <p>{lobbyStream ? `Ready: ${[lobbyStream.getAudioTracks().length ? 'microphone' : '', lobbyStream.getVideoTracks().length ? 'camera' : ''].filter(Boolean).join(' + ')}. Only you can see this preview.` : 'Text mode. Audio connects when matched.'}</p>
           <Button
             variant="secondary"
             disabled={p.busy}
@@ -147,8 +176,8 @@ export function Match({ p }: { p: Pitch }) {
               </label>
             ))}
           </fieldset>
-          {mode !== "judge" && mode !== "priority" && <label className="check-label"><input type="checkbox" checked={allowPeerMatch} onChange={(event) => setAllowPeerMatch(event.target.checked)} /><span>After 2 minutes without judges: one automated rubric judge, no Elo. Exchange feedback too.</span></label>}
-          <label className="check-label"><input type="checkbox" checked={allowSpectators} onChange={(event) => setAllowSpectators(event.target.checked)} /><span>Allow spectators to see names, text and results if everyone agrees. Audio and video stay private.</span></label>
+          <div className="match-settings-link"><Button variant="secondary" onClick={()=>setSettingsOpen(true)} disabled={preparing}>Match settings</Button><small>{mode==='judge'?'Listen & score':`${useMic?'Mic on':'Mic off'} · ${useCamera?'Camera on':'Camera off'}`} · {allowSpectators?'Public if everyone agrees':'Private'}</small></div>
+          {mediaError && <p role="alert">{mediaError}</p>}
           {p.me!.bannedUntil > Date.now() && (
             <p>
               Queue break until{" "}
@@ -156,31 +185,49 @@ export function Match({ p }: { p: Pitch }) {
             </p>
           )}
           <Button
-            disabled={p.busy || p.me!.bannedUntil > Date.now()}
-            onClick={() => {
-              void p.join(mode, allowSpectators, allowPeerMatch && mode !== "judge" && mode !== "priority", category)
-            }}
+            disabled={p.busy || preparing || p.me!.bannedUntil > Date.now()}
+            onClick={() => { void findRound() }}
           >
-            Find a round
+            {preparing ? 'Setting up camera & mic…' : 'Find a round'}
             <Icon name="bolt" />
           </Button>
-          <details className="review-details"><summary>Matching rules</summary><p>Two contestants; one or three human judges. Optional automated fallback after 2 minutes. No opponent after 2½ minutes? The queue closes.</p></details>
+          {preparing && <Button variant="ghost" onClick={() => { joining.current++; lobbyMedia.stop(); setLobbyStream(null); setPreparing(false) }}>Cancel setup</Button>}
+          <details className="review-details"><summary>Matching rules</summary><p>Two contestants; one or three human judges. Optional automated fallback after 30 seconds. No opponent? The queue closes.</p></details>
         </div>
       )}
+      {settingsOpen&&<MatchSettings preferences={preferences} onChange={savePreferences} onClose={()=>setSettingsOpen(false)}/>}
       <Spectate p={p} />
       <Rules compact />
     </div>
   )
 }
 
+function RemoteVideo({ stream, name }: { stream: MediaStream | null; name: string }) {
+  const video = useRef<HTMLVideoElement>(null)
+  const [needsPlay, setNeedsPlay] = useState(false)
+  useEffect(() => {
+    const element = video.current!
+    let cancelled = false
+    setNeedsPlay(false)
+    element.srcObject = stream
+    if (stream) void element.play().catch(() => { if (!cancelled) setNeedsPlay(true) })
+    return () => { cancelled = true; element.pause(); element.srcObject = null }
+  }, [stream])
+  return <><video ref={video} hidden={!stream} autoPlay playsInline muted aria-label={`${name}'s live camera`} />{stream && needsPlay && <button className="video-play" onClick={() => { void video.current?.play().then(() => setNeedsPlay(false)).catch(() => {}) }}>Play video</button>}</>
+}
+
 function AudioControls({
   p,
   room,
   now,
+  lobbyMedia,
+  onTransmitting,
 }: {
   p: Pitch
   room: PitchRoomView
   now: number
+  lobbyMedia: LobbyMedia
+  onTransmitting: (value: boolean) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const preview = useRef<HTMLVideoElement>(null)
@@ -191,12 +238,16 @@ function AudioControls({
   const [state, setState] = useState(audioOff)
   const [error, setError] = useState("")
   const [starting, setStarting] = useState(false)
+  const [remoteVideos, setRemoteVideos] = useState<Record<string, MediaStream | null>>({})
   useEffect(() => {
     let mounted = true
     const connection = new LiveAudio(p.api, container.current!, (v) => {
       if (mounted) setState(v)
-    }, preview.current!)
+    }, preview.current ?? undefined, (id, stream) => {
+      if (mounted) setRemoteVideos(current => current[id] === stream ? current : { ...current, [id]: stream })
+    })
     audio.current = connection
+    if (room.status === 'active' && !room.left) void start()
     const release = () => { startRequest.current?.abort(); startRequest.current = null; connection.stop(); setStarting(false) }
     window.addEventListener("pagehide", release)
     return () => {
@@ -224,7 +275,7 @@ function AudioControls({
     try {
       const config = await p.api.voice({ signal: request.signal })
       if (request.signal.aborted || audio.current !== connection) return
-      await connection.start(latestRoom.current, p.me!.player.id, config, p.config!.rules.phases)
+      await connection.start(latestRoom.current, p.me!.player.id, config, p.config!.rules.phases, lobbyMedia.take())
     } catch (e) {
       if (!request.signal.aborted)
         setError(e instanceof Error ? e.message : "Voice could not connect. You can still use text.")
@@ -246,131 +297,55 @@ function AudioControls({
   const micPending = state.microphone === "requesting"
   const cameraOn = state.camera === "on"
   const cameraPending = state.camera === "requesting"
+  useEffect(() => { onTransmitting(state.transmitting); return () => onTransmitting(false) }, [state.transmitting, onTransmitting])
+  const active = room.status === "active" && !room.left
+  const players = room.participants.filter(v => v.role === 'contestant').sort((a,b) => a.slot-b.slot)
   return (
-    <section className="panel audio-controls" aria-label="Voice, microphone and camera">
-      <div>
-        <h2 className="heading">Talk, type or turn your camera on.</h2>
-        <p>Connect to listen or watch. Mic and camera start off; text stays available.</p>
-        <div className="voice-state" role="status" aria-live="polite">
-          <strong>{starting ? "Connecting voice & video…" : state.enabled ? "Voice & video connected" : "Voice & video disabled"}</strong>
-          {state.enabled && <span>{state.connected} of {state.participants} participants connected</span>}
-          {room.role === "contestant" && <span className={state.transmitting ? "positive" : ""}>
-            {micPending ? "Waiting for microphone permission…" : state.transmitting ? "Microphone on · your turn to speak" : micOn ? "Microphone on · muted until your turn" : "Microphone off"}
-          </span>}
-          {room.role === "contestant" && <span>{cameraPending ? "Waiting for camera permission…" : cameraOn ? "Camera on · visible to this room’s participants" : "Camera off"}</span>}
-          {(error || state.message) && <span>{error || state.message}</span>}
+    <>
+    <div className="matchup-intro live-matchup" aria-label="Contestants">
+      {players.map(player => {
+        const self = player.id === p.me!.player.id
+        const hasVideo = active && (self ? cameraOn : !!remoteVideos[player.id])
+        const speaking = active && room.phase.speaker === player.slot
+        return <div aria-label={`${player.name}${speaking ? ", speaking now" : ""}`} className={`matchup-player live-player${speaking ? ' is-speaking' : ''}`} key={player.id}>
+          <div className="match-camera">
+            {self ? <video ref={preview} className="self-video" hidden={!hasVideo} muted autoPlay playsInline aria-label="Your live camera" /> : <RemoteVideo stream={active ? remoteVideos[player.id] ?? null : null} name={player.name} />}
+            {!hasVideo && <div className="match-avatar"><AvatarBadge name={player.name} look={player.avatar} size="xl" /><span>{player.left ? 'Left round' : 'Camera off'}</span></div>}
+            {hasVideo && <span className="camera-live">LIVE</span>}
+          </div>
+          <div className="live-player-caption"><PlayerLink player={player}><strong>{player.name}{self ? ' · You' : ''}</strong></PlayerLink><span>{player.left ? 'Left' : speaking ? 'Speaking' : `Contestant ${player.slot ? 'B' : 'A'}`}</span></div>
         </div>
-        <p>
-          {room.role === "judge" ? "As a judge, you can watch and listen without using a microphone or camera." : "Your voice is shared only during your speaking turns. Your camera stays visible until you turn it off."} Live audio and video are not recorded by PITCH.
-        </p>
+      })}
+    </div>
+    {active && <section className="audio-controls round-audio" aria-label="Call controls">
+      <div className="call-status" role="status"><span className={state.connected ? 'positive' : ''}>{starting || (state.enabled && !state.connected) ? 'Connecting…' : state.enabled ? `Connected · ${state.connected}/${state.participants}` : 'Disconnected'}</span>{room.role==='contestant'&&<small>{state.transmitting ? 'Mic live' : micOn ? 'Mic waits for your turn' : 'Mic off'}</small>}</div>
+      <div className="call-buttons">
+        {room.role === 'contestant' && <>
+          <Button variant="secondary" disabled={!state.enabled || starting} aria-pressed={micOn} onClick={() => micOn || micPending ? audio.current?.disableMicrophone() : void audio.current?.enableMicrophone()}><Icon name="mic"/>{micPending ? 'Cancel mic' : micOn ? 'Mic on' : 'Mic off'}</Button>
+          <Button variant="secondary" disabled={!state.enabled || starting} aria-pressed={cameraOn} onClick={() => cameraOn || cameraPending ? audio.current?.disableCamera() : void audio.current?.enableCamera()}>{cameraPending ? 'Cancel camera' : cameraOn ? 'Camera on' : 'Camera off'}</Button>
+        </>}
+        {state.needsPlayback && <Button onClick={() => void audio.current?.play()}>Enable sound</Button>}
+        <Button variant="ghost" onClick={() => state.enabled || starting ? stop() : void start()}>{starting ? 'Cancel' : state.enabled ? 'Disconnect' : 'Connect'}</Button>
       </div>
-      <div className="hero-actions">
-        <Button
-          variant={state.enabled ? "secondary" : "primary"}
-          aria-pressed={state.enabled}
-          disabled={room.status !== "active" || room.left}
-          onClick={() => {
-            if (state.enabled || starting) stop()
-            else void start()
-          }}
-        >
-          {starting ? "Cancel connection" : state.enabled ? "Disconnect voice & video" : "Connect voice & video"}
-        </Button>
-        {room.role === "contestant" && (
-          <Button
-            variant={micOn ? "secondary" : "primary"}
-            disabled={!state.enabled || starting}
-            aria-pressed={micOn}
-            onClick={() => {
-              if (micOn || micPending) audio.current?.disableMicrophone()
-              else void audio.current?.enableMicrophone()
-            }}
-          >
-            <Icon name="mic" />
-            {micPending ? "Cancel microphone" : micOn ? "Turn microphone off" : "Turn microphone on"}
-          </Button>
-        )}
-        {room.role === "contestant" && <Button variant={cameraOn ? "secondary" : "primary"} disabled={!state.enabled || starting} aria-pressed={cameraOn} onClick={() => {
-          if (cameraOn || cameraPending) audio.current?.disableCamera()
-          else void audio.current?.enableCamera()
-        }}>{cameraPending ? "Cancel camera" : cameraOn ? "Turn camera off" : "Turn camera on"}</Button>}
-        {state.needsPlayback && <Button variant="secondary" onClick={() => { void audio.current?.play() }}>Play audio & video</Button>}
-        {state.enabled && <Button variant="ghost" disabled={starting} onClick={() => { void start() }}>Reconnect voice & video</Button>}
-      </div>
-      {state.enabled && <p>Everyone must connect to listen or watch. Reconnect if needed, or use text.</p>}
-      <figure className="local-camera" hidden={!cameraOn}><video ref={preview} muted autoPlay playsInline aria-label="Your camera preview" /><figcaption>You · camera on</figcaption></figure>
-      <div ref={container} className="media-streams" />
-    </section>
+      {(error || state.message) && <p role="alert">{error || state.message}</p>}
+    </section>}
+    <div ref={container} className="round-audio-streams" aria-hidden="true" />
+    </>
   )
 }
 
-function ResponseForm({
-  p,
-  room,
-  now,
-}: {
-  p: Pitch
-  room: PitchRoomView
-  now: number
-}) {
-  const [text, setText] = useState("")
-  const submitted = room.responses.some(
-    (r) => r.playerId === p.me!.player.id && r.phase === room.phase.index,
-  )
-  const allowed = canRespond(room, now)
-  function submit(e: FormEvent) {
-    e.preventDefault()
-    if (allowed && !submitted)
-      void p.act(async () => {
-        p.acceptRoom(await p.api.respond(room.code, room.phase.index, text))
-      })
-  }
-  return (
-    <form className="play-round" onSubmit={submit}>
-      <label className="form-stack">
-        <strong>Your text response · with or without voice</strong>
-        <textarea
-          className="match-response-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={1200}
-          required
-          readOnly={!allowed || submitted}
-          placeholder="Make your case clearly. Be specific about what you would say and do."
-        />
-      </label>
-      <div className="response-submit">
-        <span>
-          {text.length}/1200 ·{" "}
-          {submitted
-            ? "Response saved."
-            : allowed
-              ? "One submission during this speaking turn."
-              : "Wait for your speaking turn."}
-        </span>
-        <Button
-          type="submit"
-          disabled={p.busy || !allowed || submitted || !text.trim()}
-        >
-          Submit response
-          <Icon name="check" />
-        </Button>
-      </div>
-    </form>
-  )
-}
 
 function PeerScorecard({ p, room, now }: { p: Pitch; room: PitchRoomView; now: number }) {
   const [feedback, setFeedback] = useState<Rubric>({ clarity: 3, persuasiveness: 3, composure: 3, tip: "" })
-  const open = room.phase.key === "judging" && now < room.phase.deadline && !room.phase.expired && !room.ballotSubmitted
-  const opponent = room.participants.find((person) => person.id !== p.me!.player.id)
+  const open = room.role === "contestant" && !room.peerFeedbackSubmitted && (room.status !== "active" || (!room.left && room.phase.key === "judging"))
+  const opponent = room.participants.find((person) => person.role === "contestant" && person.id !== p.me!.player.id)
   return <form className="panel form-stack" onSubmit={(event) => {
     event.preventDefault()
     if (open) void p.act(async () => { p.acceptRoom(await p.api.peerFeedback(room.code, feedback)) })
   }}>
     <h2 className="heading">Feedback for {opponent?.name}</h2>
-    <p>{room.ballotSubmitted ? "Your feedback is saved. It will be shared when the round ends." : "After the speaking turns, give your opponent three scores and one useful tip. This does not change Elo."}</p>
-    {skills.map((skill) => <label key={skill} className="capitalize">{skill}<select value={feedback[skill]} disabled={!open || p.busy} onChange={(event) => setFeedback({ ...feedback, [skill]: Number(event.target.value) })}>{[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}/5</option>)}</select></label>)}
+    <p>{room.peerFeedbackSubmitted ? "Feedback saved." : "Private to your opponent · no Elo change"}</p>
+    <div className="peer-score-fields">{skills.map((skill) => <label key={skill} className="capitalize">{skill}<select value={feedback[skill]} disabled={!open || p.busy} onChange={(event) => setFeedback({ ...feedback, [skill]: Number(event.target.value) })}>{[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}/5</option>)}</select></label>)}</div>
     <label>One constructive tip<textarea value={feedback.tip} disabled={!open || p.busy} minLength={12} maxLength={400} required onChange={(event) => setFeedback({ ...feedback, tip: event.target.value })} placeholder="Name one thing they did well and one useful next step." /></label>
     <Button type="submit" disabled={!open || p.busy || feedback.tip.trim().length < 12}>Send opponent feedback</Button>
   </form>
@@ -604,232 +579,89 @@ function Safety({ p, room }: { p: Pitch; room: PitchRoomView }) {
   )
 }
 
-function Round({ p, room }: { p: Pitch; room: PitchRoomView }) {
+function LeaveRoundDialog({ p, room, open, onClose }: { p: Pitch; room: PitchRoomView; open: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const element = dialog.current!
+    if (open && !element.open) element.showModal()
+    if (!open && element.open) element.close()
+  }, [open])
+  const rated = room.judgingMode === 'judged'
+  const contestant = room.role === 'contestant'
+  const loss = Math.min(p.config?.rules.leaveEloPenalty ?? PITCH_LEAVE_ELO_PENALTY, Math.max(0, (p.me?.rating.value ?? 1000) - (p.config?.rules.floor ?? 100)))
+  return <dialog ref={dialog} className="leave-dialog" aria-labelledby="leave-title" aria-describedby="leave-description" onCancel={event => { event.preventDefault(); if (!p.busy) onClose() }}>
+    <h2 id="leave-title">Leave this round?</h2>
+    <p id="leave-description">{!rated ? 'This ends the practice duel. No Elo change.' : contestant ? `You forfeit and lose ${loss} Elo. A 5–10 minute queue break also applies.` : 'Leaving before scoring costs 10 reliability points and a 5–10 minute queue break. Your Elo stays the same.'}</p>
+    {rated && contestant && <div className="leave-elo"><strong>−{loss}</strong><span>Elo</span></div>}
+    {p.error && <p role="alert">{p.error}</p>}
+    <div className="hero-actions"><Button autoFocus disabled={p.busy} onClick={onClose}>Stay in round</Button><Button variant="secondary" className="leave-round-button" disabled={p.busy} onClick={() => {
+      void p.act(async () => { p.acceptRoom(await p.api.leave(room.code)); onClose(); await p.refresh() })
+    }}>{p.busy ? 'Leaving…' : 'Leave round'}</Button></div>
+  </dialog>
+}
+
+function RoundOutcome({ p, room }: { p: Pitch; room: PitchRoomView }) {
+  const result = room.result!
+  const unrated = !result.ratingChanges.length
+  const reason = result.reason === 'insufficient_judges' ? 'Not enough judge scorecards. Elo unchanged.' : result.reason === 'forfeit' ? 'Round ended by forfeit.' : result.reason === 'automated_practice' ? 'Automated text checks. Elo unchanged.' : result.reason === 'peer_practice' ? 'Opponent feedback. Elo unchanged.' : result.reason.replaceAll('_', ' ')
+  return <section className="round-outcome" aria-label="Round results">
+    <header className="outcome-heading"><div><div className="eyebrow">{unrated ? 'UNRATED' : 'ROUND COMPLETE'}</div><h2 className="heading">{unrated ? 'Round summary' : 'Your results'}</h2><p>{reason}</p></div><span className="outcome-votes"><Icon name="gavel" />{result.voteCount} {result.voteCount === 1 ? 'scorecard' : 'scorecards'}</span></header>
+    <div className="outcome-players">{result.scores.map(score => {
+      const player = room.participants.find(v => v.id === score.playerId)!
+      const change = result.ratingChanges.find(v => v.playerId === score.playerId)
+      const checks = result.automatedFeedback?.find(v => v.playerId === score.playerId)
+      const winner = result.winnerId === score.playerId
+      return <article className={`outcome-player${winner ? ' is-winner' : ''}`} key={score.playerId}>
+        <header><PlayerLink player={player}><AvatarBadge name={player.name} look={player.avatar} /><strong>{player.name}{player.id === p.me!.player.id ? ' · You' : ''}</strong></PlayerLink>{winner && <span className="winner-badge"><Icon name="trophy" size={14} />Winner</span>}</header>
+        <div className="elo-result">{change ? <><strong className={change.delta >= 0 ? 'positive' : 'negative'}>{signed(change.delta)}<small>Elo</small></strong><span>{change.before}<Icon name="arrow" size={16} />{change.after}</span></> : <span className="elo-unchanged">Elo unchanged</span>}</div>
+        {score.averages && !checks && <dl className="outcome-skills">{skills.map(skill => {
+          const value = score.averages?.[skill]
+          return value == null ? null : <div key={skill}><dt className="capitalize">{skill}</dt><dd><meter min={0} max={5} value={value} aria-label={skill} /><strong>{value.toFixed(1)}<small>/5</small></strong></dd></div>
+        })}</dl>}
+        {checks && <div className="outcome-checks"><p>{checks.tip}</p><ul>{Object.entries(checks.checks).map(([key, value]) => <li key={key}><span aria-hidden="true">{value ? '✓' : '○'}</span>{key === 'nextStep' ? 'Next step' : key === 'specificity' ? 'Example' : 'Structure'}<span className="check-status">{value ? 'Found' : 'Try adding'}</span></li>)}</ul></div>}
+      </article>
+    })}</div>
+    <div className="round-feedback"><h3>Feedback</h3>{room.feedback.length ? room.feedback.map((feedback,index) => <article className="round-feedback-item" key={`${feedback.ballotId}-${feedback.playerId}`}><div className="feedback-source"><Icon name="gavel" size={18} /><span>{room.judgingMode === 'judged' ? `Judge ${index + 1}` : 'Your opponent'}{room.role === 'judge' ? ` · For ${room.participants.find(v => v.id === feedback.playerId)?.name}` : ''}</span></div><blockquote>{feedback.tip}</blockquote><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating} /></article>) : <p className="feedback-empty">{result.voteCount ? 'No written feedback this round.' : 'No scorecards submitted.'}</p>}</div>
+  </section>
+}
+
+function Round({ p, room, lobbyMedia }: { p: Pitch; room: PitchRoomView; lobbyMedia: LobbyMedia }) {
   const now = useServerNow(room.serverTime)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [transmitting, setTransmitting] = useState(false)
+  const [tab,setTab] = useState('round')
   const active = room.status === "active" && !room.left
-  const automated = room.judgingMode === "automated"
-  const peer = room.judgingMode === "peer" || automated
-  const players = room.participants
-    .filter((v) => v.role === "contestant")
-    .sort((a, b) => a.slot - b.slot)
-  const winner = room.participants.find((v) => v.id === room.result?.winnerId)
-  return (
-    <div className="page-stack playable-match">
-      <div className="match-titlebar">
-        <div>
-          <div className="eyebrow">
-            ROOM {room.code} ·{" "}
-            {room.role === "judge" ? "YOU ARE JUDGING" : "YOU ARE A CONTESTANT"}
-          </div>
-          <h1 className="display">
-            {room.left
-              ? "You left the round."
-              : room.status === "cancelled"
-                ? "Round cancelled."
-                : room.status === "finished"
-                  ? peer ? "Practice duel complete!" : winner
-                    ? `${winner.name} wins!`
-                    : "A draw."
-                  : room.phase.label}
-          </h1>
-        </div>
-        <span className="countdown">
-          <Icon name="clock" />
-          {active ? countdown(room.phase.deadline, now) : "ROUND CLOSED"}
-        </span>
-      </div>
-      <div className={room.role === "contestant" ? "round-layout has-chat" : "round-layout"}>
-      <div className="page-stack round-main">
-      <div className="scenario-reveal">
-        <div>
-          <span className="capitalize">{room.scenario.category}</span>
-          <h2 className="heading">{room.scenario.title}</h2>
-          <p className="arena-prompt">{room.scenario.prompt}</p>
-          <p>{room.scenario.goal}</p>
-          {room.yourPosition && (
-            <strong>Your assigned position: {room.yourPosition}</strong>
-          )}
+  const peer = room.judgingMode !== 'judged'
+  const canFeedback = room.role === 'contestant' && (!active || room.phase.key === 'judging')
+  const speaker = room.participants.find(v=>v.role==='contestant'&&v.slot===room.phase.speaker)
+  const turn = !active ? room.status==='cancelled'?'Round ended':'Round complete' : speaker ? `${speaker.id===p.me!.player.id?'Your':speaker.name+"’s"} ${room.phase.index<3?'opening':'response'}` : room.phase.key==='judging' ? peer?'Exchange feedback':'Judges are scoring' : 'Read the scenario'
+  useEffect(()=>{setTab('round')},[room.phase.index,room.status])
+  // Completed rounds can receive peer feedback later. Keep that private view current.
+  useEffect(()=>{
+    if(active)return
+    const controller=new AbortController();let timer:ReturnType<typeof setTimeout>
+    async function poll(){try{const value=await p.api.room(room.code,{signal:controller.signal});if(!controller.signal.aborted)p.acceptRoom(value)}catch{}finally{if(!controller.signal.aborted)timer=setTimeout(()=>void poll(),5000)}}
+    timer=setTimeout(()=>void poll(),5000);return()=>{controller.abort();clearTimeout(timer)}
+  },[active,p.api,p.acceptRoom,room.code])
+  const tabs=[['round',active?(room.phase.key==='judging'?'Feedback':'Your turn'):'Results'],['responses','Responses'],...(canFeedback?[['peer','Peer feedback']]:[]),...(room.role==='contestant'?[['chat','Chat']]:[]),['details','Details']] as const
+  return <div className="round-workspace">
+    <header className="round-header"><div><span className="eyebrow">{room.role==='judge'?'JUDGING':'HEAD-TO-HEAD'} · {room.code}</span><h1>{turn}</h1></div><div className="round-heading-actions"><strong className="countdown"><Icon name="clock"/>{active?countdown(room.phase.deadline,now):'Saved'}</strong>{active?<Button variant="secondary" className="leave-round-button" onClick={()=>setConfirmLeave(true)}>Leave</Button>:<Button variant="secondary" onClick={p.clearRoom}>Back</Button>}</div></header>
+    <section className="round-scenario" aria-label="Scenario"><div><span className="capitalize">{room.scenario.category}</span><strong>{room.scenario.title}</strong></div><p>{room.scenario.prompt}</p>{room.yourPosition&&room.scenario.positions&&<small>Your position: {room.yourPosition}</small>}</section>
+    <div className={`round-desk${room.role==='contestant'?' with-chat':''}`}>
+      <div className="round-stage">
+        <div className="round-media"><AudioControls p={p} room={room} now={now} lobbyMedia={lobbyMedia} onTransmitting={setTransmitting}/></div>
+        <div className="round-progress" aria-label="Round progress">{p.config!.rules.phases.map((phase,index)=><span key={phase.key} className={index===room.phase.index?'current':index<room.phase.index?'complete':''} aria-current={index===room.phase.index?'step':undefined} aria-label={`${phase.label}, ${phase.seconds} seconds`} title={`${phase.label} · ${phase.seconds}s`}/>)}<small>{active?`${room.phase.index+1}/6`:'Complete'}</small></div>
+        <div className="round-tabs" role="group" aria-label="Round tools">{tabs.map(([id,label])=><button key={id} type="button" className={id==='chat'?'round-chat-tab':''} aria-pressed={tab===id} onClick={()=>setTab(id)}>{label}{id==='peer'&&room.peerFeedbackSubmitted?' ✓':''}</button>)}</div>
+        <div className="round-tool-panel" tabIndex={0} aria-label={tabs.find(t=>t[0]===tab)?.[1]}>
+          <div hidden={tab!=='round'}>{(active?(room.role==='judge'?room.phase.key==='judging'?<Scorecard p={p} room={room} now={now}/>:<div className="round-waiting"><Icon name="gavel"/><h2>Listen to both contestants</h2><p>Your scorecard opens after their responses.</p></div>:peer&&room.phase.key==='judging'?<PeerScorecard p={p} room={room} now={now}/>:room.phase.key==='judging'?<div className="round-waiting"><h2>Judges are scoring</h2><Button onClick={()=>setTab('peer')}>Give peer feedback</Button></div>:<LiveResponse key={room.phase.index} p={p} room={room} now={now} transmitting={transmitting}/>):room.result?<RoundOutcome p={p} room={room}/>:<p>Round ended. Your history is saved.</p>)}</div>
+          {tab==='peer'&&canFeedback&&<><PeerScorecard p={p} room={room} now={now}/><section className="received-peer"><h3>From your opponent</h3>{room.peerFeedback?.length?room.peerFeedback.map(feedback=><article key={feedback.ballotId}><blockquote>{feedback.tip}</blockquote><FeedbackButtons p={p} id={feedback.ballotId} rating={feedback.rating}/></article>):<p>No peer feedback yet.</p>}</section></>}
+          {tab==='responses'&&<section><h2>Written responses</h2>{room.responses.length?room.responses.map(r=><article className="feedback-card" key={`${r.playerId}-${r.phase}`}><strong>{room.participants.find(v=>v.id===r.playerId)?.name} · {r.phase<3?'Opening':'Response'}</strong><p className="preserve-lines">{r.content}</p></article>):<p>Submitted words appear after each turn.</p>}</section>}
+          {tab==='chat'&&<OpponentChat p={p} room={room}/>}
+          {tab==='details'&&<><div className="round-details"><strong>{room.isPublic?'Public round':'Private round'} · {peer?'Unrated':'Rated with valid scorecards'}</strong><p>Mic is live in preparation and on your turn. Camera stays on until switched off. Audio and video are not recorded.</p>{room.judgingMode==='automated'&&<p>One automated rubric judge checks submitted text. Not AI; no voice or video assessment.</p>}<h3>Judges</h3>{room.participants.filter(v=>v.role==='judge').map(v=><div className="round-judge" key={v.id}><PlayerLink player={v}><AvatarBadge name={v.name} look={v.avatar}/>{v.name}</PlayerLink><span>{v.left?'Left':v.submitted?'Scored':'Listening'}</span></div>)}{peer&&<p>{room.judgingMode==='automated'?'Automated rubric judge':'Peer feedback'}</p>}</div><Safety p={p} room={room}/></>}
         </div>
       </div>
-      <div className="matchup-intro">
-        {players.map((v, i) => (
-          <div className="matchup-player" key={v.id}>
-            <PlayerLink player={v} className="player-link-stack"><AvatarBadge name={v.name} look={v.avatar} size="xl" /><strong>{v.name}</strong></PlayerLink>
-            <span>
-              CONTESTANT {i ? "B" : "A"}
-              {v.id === p.me!.player.id ? " · YOU" : ""}
-            </span>
-            <small>{v.ageBand ? `Ages ${v.ageBand}` : ""}</small>
-            <small>
-              {v.left
-                ? "Left round"
-                : active && room.phase.speaker === v.slot
-                  ? "Speaking now"
-                  : v.position || "Ready"}
-            </small>
-          </div>
-        ))}
-        <div className="matchup-vs match-center">
-          <span>{room.band}</span>
-          <strong>VS</strong>
-          <small>{automated ? "One automated judge · unrated" : peer ? "Two-player practice · unrated" : `${room.participants.filter(v => v.role === 'judge').length} human judge${room.participants.filter(v => v.role === 'judge').length === 1 ? '' : 's'}`}</small>
-        </div>
-      </div>
-      {active && <p>{room.isPublic ? "Public round: viewers can follow shared text and results." : "Private round: only its participants can view it."}</p>}
-      {peer && <div className="pricing-preview-note"><Icon name="versus" /><div><strong>{automated ? "Automated rubric judge · text only" : "Two-player practice · no judges needed"}</strong><p>{automated ? "Free text checks: structure, examples, next steps. Not AI; no audio or video assessment. " : "Take your turns, then give each other feedback. "}No Elo or judging credits.</p></div></div>}
-      <div className="live-judge-cards">
-        {automated && <div className="panel"><Icon name="gavel" /><strong>Automated rubric judge</strong><span>{room.result ? 'Text checks complete' : '1 stand-in · submit text during your turn'}</span></div>}
-        {room.participants
-          .filter((v) => v.role === "judge")
-          .map((v) => (
-            <div className="panel" key={v.id}>
-              <PlayerLink player={v}><AvatarBadge name={v.name} look={v.avatar}/><strong>{v.name}</strong></PlayerLink><Icon name="gavel"/>
-              <span>
-                {v.left
-                  ? "Left round"
-                  : v.submitted
-                    ? "Scorecard received"
-                    : "Listening / scoring"}
-              </span>
-            </div>
-          ))}
-      </div>
-      {active && (
-        <>
-          <div className="phase-track">
-            {p.config!.rules.phases.map((phase, i) => (
-              <span
-                className={i === room.phase.index ? "current" : ""}
-                key={phase.key}
-              >
-                {peer && i === 5 ? "Opponent feedback" : phase.label} · {phase.seconds}s
-              </span>
-            ))}
-          </div>
-          {now >= room.phase.deadline && (
-            <p role="status">Waiting for the server’s next phase…</p>
-          )}
-          <AudioControls p={p} room={room} now={now} />
-          {peer && room.phase.key === "judging" ? <PeerScorecard p={p} room={room} now={now} /> : room.role === "contestant" ? (
-            <ResponseForm key={room.phase.index} p={p} room={room} now={now} />
-          ) : (
-            <Scorecard p={p} room={room} now={now} />
-          )}
-        </>
-      )}
-      <section className="panel">
-        <SectionTitle title="Written responses" />
-        <p>
-          Responses become visible to other players after each speaking turn.
-        </p>
-        {room.responses.length ? (
-          room.responses.map((r) => (
-            <article className="feedback-card" key={`${r.playerId}-${r.phase}`}>
-              <strong>
-                {room.participants.find((v) => v.id === r.playerId)?.name} ·{" "}
-                {p.config!.rules.phases[r.phase]?.label}
-              </strong>
-              <p className="preserve-lines">{r.content}</p>
-            </article>
-          ))
-        ) : (
-          <p>No text responses shared yet. Players may be using live audio.</p>
-        )}
-      </section>
-      {room.result && (
-        <section className="game-results">
-          <div className="result-banner">
-            <Icon name="trophy" />
-            <span>
-              {peer ? "UNRATED PRACTICE" : room.status === "cancelled"
-                ? "UNRATED"
-                : winner
-                  ? "ROUND COMPLETE"
-                  : "DRAW"}
-            </span>
-            <p>
-              {room.result.voteCount} {automated ? "automated judge · Elo unchanged" : peer ? "opponent feedback submissions · Elo unchanged" : `scorecards · ${room.result.reason.replaceAll("_", " ")}`}
-            </p>
-          </div>
-          {peer && !room.feedback.length && <p>No opponent feedback was submitted before this round ended.</p>}
-          <div className="final-score-grid">
-            {room.result.scores.map((score) => {
-              const change = room.result!.ratingChanges.find(
-                (c) => c.playerId === score.playerId,
-              )
-              return (
-                <div className="panel" key={score.playerId}>
-                  <h2 className="heading">
-                    {players.find((v) => v.id === score.playerId)?.name}
-                  </h2>
-                  {change ? (
-                    <p className={change.delta >= 0 ? "positive" : "negative"}>
-                      {signed(change.delta)} Elo · {change.before} →{" "}
-                      {change.after}
-                    </p>
-                  ) : (
-                    <p>No Elo change</p>
-                  )}
-                  {!automated && skills.map((k) => (
-                    <p className="capitalize" key={k}>
-                      {k}: {score.averages?.[k] ?? "—"}/5
-                    </p>
-                  ))}
-                  {automated && room.result?.automatedFeedback?.filter(f => f.playerId === score.playerId).map(f => <div key={f.playerId}><p>{f.tip}</p><ul className="automated-checks">{Object.entries(f.checks).map(([key,value]) => <li key={key}>{value ? '✓' : '—'} {key === 'nextStep' ? 'Clear next step' : key === 'specificity' ? 'Specific example' : 'Sentence structure'}</li>)}</ul><small>Simple text checks, not a skill score.</small></div>)}
-                </div>
-              )
-            })}
-          </div>
-          {room.feedback.map((f) => (
-            <div className="panel" key={f.ballotId}>
-              <p className="feedback-quote">“{f.tip}”</p>
-              <FeedbackButtons p={p} id={f.ballotId} rating={f.rating} />
-            </div>
-          ))}
-        </section>
-      )}
-      <Safety p={p} room={room} />
-      {active ? (
-        <div className="panel">
-          {confirmLeave ? (
-            <>
-              <p>
-                {peer ? "Leaving ends this unrated duel for both players. Your Elo stays the same." : "Leaving applies a queue break. Contestants forfeit; judges lose reliability."}
-              </p>
-              <div className="hero-actions">
-                <Button
-                  variant="secondary"
-                  disabled={p.busy}
-                  onClick={() => {
-                    void p.act(async () => {
-                      p.acceptRoom(await p.api.leave(room.code))
-                      await p.refresh()
-                    })
-                  }}
-                >
-                  Leave round
-                </Button>
-                <Button onClick={() => setConfirmLeave(false)}>
-                  Stay in round
-                </Button>
-              </div>
-            </>
-          ) : (
-            <Button variant="ghost" onClick={() => setConfirmLeave(true)}>
-              Leave round…
-            </Button>
-          )}
-        </div>
-      ) : (
-        <Button onClick={p.clearRoom}>
-          Back to matchmaking
-          <Icon name="arrow" />
-        </Button>
-      )}
-      </div>
-      {room.role === "contestant" && <aside className="round-chat-sidebar" aria-label="Opponent chat"><OpponentChat p={p} room={room} /></aside>}
-      </div>
+      {room.role==='contestant'&&<aside className="desk-chat" aria-label="Opponent chat"><OpponentChat p={p} room={room}/></aside>}
     </div>
-  )
+    <LeaveRoundDialog p={p} room={room} open={active&&confirmLeave} onClose={()=>setConfirmLeave(false)}/>
+  </div>
 }

@@ -33,7 +33,7 @@ export function DemoMatch({ scenario, name, avatar, onClose }: { scenario: Scena
       <SectionTitle eyebrow="SOLO DEMO · NO ELO" title={finished ? "Demo round complete" : demoSteps[stage.index].title} action={<Button variant="ghost" onClick={onClose}>Exit demo</Button>} />
       <div className="pricing-preview-note"><Icon name="spark" /><div><strong>Simulated round</strong><p>Scripted opponents and results. Not AI. No Elo or history changes.</p></div></div>
       <section className="panel form-stack">
-        <span className="capitalize">{scenario.category}</span><h2 className="heading">{scenario.title}</h2><p className="arena-prompt">{scenario.prompt}</p><p>{scenario.goal}</p>
+        <span className="capitalize">{scenario.category}</span><h2 className="heading">{scenario.title}</h2><p className="arena-prompt">{scenario.prompt}</p>
         {scenario.positions && <p><strong>Your side:</strong> {scenario.positions[0]}<br /><strong>Demo opponent:</strong> {scenario.positions[1]}</p>}
       </section>
       <div className="matchup-intro">

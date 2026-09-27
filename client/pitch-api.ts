@@ -1,5 +1,5 @@
 import { PITCH_API_VERSION } from '../shared/pitch';
-import type { Ballot, FeedbackRating, PitchConfig, PitchHistory, PitchLeaderboard, PitchMe, PitchQueue, PitchRoomView, QueueMode, ReportReason, Reports, Session, Signup, SignalPage, VoiceConfig, VoiceMessage, SpectatorList, SpectatorRound, Rubric, AvatarLook, RoomChat, PracticeDraft, PracticeLog } from '../shared/pitch';
+import type { Ballot, RoundHistoryPage, FeedbackRating, PitchConfig, PitchHistory, PitchLeaderboard, PitchMe, PitchQueue, PitchRoomView, QueueMode, ReportReason, Reports, Session, Signup, SignalPage, VoiceConfig, VoiceMessage, SpectatorList, SpectatorRound, Rubric, AvatarLook, RoomChat, PracticeDraft, PracticeLog } from '../shared/pitch';
 export type * from '../shared/pitch';
 export { PITCH_API_VERSION } from '../shared/pitch';
 
@@ -49,9 +49,12 @@ export class PitchApi {
     try { await this.request('/logout', 'POST', {}); }
     finally { if (this.token === token) this.token = null; }
   }
-  playerProfile(id: string, options?: RequestOptions) { return this.request<import('../shared/pitch').PublicProfile>(`/players/${encodeURIComponent(id)}`,'GET',undefined,options); }
+  playerProfile(id: string, options?: RequestOptions) { return this.request<import('../shared/pitch').FullPlayerProfile>(`/players/${encodeURIComponent(id)}`,'GET',undefined,options); }
+  follow(id: string, follow: boolean, options?: RequestOptions) { return this.request<import('../shared/pitch').FullPlayerProfile>(`/players/${encodeURIComponent(id)}/follow`,'POST',{follow},options); }
   friends(options?: RequestOptions) { return this.request<{friends:import('../shared/pitch').FriendEntry[]}>('/friends','GET',undefined,options); }
   friend(id: string, action: import('../shared/pitch').FriendAction, options?: RequestOptions) { return this.request<import('../shared/pitch').PublicProfile>(`/friends/${encodeURIComponent(id)}`,'POST',{action},options); }
+  messages(id:string, before?:number, options?:RequestOptions) { return this.request<import('../shared/pitch').DirectMessages>(`/friends/${encodeURIComponent(id)}/messages${before?`?before=${before}`:''}`,'GET',undefined,options); }
+  sendMessage(id:string,content:string,requestId:string,options?:RequestOptions) { return this.request<import('../shared/pitch').DirectMessages>(`/friends/${encodeURIComponent(id)}/messages`,'POST',{content,requestId},options); }
   saveAvatar(avatar: AvatarLook) { return this.request<{avatar:AvatarLook}>('/avatar','POST',{avatar}); }
   chat(code: string, options?: RequestOptions) { return this.request<RoomChat>(this.roomPath(code,'/chat'),'GET',undefined,options); }
   sendChat(code: string, kind: 'message'|'reaction', content: string, requestId: string, options?: RequestOptions) { return this.request<RoomChat>(this.roomPath(code,'/chat'),'POST',{kind,content,requestId},options); }
@@ -65,6 +68,7 @@ export class PitchApi {
   leave(code: string, options?: RequestOptions) { return this.request<PitchRoomView>(this.roomPath(code, '/leave'), 'POST', {}, options); }
   savePractice(draft: PracticeDraft, options?: RequestOptions) { return this.request<{practice:PracticeLog}>('/practice','POST',draft,options); }
   deletePractice(id:string, options?: RequestOptions) { return this.request<{deleted:true}>(`/practice/${encodeURIComponent(id)}`,'DELETE',undefined,options); }
+  roundHistory(cursor?: string, options?: RequestOptions) { return this.request<RoundHistoryPage>('/round-history' + (cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''), 'GET', undefined, options); }
   history(options?: RequestOptions) { return this.request<PitchHistory>('/history', 'GET', undefined, options); }
   leaderboard(options?: RequestOptions) { return this.request<PitchLeaderboard>('/leaderboard', 'GET', undefined, options); }
   publicRounds(options?: RequestOptions) { return this.request<SpectatorList>('/spectate', 'GET', undefined, options); }
@@ -93,7 +97,7 @@ export class PitchApi {
         if (controller.signal.aborted) return;
         handlers.onError(error);
         if (error instanceof PitchApiError && [401, 403, 404].includes(error.status)) stop();
-      } finally { if (!controller.signal.aborted) timer = setTimeout(() => { void tick(); }, 4000); }
+      } finally { if (!controller.signal.aborted) timer = setTimeout(() => { void tick(); }, 1500); }
     };
     void tick();
     return stop;

@@ -39,6 +39,7 @@ export function Pricing({ navigate }: { navigate: (page: Page) => void }) {
             <div><dt>Matches</dt><dd>Unlimited</dd></div>
             <div><dt>Scenarios</dt><dd>Premium packs: interviews, negotiation and networking</dd></div>
             <div><dt>Feedback</dt><dd>Full score history and skill progress</dd></div>
+            <div><dt>Style</dt><dd>Pro skins and exclusive colour collections</dd></div>
           </dl>
           <Button disabled>PITCH Pro · coming soon</Button>
         </article>

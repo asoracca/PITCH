@@ -34,9 +34,9 @@ test('connected dashboard, profile and leaderboard render server data and honest
 });
 test('live round renders server participants, judge form and result instead of simulated opponents', () => {
   const contestant = render(ui.Match, { p: { ...p, room } });
-  assert.match(contestant, /Taylor/); assert.match(contestant, /Submit response/); assert.match(contestant, /Connect voice &amp; video/); assert.match(contestant, /Turn microphone on/); assert.match(contestant, /with or without voice/); assert.match(contestant, /Voice &amp; video disabled/); assert.doesNotMatch(contestant, /Maya|Sofia|ANALYZING BOTH RESPONSES/);
+  assert.match(contestant, /Taylor/); assert.match(contestant, /Submit response/); assert.match(contestant, /Connect/); assert.match(contestant, /Mic off/); assert.match(contestant, /Your response/); assert.match(contestant, /Disconnected/); assert.doesNotMatch(contestant, /Maya|Sofia|ANALYZING BOTH RESPONSES/);
   const judging = render(ui.Match, { p: { ...p, room: { ...room, role: 'judge', yourSlot: 2, phase: { ...room.phase, key: 'judging', speaker: null } } } });
-  assert.doesNotMatch(judging, /Turn microphone on/); assert.match(judging, /Submit scorecard/); assert.match(judging, /persuasiveness/);
+  assert.doesNotMatch(judging, /Mic off/); assert.match(judging, /Submit scorecard/); assert.match(judging, /persuasiveness/);
 });
 
 async function withAudio(getUserMedia, run) {
@@ -44,12 +44,21 @@ async function withAudio(getUserMedia, run) {
   const peers = [], instances = [], sent = [];
   let latest = { enabled: false, microphone: 'off', transmitting: false };
   class Peer {
-    constructor() { this.signalingState = 'stable'; this.connectionState = 'new'; this.senders = {}; peers.push(this); }
-    addTransceiver(kind, options) { this.direction = options.direction; const sender = { track: null, replaceTrack: async track => { sender.track = track; } }; this.senders[kind] = sender; if (kind === 'audio') this.sender = sender; return { sender }; }
+    constructor() { this.signalingState = 'stable'; this.connectionState = 'new'; this.senders = {}; this.transceivers=[]; peers.push(this); }
+    addTransceiver(kind, options) { this.direction = options.direction; const sender = { track: null, replaceTrack: async track => { sender.track = track; } }; this.senders[kind] = sender; if (kind === 'audio') this.sender = sender; const transceiver={sender,receiver:{track:{kind}},mid:null,direction:options.direction};this.transceivers.push(transceiver);return transceiver; }
+    getTransceivers() { return this.transceivers; }
     async createOffer() { return { type: 'offer', sdp: 'offer' }; }
     async createAnswer() { return { type: 'answer', sdp: 'answer' }; }
     async setLocalDescription(description) { this.localDescription = description; this.signalingState = description.type === 'offer' ? 'have-local-offer' : 'stable'; }
-    async setRemoteDescription(description) { this.remoteDescription = description; this.signalingState = description.type === 'offer' ? 'have-remote-offer' : 'stable'; }
+    async setRemoteDescription(description) {
+      // Reproduce browser rollback: the incoming offer creates receiving channels
+      // and leaves the outgoing offer's original senders without an associated mid.
+      if(description.type==='offer' && this.signalingState==='have-local-offer'){
+        this.transceivers.forEach(t=>{t.mid=null});
+        for(const [index,kind] of ['audio','video'].entries())this.addTransceiver(kind,{direction:'recvonly'}).mid=String(index);
+      }
+      this.remoteDescription = description; this.signalingState = description.type === 'offer' ? 'have-remote-offer' : 'stable';
+    }
     async addIceCandidate() {}
     close() { this.connectionState = 'closed'; }
   }
@@ -106,6 +115,11 @@ test('both sides can initiate or reconnect voice; simultaneous offers resolve to
     api.signals = async () => ({ signals: [{ id: 1, senderId: 'other', kind: 'offer', payload: { type: 'offer', sdp: 'remote-offer' } }], cursor: 1 });
     const audio = make(); await audio.start(room, 'self', voiceConfig, phases); await new Promise(resolve => setImmediate(resolve));
     assert.equal(sent.filter(s => s.kind === 'offer').length, 1); assert.equal(sent.filter(s => s.kind === 'answer').length, 1); assert.equal(peers[0].signalingState, 'stable');
+    await audio.enableMicrophone();
+    const channels=peers[0].getTransceivers();
+    assert.equal(channels[0].sender.track,null);assert.equal(channels[0].direction,'inactive');
+    assert.equal(channels[2].direction,'sendrecv');assert.ok(channels[2].sender.track);
+    assert.equal(channels[3].direction,'sendrecv');
     audio.stop(); await audio.start(room, 'self', voiceConfig, phases); assert.equal(sent.filter(s => s.kind === 'offer').length, 2);
   });
 });
@@ -166,7 +180,7 @@ test('empty avatars, home logo, coaching microphone and unrated feedback are vis
   assert.match(render(ui.Logo, {}), /href="#Home"/);
   const coach=render(ui.Coach,{navigate(){}});assert.match(coach,/Use microphone/);assert.match(coach,/Guided demo uses scripted replies/);assert.match(coach,/Hiring Manager/);
   const peer=render(ui.Match,{p:{...p,room:{...room,judgingMode:'peer',phase:{...room.phase,key:'judging',index:5}}}});
-  assert.match(peer,/Send opponent feedback/);assert.match(peer,/Turn camera on/);assert.match(peer,/does not change Elo/);
+  assert.match(peer,/Send opponent feedback/);assert.match(peer,/Camera off/);assert.match(peer,/no Elo change/);
 });
 
 test('transcription combines interim and final results without duplication and ignores cancelled events',()=>{
